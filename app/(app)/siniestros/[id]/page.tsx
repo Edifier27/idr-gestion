@@ -11,6 +11,7 @@ import { CobroBadge } from "@/components/cobro-badge";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
 import { DescargoPanel } from "@/components/descargo-panel";
 import { MailPanel } from "@/components/mail-panel";
+import { KmPanel } from "@/components/km-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +68,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         <div className="space-y-4">
           {verFacturacion && (
             <Bloque titulo="Facturación">
-              <Dato k="Km total" v={s.kmTotal != null ? `${s.kmTotal} km` : null} />
+              <KmPanel siniestroId={s.id} kmTotal={s.kmTotal} domicilio={s.domicilio} lugarHecho={lugarTxt} />
               <Dato k="Km bonificados" v={`${desg.kmBonificados} km`} />
               <Dato k="Km facturables" v={`${desg.kmFacturables} km × $650`} />
               <Dato k="Gasto km" v={formatARS(desg.montoKm)} />
