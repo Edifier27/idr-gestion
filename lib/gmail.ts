@@ -123,7 +123,12 @@ export async function enviarMail(opts: {
 }
 
 type CabeceraGmail = { name: string; value: string };
-type ParteMensaje = { mimeType?: string; body?: { data?: string }; parts?: ParteMensaje[] };
+type ParteMensaje = {
+  mimeType?: string;
+  filename?: string;
+  body?: { data?: string; attachmentId?: string; size?: number };
+  parts?: ParteMensaje[];
+};
 
 function cabecera(headers: CabeceraGmail[], nombre: string): string {
   return headers.find(h => h.name.toLowerCase() === nombre.toLowerCase())?.value ?? "";
@@ -152,6 +157,26 @@ function extraerTexto(payload?: ParteMensaje): string {
   return "";
 }
 
+/** Junta todas las partes que son adjuntos (tienen filename y attachmentId). */
+function extraerAdjuntos(payload?: ParteMensaje): AdjuntoInfo[] {
+  if (!payload) return [];
+  const encontrados: AdjuntoInfo[] = [];
+  function recorrer(parte: ParteMensaje) {
+    if (parte.filename && parte.body?.attachmentId) {
+      encontrados.push({
+        attachmentId: parte.body.attachmentId,
+        nombre: parte.filename,
+        tipo: parte.mimeType ?? "application/octet-stream",
+        tamano: parte.body.size ?? 0,
+      });
+    }
+    parte.parts?.forEach(recorrer);
+  }
+  recorrer(payload);
+  return encontrados;
+}
+
+export type AdjuntoInfo = { attachmentId: string; nombre: string; tipo: string; tamano: number };
 export type MensajeResumen = {
   id: string;
   asunto: string;
@@ -160,7 +185,7 @@ export type MensajeResumen = {
   snippet: string;
   noLeido: boolean;
 };
-export type MensajeCompleto = MensajeResumen & { cuerpo: string };
+export type MensajeCompleto = MensajeResumen & { cuerpo: string; adjuntos: AdjuntoInfo[] };
 
 /** Lista los últimos mensajes de la bandeja de entrada (más nuevos primero). */
 export async function listarMensajes(maxResults = 25): Promise<MensajeResumen[]> {
@@ -208,5 +233,19 @@ export async function obtenerMensaje(id: string): Promise<MensajeCompleto> {
     snippet: data.snippet ?? "",
     noLeido: (data.labelIds ?? []).includes("UNREAD"),
     cuerpo: extraerTexto(data.payload),
+    adjuntos: extraerAdjuntos(data.payload),
   };
+}
+
+/** Descarga los bytes de un adjunto puntual de un mensaje. */
+export async function obtenerAdjunto(mensajeId: string, attachmentId: string): Promise<Buffer> {
+  const accessToken = await accessTokenActivo();
+  const res = await fetch(
+    `https://www.googleapis.com/gmail/v1/users/me/messages/${mensajeId}/attachments/${attachmentId}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message ?? "No se pudo descargar el adjunto.");
+  const base64 = (data.data as string).replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(base64, "base64");
 }

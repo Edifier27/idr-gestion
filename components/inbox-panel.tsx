@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 
 type Mensaje = { id: string; asunto: string; de: string; fecha: string; snippet: string; noLeido: boolean };
-type MensajeCompleto = Mensaje & { cuerpo: string };
+type Adjunto = { attachmentId: string; nombre: string; tipo: string; tamano: number };
+type MensajeCompleto = Mensaje & { cuerpo: string; adjuntos: Adjunto[] };
+
+function formatearTamano(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function InboxPanel() {
   const [mensajes, setMensajes] = useState<Mensaje[] | null>(null);
@@ -65,6 +72,25 @@ export function InboxPanel() {
             <button onClick={() => setAbierto(null)} className="text-xs text-slate hover:text-ink">Cerrar</button>
           </div>
           <pre className="max-h-96 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-ink">{abierto.cuerpo || abierto.snippet}</pre>
+
+          {abierto.adjuntos.length > 0 && (
+            <div className="mt-3 border-t border-line pt-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate">
+                Adjuntos ({abierto.adjuntos.length})
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {abierto.adjuntos.map(a => (
+                  <a
+                    key={a.attachmentId}
+                    href={`/api/gmail/mensajes/${abierto.id}/adjuntos/${a.attachmentId}?nombre=${encodeURIComponent(a.nombre)}&tipo=${encodeURIComponent(a.tipo)}`}
+                    className="rounded border border-ink/20 bg-white px-2.5 py-1.5 text-xs text-ink transition hover:bg-ink hover:text-paper"
+                  >
+                    📎 {a.nombre} <span className="text-slate">({formatearTamano(a.tamano)})</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {cargandoDetalle && <p className="mb-4 text-xs text-slate">Cargando mail…</p>}
