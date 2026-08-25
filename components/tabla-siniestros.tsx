@@ -36,6 +36,9 @@ function esPorFacturar(r: SiniestroRow) { return r.estado === "elevado" && (r.es
 function esPorCobrar(r: SiniestroRow) { return r.estadoCobro === "facturado" || r.estadoCobro === "presentado"; }
 function esVencido(r: SiniestroRow) { const d = diasRestantes(r.fechaLimite); return d !== null && d < 0; }
 
+const SIN_ASIGNAR = "__sin_asignar__";
+function claveOperador(r: SiniestroRow) { return r.operador ?? SIN_ASIGNAR; }
+
 export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
   const [quick, setQuick] = useState<QuickFilter>("todos");
   const [operador, setOperador] = useState("");
@@ -61,6 +64,21 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
     vencidos: rows.filter(esVencido).length,
   }), [rows]);
 
+  const porOperador = useMemo(() => {
+    const mapa = new Map<string, { pendientes: number; resueltos: number; vencidos: number; total: number }>();
+    for (const r of rows) {
+      const clave = claveOperador(r);
+      const acc = mapa.get(clave) ?? { pendientes: 0, resueltos: 0, vencidos: 0, total: 0 };
+      acc.total++;
+      if (esPendiente(r)) acc.pendientes++; else acc.resueltos++;
+      if (esVencido(r)) acc.vencidos++;
+      mapa.set(clave, acc);
+    }
+    return Array.from(mapa.entries())
+      .map(([clave, datos]) => ({ clave, ...datos }))
+      .sort((a, b) => b.total - a.total);
+  }, [rows]);
+
   const filtradas = useMemo(() => {
     let out = rows;
     if (quick === "pendientes") out = out.filter(esPendiente);
@@ -68,7 +86,7 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
     else if (quick === "por_cobrar") out = out.filter(esPorCobrar);
     else if (quick === "vencidos") out = out.filter(esVencido);
 
-    if (operador) out = out.filter(r => r.operador === operador);
+    if (operador) out = out.filter(r => claveOperador(r) === operador);
     if (compania) out = out.filter(r => r.compania === compania);
     if (estado) out = out.filter(r => r.estado === estado);
     if (estadoCobro) out = out.filter(r => (r.estadoCobro ?? "no_facturado") === estadoCobro);
@@ -87,6 +105,30 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
 
   return (
     <div>
+      {esAdmin && porOperador.length > 0 && (
+        <div className="mb-4 rounded-lg border border-line bg-white p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Por vendedor</h2>
+            {operador && (
+              <button onClick={() => setOperador("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
+                Ver todos
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            {porOperador.map(o => (
+              <TarjetaOperador
+                key={o.clave}
+                nombre={o.clave === SIN_ASIGNAR ? "Sin asignar" : o.clave}
+                {...o}
+                activo={operador === o.clave}
+                onClick={() => setOperador(a => a === o.clave ? "" : o.clave)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2">
           <QuickBtn label="Todos" activo={quick === "todos"} n={conteos.todos} onClick={() => setQuick("todos")} />
@@ -131,6 +173,36 @@ function QuickBtn({ label, n, activo, onClick }: { label: string; n: number; act
       }`}
     >
       {label} <span className={activo ? "text-paper/70" : "text-slate"}>({n})</span>
+    </button>
+  );
+}
+
+function TarjetaOperador({ nombre, total, pendientes, resueltos, vencidos, activo, onClick }: {
+  nombre: string; total: number; pendientes: number; resueltos: number; vencidos: number; activo: boolean; onClick: () => void;
+}) {
+  const pctResuelto = total === 0 ? 0 : Math.round((resueltos / total) * 100);
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-lg border p-3 text-left transition ${
+        activo ? "border-ink bg-ink/5" : "border-line bg-white hover:border-ink/30 hover:bg-paper"
+      }`}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="truncate text-sm font-semibold text-ink" title={nombre}>{nombre}</span>
+        {vencidos > 0 && (
+          <span className="shrink-0 rounded-full bg-fraude/10 px-1.5 py-0.5 text-[10px] font-semibold text-fraude">
+            {vencidos} venc.
+          </span>
+        )}
+      </div>
+      <div className="mb-1.5 h-1.5 overflow-hidden rounded-full bg-line">
+        <div className="h-full bg-ok transition-[width]" style={{ width: `${pctResuelto}%` }} />
+      </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-amber">{pendientes} pendiente{pendientes === 1 ? "" : "s"}</span>
+        <span className="text-ok">{resueltos} resuelto{resueltos === 1 ? "" : "s"}</span>
+      </div>
     </button>
   );
 }
