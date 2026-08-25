@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { conexionActiva } from "@/lib/gmail";
+import { InboxPanel } from "@/components/inbox-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
       <header className="mb-6 border-b border-line pb-5">
         <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">IDR Gestión</p>
         <h1 className="text-xl font-semibold text-ink">Casilla de mail</h1>
-        <p className="text-sm text-slate">Conectá la casilla corporativa para poder mandar mails con adjuntos desde cada caso.</p>
+        <p className="text-sm text-slate">Conectá la casilla corporativa para mandar mails con adjuntos desde cada caso y ver la bandeja de entrada acá.</p>
       </header>
 
       {searchParams.conectado && (
@@ -42,6 +43,9 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
             <a href="/api/gmail/connect" className="inline-block rounded border border-ink/20 px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-ink hover:text-paper">
               Reconectar / cambiar de casilla
             </a>
+            <p className="mt-3 text-xs text-slate">
+              Si la conectaste antes de que sumáramos la bandeja de entrada, hacé clic en "Reconectar" una vez para darle permiso de lectura además de envío.
+            </p>
           </>
         ) : (
           <>
@@ -52,6 +56,12 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
           </>
         )}
       </section>
+
+      {conexion && (
+        <div className="mt-6">
+          <InboxPanel />
+        </div>
+      )}
     </main>
   );
 }

@@ -5,7 +5,7 @@ import { gmailConexion } from "@/lib/db/schema";
 import { asegurarTablasGmail } from "@/lib/db/asegurar-gmail";
 
 const REDIRECT_URI = "https://crm-atm.vercel.app/api/gmail/callback";
-const SCOPE = "https://www.googleapis.com/auth/gmail.send";
+const SCOPE = "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly";
 
 function credenciales() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -75,6 +75,12 @@ export async function conexionActiva() {
   return row ?? null;
 }
 
+async function accessTokenActivo(): Promise<string> {
+  const conexion = await conexionActiva();
+  if (!conexion) throw new Error("No hay una casilla de Gmail conectada.");
+  return accessTokenDesdeRefresh(conexion.refreshToken);
+}
+
 export type AdjuntoMail = { nombre: string; tipo: string; bytes: Uint8Array };
 
 /** Arma el mensaje MIME y lo manda por la API de Gmail, como la casilla conectada. */
@@ -87,7 +93,7 @@ export async function enviarMail(opts: {
   const conexion = await conexionActiva();
   if (!conexion) throw new Error("No hay una casilla de Gmail conectada.");
 
-  const accessToken = await accessTokenDesdeRefresh(conexion.refreshToken);
+  const accessToken = await accessTokenActivo();
 
   const composer = new MailComposer({
     from: conexion.email,
@@ -114,4 +120,93 @@ export async function enviarMail(opts: {
     const data = await res.json().catch(() => null);
     throw new Error(data?.error?.message ?? "Gmail rechazó el envío.");
   }
+}
+
+type CabeceraGmail = { name: string; value: string };
+type ParteMensaje = { mimeType?: string; body?: { data?: string }; parts?: ParteMensaje[] };
+
+function cabecera(headers: CabeceraGmail[], nombre: string): string {
+  return headers.find(h => h.name.toLowerCase() === nombre.toLowerCase())?.value ?? "";
+}
+
+function decodeBase64Url(data: string): string {
+  const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(base64, "base64").toString("utf-8");
+}
+
+/** Busca el texto plano del mail; si no hay, usa el HTML despojado de tags. */
+function extraerTexto(payload?: ParteMensaje): string {
+  if (!payload) return "";
+  if (payload.mimeType === "text/plain" && payload.body?.data) return decodeBase64Url(payload.body.data);
+  if (payload.parts) {
+    const plano = payload.parts.find(p => p.mimeType === "text/plain" && p.body?.data);
+    if (plano?.body?.data) return decodeBase64Url(plano.body.data);
+    for (const parte of payload.parts) {
+      const texto = extraerTexto(parte);
+      if (texto) return texto;
+    }
+  }
+  if (payload.mimeType === "text/html" && payload.body?.data) {
+    return decodeBase64Url(payload.body.data).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  }
+  return "";
+}
+
+export type MensajeResumen = {
+  id: string;
+  asunto: string;
+  de: string;
+  fecha: string;
+  snippet: string;
+  noLeido: boolean;
+};
+export type MensajeCompleto = MensajeResumen & { cuerpo: string };
+
+/** Lista los últimos mensajes de la bandeja de entrada (más nuevos primero). */
+export async function listarMensajes(maxResults = 25): Promise<MensajeResumen[]> {
+  const accessToken = await accessTokenActivo();
+  const listRes = await fetch(
+    `https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}&labelIds=INBOX`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  const listData = await listRes.json();
+  if (!listRes.ok) throw new Error(listData?.error?.message ?? "No se pudo listar los mensajes.");
+  const ids: string[] = (listData.messages ?? []).map((m: { id: string }) => m.id);
+
+  return Promise.all(ids.map(async (id): Promise<MensajeResumen> => {
+    const res = await fetch(
+      `https://www.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const data = await res.json();
+    const headers: CabeceraGmail[] = data.payload?.headers ?? [];
+    return {
+      id,
+      asunto: cabecera(headers, "Subject") || "(sin asunto)",
+      de: cabecera(headers, "From"),
+      fecha: cabecera(headers, "Date"),
+      snippet: data.snippet ?? "",
+      noLeido: (data.labelIds ?? []).includes("UNREAD"),
+    };
+  }));
+}
+
+/** Trae un mensaje completo, con el cuerpo de texto ya decodificado. */
+export async function obtenerMensaje(id: string): Promise<MensajeCompleto> {
+  const accessToken = await accessTokenActivo();
+  const res = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message ?? "No se pudo leer el mensaje.");
+  const headers: CabeceraGmail[] = data.payload?.headers ?? [];
+  return {
+    id,
+    asunto: cabecera(headers, "Subject") || "(sin asunto)",
+    de: cabecera(headers, "From"),
+    fecha: cabecera(headers, "Date"),
+    snippet: data.snippet ?? "",
+    noLeido: (data.labelIds ?? []).includes("UNREAD"),
+    cuerpo: extraerTexto(data.payload),
+  };
 }
