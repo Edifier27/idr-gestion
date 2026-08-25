@@ -7,9 +7,9 @@ import { siniestros } from "@/lib/db/schema";
 import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
 import { TablaSiniestros } from "@/components/tabla-siniestros";
-import { UserMenu } from "@/components/user-menu";
+import { PanelLayout } from "@/components/panel-layout";
 
-export const metadata: Metadata = { title: "Gestión de Siniestros · IDR" };
+export const metadata: Metadata = { title: "Tablero · IDR Gestión" };
 export const dynamic = "force-dynamic";
 
 async function cargar(): Promise<SiniestroRow[]> {
@@ -50,26 +50,23 @@ export default async function Dashboard() {
   });
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <header className="mb-6 flex items-baseline justify-between border-b border-line pb-5">
+    <main className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-8">
+      <header className="mb-7 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">IDR Gestión · Siniestros</p>
-          <h1 className="text-2xl font-semibold text-ink">Gestión de siniestros</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Tablero</h1>
+          <p className="text-sm text-slate">Casos de investigación de siniestros</p>
         </div>
-        <div className="flex items-center gap-4">
-          <UserMenu nombre={session.user.name ?? session.user.username} rol={session.user.rol} />
-          <a href="/api/export" className="rounded border border-ink/20 px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-ink hover:text-paper">
-            Exportar Excel
-          </a>
-        </div>
+        <a href="/api/export" className="rounded-md border border-ink/15 bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-ink/30 hover:bg-paper">
+          Exportar Excel
+        </a>
       </header>
 
       {/* Stats */}
       <div className={`mb-6 grid grid-cols-2 gap-3 ${esAdmin ? "md:grid-cols-4" : ""}`}>
-        <Stat label="Siniestros" valor={String(total)} />
-        <Stat label="En gestión" valor={String(enGestion)} />
-        {esAdmin && <Stat label="Por cobrar" valor={formatARS(montoFacturado)} acento />}
-        {esAdmin && <Stat label="Cobrado" valor={formatARS(montoCobrado)} ok />}
+        <Stat label="Siniestros" valor={String(total)} icon={<IconFolder />} />
+        <Stat label="En gestión" valor={String(enGestion)} icon={<IconClock />} accent="amber" />
+        {esAdmin && <Stat label="Por cobrar" valor={formatARS(montoFacturado)} icon={<IconInvoice />} accent="amber" />}
+        {esAdmin && <Stat label="Cobrado" valor={formatARS(montoCobrado)} icon={<IconCheck />} accent="ok" />}
       </div>
 
       {/* Alertas de vencimiento */}
@@ -90,19 +87,38 @@ export default async function Dashboard() {
         </div>
       )}
 
-      {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : <TablaSiniestros rows={rows} esAdmin={esAdmin} />}
+      <PanelLayout esAdmin={esAdmin}>
+        {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : <TablaSiniestros rows={rows} esAdmin={esAdmin} />}
+      </PanelLayout>
     </main>
   );
 }
 
-function Stat({ label, valor, acento, ok }: { label:string; valor:string; acento?:boolean; ok?:boolean }) {
-  const color = ok ? "text-ok" : acento ? "text-amber" : "text-ink";
+function Stat({ label, valor, icon, accent }: { label:string; valor:string; icon: React.ReactNode; accent?: "amber" | "ok" }) {
+  const colorTexto = accent === "ok" ? "text-ok" : accent === "amber" ? "text-amber" : "text-ink";
+  const colorIcono = accent === "ok" ? "bg-ok/10 text-ok" : accent === "amber" ? "bg-amber/10 text-amber" : "bg-ink/5 text-ink";
   return (
-    <div className="rounded-lg border border-line bg-white p-4">
-      <p className="mb-1 text-xs uppercase tracking-wide text-slate">{label}</p>
-      <p className={`tnum text-xl font-semibold ${color}`}>{valor}</p>
+    <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-xs uppercase tracking-wide text-slate">{label}</p>
+        <span className={`flex h-7 w-7 items-center justify-center rounded-md ${colorIcono}`}>{icon}</span>
+      </div>
+      <p className={`tnum text-2xl font-semibold ${colorTexto}`}>{valor}</p>
     </div>
   );
+}
+
+function IconFolder() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1.5 3.5A1 1 0 012.5 2.5H6l1.5 1.5h6a1 1 0 011 1v8a1 1 0 01-1 1h-11a1 1 0 01-1-1v-9.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>;
+}
+function IconClock() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.3" stroke="currentColor" strokeWidth="1.3"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
+}
+function IconInvoice() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="3" y="1.5" width="10" height="13" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
+}
+function IconCheck() {
+  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.3" stroke="currentColor" strokeWidth="1.3"/><path d="M5.2 8.2l1.8 1.8 3.8-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 }
 
 function EmptyStateSinDatos() {

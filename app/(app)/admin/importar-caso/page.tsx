@@ -17,11 +17,9 @@ export default async function ImportarCaso() {
     : [];
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <a href="/panel" className="mb-5 inline-block text-sm text-slate hover:text-ink">← Volver al tablero</a>
-      <header className="mb-6 border-b border-line pb-5">
-        <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">IDR Gestión</p>
-        <h1 className="text-xl font-semibold text-ink">Importar caso</h1>
+    <main className="mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-8">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Importar caso</h1>
         <p className="text-sm text-slate">
           Subí el PDF de carátula, o pegá el texto del mail si no viene como adjunto. La IA extrae los datos; revisalos antes de crear el caso.
         </p>

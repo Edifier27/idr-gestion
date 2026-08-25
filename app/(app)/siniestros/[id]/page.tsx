@@ -35,11 +35,13 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   const desg = desgloseFacturacion(s.kmTotal);
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
-      <a href="/panel" className="mb-5 inline-block text-sm text-slate hover:text-ink">← Volver</a>
+    <main className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
+      <a href="/panel" className="mb-4 inline-flex items-center gap-1 text-sm text-slate hover:text-ink">
+        <span aria-hidden>←</span> Tablero
+      </a>
 
       {/* Cabecera */}
-      <div className="mb-6 flex items-start justify-between border-b border-line pb-5">
+      <div className="mb-6 flex items-start justify-between rounded-lg border border-line bg-white p-5 shadow-sm">
         <div>
           <p className="font-mono text-xs text-slate">Gestión {s.numeroGestion ?? "—"} · Siniestro {s.nroSiniestro ?? "—"}</p>
           <h1 className="mt-1 text-xl font-semibold text-ink">{s.asegurado ?? "Sin asegurado"}</h1>

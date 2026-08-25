@@ -13,11 +13,9 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
   const conexion = await conexionActiva();
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <a href="/panel" className="mb-5 inline-block text-sm text-slate hover:text-ink">← Volver al tablero</a>
-      <header className="mb-6 border-b border-line pb-5">
-        <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">IDR Gestión</p>
-        <h1 className="text-xl font-semibold text-ink">Casilla de mail</h1>
+    <main className="mx-auto max-w-2xl px-4 py-6 md:px-8 md:py-8">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Casilla de mail</h1>
         <p className="text-sm text-slate">Conectá la casilla corporativa para mandar mails con adjuntos desde cada caso y ver la bandeja de entrada acá.</p>
       </header>
 
