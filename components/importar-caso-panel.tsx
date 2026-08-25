@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type Datos = {
   nro_siniestro: string | null;
@@ -38,31 +38,57 @@ const VACIO: Datos = {
   lugar_siniestro: { calle1: null, altura1: null, calle2: null, altura2: null, localidad: null, provincia: null, comisaria: null, acta: null, sumario: null },
 };
 
-export function ImportarMailPanel({ operadoresExistentes }: { operadoresExistentes: string[] }) {
+function archivoABase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const resultado = reader.result as string;
+      resolve(resultado.split(",")[1] ?? ""); // saca el prefijo data:application/pdf;base64,
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistentes: string[] }) {
+  const [modo, setModo] = useState<"pdf" | "texto">("pdf");
   const [texto, setTexto] = useState("");
+  const [archivo, setArchivo] = useState<File | null>(null);
   const [datos, setDatos] = useState<Datos | null>(null);
   const [operador, setOperador] = useState("");
   const [extrayendo, setExtrayendo] = useState(false);
   const [creando, setCreando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creado, setCreado] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function extraer() {
-    if (!texto.trim()) return;
+    if (modo === "pdf" && !archivo) return;
+    if (modo === "texto" && !texto.trim()) return;
     setExtrayendo(true);
     setError(null);
     setDatos(null);
     try {
-      const res = await fetch("/api/extract-mail", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto }),
-      });
+      let res: Response;
+      if (modo === "pdf") {
+        const pdfBase64 = await archivoABase64(archivo!);
+        res = await fetch("/api/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pdfBase64 }),
+        });
+      } else {
+        res = await fetch("/api/extract-mail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto }),
+        });
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "No se pudo leer el mail.");
+      if (!res.ok) throw new Error(data.error ?? "No se pudo leer el documento.");
       setDatos({ ...VACIO, ...data.datos, lugar_siniestro: { ...VACIO.lugar_siniestro, ...data.datos.lugar_siniestro } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al leer el mail.");
+      setError(e instanceof Error ? e.message : "Error al leer el documento.");
     } finally {
       setExtrayendo(false);
     }
@@ -110,19 +136,38 @@ export function ImportarMailPanel({ operadoresExistentes }: { operadoresExistent
   return (
     <div className="space-y-5">
       <div className="rounded-lg border border-line bg-white p-5">
-        <label className="block">
-          <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Texto del mail (asunto + cuerpo)</span>
-          <textarea
-            value={texto}
-            onChange={e => setTexto(e.target.value)}
-            rows={10}
-            placeholder="Pegá acá el mail completo..."
-            className="w-full resize-y rounded border border-line px-3 py-2 font-mono text-xs focus:border-ink/40 focus:outline-none"
-          />
-        </label>
+        <div className="mb-4 flex gap-2">
+          <TabBtn label="Subir PDF de carátula" activo={modo === "pdf"} onClick={() => { setModo("pdf"); setError(null); }} />
+          <TabBtn label="Pegar texto de mail" activo={modo === "texto"} onClick={() => { setModo("texto"); setError(null); }} />
+        </div>
+
+        {modo === "pdf" ? (
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">PDF de carátula</span>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="application/pdf"
+              onChange={e => setArchivo(e.target.files?.[0] ?? null)}
+              className="block w-full rounded border border-line px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-ink file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-paper"
+            />
+          </label>
+        ) : (
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Texto del mail (asunto + cuerpo)</span>
+            <textarea
+              value={texto}
+              onChange={e => setTexto(e.target.value)}
+              rows={10}
+              placeholder="Pegá acá el mail completo..."
+              className="w-full resize-y rounded border border-line px-3 py-2 font-mono text-xs focus:border-ink/40 focus:outline-none"
+            />
+          </label>
+        )}
+
         <button
           onClick={extraer}
-          disabled={extrayendo || !texto.trim()}
+          disabled={extrayendo || (modo === "pdf" ? !archivo : !texto.trim())}
           className="mt-3 rounded bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:opacity-90 disabled:opacity-50"
         >
           {extrayendo ? "Leyendo…" : "Extraer con IA"}
@@ -175,6 +220,19 @@ export function ImportarMailPanel({ operadoresExistentes }: { operadoresExistent
   );
 }
 
+function TabBtn({ label, activo, onClick }: { label: string; activo: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+        activo ? "bg-ink text-paper" : "border border-ink/20 text-ink hover:bg-ink/5"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
 function Campo({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">

@@ -12,7 +12,7 @@ export function UserMenu({ nombre, rol }: { nombre: string; rol: string }) {
         <>
           <a href="/admin/usuarios" className="text-ink underline-offset-2 hover:underline">Usuarios</a>
           <a href="/admin/mail" className="text-ink underline-offset-2 hover:underline">Mail</a>
-          <a href="/admin/importar-mail" className="text-ink underline-offset-2 hover:underline">Importar mail</a>
+          <a href="/admin/importar-caso" className="text-ink underline-offset-2 hover:underline">Importar caso</a>
         </>
       )}
       <button
