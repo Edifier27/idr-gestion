@@ -62,8 +62,23 @@ export const usuarios = pgTable("usuarios", {
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Evidencia: fotos y documentos adjuntos a un siniestro. El archivo en sí
+// vive en Vercel Blob; acá solo guardamos el puntero. Disponible para todos
+// los roles (no es dato de facturación).
+export const evidencia = pgTable("evidencia", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siniestroId: uuid("siniestro_id").notNull(),
+  nombre: text("nombre").notNull(),      // nombre de archivo original
+  url: text("url").notNull(),            // URL pública en Vercel Blob
+  tipo: text("tipo").notNull(),          // mime type
+  tamano: integer("tamano"),             // bytes
+  subidoPor: text("subido_por"),         // username de quien lo subió
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type SiniestroRow = typeof siniestros.$inferSelect;
 export type NuevoSiniestro = typeof siniestros.$inferInsert;
 export type BitacoraRow = typeof bitacora.$inferSelect;
 export type UsuarioRow = typeof usuarios.$inferSelect;
 export type NuevoUsuario = typeof usuarios.$inferInsert;
+export type EvidenciaRow = typeof evidencia.$inferSelect;

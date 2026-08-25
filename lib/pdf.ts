@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import type { SiniestroRow } from "./db/schema";
+import type { SiniestroRow, EvidenciaRow } from "./db/schema";
 import { desgloseFacturacion } from "./facturacion";
 
 const INK = rgb(0.08, 0.11, 0.18);
@@ -61,4 +61,96 @@ export async function caratulaPDF(s: SiniestroRow): Promise<Uint8Array> {
   row("Lugar del hecho", [lugar.calle1, lugar.altura1, lugar.localidad, lugar.provincia].filter(Boolean).join(" "));
   row("Estado", s.estado);
   return pdf.save();
+}
+
+const A4: [number, number] = [595, 842];
+
+function envolverTexto(texto: string, font: Awaited<ReturnType<PDFDocument["embedFont"]>>, size: number, maxWidth: number): string[] {
+  const lineas: string[] = [];
+  for (const parrafo of texto.split("\n")) {
+    const palabras = parrafo.split(/\s+/).filter(Boolean);
+    let actual = "";
+    for (const palabra of palabras) {
+      const prueba = actual ? `${actual} ${palabra}` : palabra;
+      if (actual && font.widthOfTextAtSize(prueba, size) > maxWidth) {
+        lineas.push(actual);
+        actual = palabra;
+      } else {
+        actual = prueba;
+      }
+    }
+    lineas.push(actual);
+  }
+  return lineas;
+}
+
+export type ArchivoConBytes = { row: EvidenciaRow; bytes: Uint8Array | null };
+
+/**
+ * Expediente completo: carátula → informe técnico-legal → fotos → documental.
+ * Las fotos van como JPG/PNG (lo único que pdf-lib puede incrustar); el resto
+ * de los adjuntos (Word, HEIC, etc.) quedan listados al final, no incrustados
+ * — siguen disponibles para descargar desde el CRM.
+ */
+export async function expedientePDF(s: SiniestroRow, archivos: ArchivoConBytes[]): Promise<Uint8Array> {
+  const merged = await PDFDocument.create();
+  const font = await merged.embedFont(StandardFonts.Helvetica);
+  const bold = await merged.embedFont(StandardFonts.HelveticaBold);
+
+  // 1. Carátula
+  const caratula = await PDFDocument.load(await caratulaPDF(s));
+  (await merged.copyPages(caratula, caratula.getPageIndices())).forEach(p => merged.addPage(p));
+
+  // 2. Informe técnico-legal
+  if (s.informe?.trim()) {
+    let page = merged.addPage(A4);
+    let y = 792;
+    page.drawText("INFORME TÉCNICO-LEGAL", { x: 50, y, size: 14, font: bold, color: INK });
+    y -= 30;
+    for (const linea of envolverTexto(s.informe, font, 10, 495)) {
+      if (y < 50) { page = merged.addPage(A4); y = 792; }
+      page.drawText(linea, { x: 50, y, size: 10, font, color: INK });
+      y -= 14;
+    }
+  }
+
+  // 3. Fotos (solo JPG/PNG, que es lo que pdf-lib sabe incrustar)
+  const fotos = archivos.filter(a => (a.row.tipo === "image/jpeg" || a.row.tipo === "image/png") && a.bytes);
+  if (fotos.length > 0) {
+    merged.addPage(A4).drawText("FOTOGRAFÍAS", { x: 50, y: 792, size: 14, font: bold, color: INK });
+    for (const { row, bytes } of fotos) {
+      const img = row.tipo === "image/png" ? await merged.embedPng(bytes!) : await merged.embedJpg(bytes!);
+      const maxW = 495, maxH = 700;
+      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+      const w = img.width * scale, h = img.height * scale;
+      const page = merged.addPage(A4);
+      page.drawImage(img, { x: (A4[0] - w) / 2, y: 792 - h, width: w, height: h });
+      page.drawText(row.nombre, { x: 50, y: 792 - h - 18, size: 8, font, color: GREY });
+    }
+  }
+
+  // 4. Documental (otros PDFs adjuntos, se copian tal cual)
+  const documentos = archivos.filter(a => a.row.tipo === "application/pdf" && a.bytes);
+  if (documentos.length > 0) {
+    merged.addPage(A4).drawText("DOCUMENTAL", { x: 50, y: 792, size: 14, font: bold, color: INK });
+    for (const { bytes } of documentos) {
+      const doc = await PDFDocument.load(bytes!, { ignoreEncryption: true });
+      (await merged.copyPages(doc, doc.getPageIndices())).forEach(p => merged.addPage(p));
+    }
+  }
+
+  // Adjuntos que no se pudieron incrustar (Word, HEIC, etc.) — quedan listados.
+  const otros = archivos.filter(a => !fotos.includes(a) && !documentos.includes(a));
+  if (otros.length > 0) {
+    const page = merged.addPage(A4);
+    let y = 792;
+    page.drawText("OTROS ADJUNTOS (descargar desde el CRM)", { x: 50, y, size: 12, font: bold, color: INK });
+    y -= 24;
+    for (const { row } of otros) {
+      page.drawText(`· ${row.nombre}`, { x: 50, y, size: 10, font, color: GREY });
+      y -= 16;
+    }
+  }
+
+  return merged.save();
 }

@@ -2,11 +2,13 @@ import { eq, desc } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
-import { siniestros, bitacora } from "@/lib/db/schema";
+import { siniestros, bitacora, evidencia } from "@/lib/db/schema";
 import { desgloseFacturacion, formatARS } from "@/lib/facturacion";
 import { puedeVerCaso, puedeVerFacturacion } from "@/lib/acceso";
+import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
+import { EvidenciaPanel } from "@/components/evidencia-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,10 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   const notas = await db.select().from(bitacora)
     .where(eq(bitacora.siniestroId, params.id))
     .orderBy(desc(bitacora.fecha));
+  await asegurarTablaEvidencia();
+  const archivos = await db.select().from(evidencia)
+    .where(eq(evidencia.siniestroId, params.id))
+    .orderBy(desc(evidencia.creadoEn));
   const lugar = (s.lugarSiniestro ?? {}) as Record<string,string>;
   const lugarTxt = [lugar.calle1, lugar.altura1, lugar.localidad, lugar.provincia].filter(Boolean).join(" ");
   const desg = desgloseFacturacion(s.kmTotal);
@@ -74,7 +80,15 @@ export default async function Detalle({ params }: { params: { id: string } }) {
             <div className="grid grid-cols-2 gap-2">
               {verFacturacion && <BtnLink href={`/api/factura-pdf?id=${s.id}`} label="📄 Factura PDF" />}
               <BtnLink href={`/api/caratula-pdf?id=${s.id}`} label="📋 Carátula PDF" />
+              <BtnLink href={`/api/expediente-pdf?id=${s.id}`} label="🗂️ Expediente PDF" />
             </div>
+          </Bloque>
+        </div>
+
+        {/* Evidencia */}
+        <div className="md:col-span-2">
+          <Bloque titulo="Evidencia">
+            <EvidenciaPanel siniestroId={s.id} archivosIniciales={archivos} />
           </Bloque>
         </div>
 
