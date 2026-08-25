@@ -3,8 +3,7 @@ import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
-import { EstadoBadge } from "@/components/estado-badge";
-import { CobroBadge } from "@/components/cobro-badge";
+import { TablaSiniestros } from "@/components/tabla-siniestros";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +77,7 @@ export default async function Dashboard() {
         </div>
       )}
 
-      {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : <Tabla rows={rows} />}
+      {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : <TablaSiniestros rows={rows} />}
     </main>
   );
 }
@@ -89,50 +88,6 @@ function Stat({ label, valor, acento, ok }: { label:string; valor:string; acento
     <div className="rounded-lg border border-line bg-white p-4">
       <p className="mb-1 text-xs uppercase tracking-wide text-slate">{label}</p>
       <p className={`tnum text-xl font-semibold ${color}`}>{valor}</p>
-    </div>
-  );
-}
-
-function Tabla({ rows }: { rows: SiniestroRow[] }) {
-  return (
-    <div className="overflow-x-auto rounded-lg border border-line bg-white">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-line bg-paper text-left text-xs uppercase tracking-wide text-slate">
-            <th className="px-3 py-3 font-medium">Gestión</th>
-            <th className="px-3 py-3 font-medium">Asegurado</th>
-            <th className="px-3 py-3 font-medium">Tipo</th>
-            <th className="px-3 py-3 font-medium">Estado</th>
-            <th className="px-3 py-3 font-medium">Cobro</th>
-            <th className="px-3 py-3 font-medium">Vence</th>
-            <th className="px-3 py-3 text-right font-medium">Facturar</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(s => {
-            const dias = s.fechaLimite ? Math.ceil((new Date(s.fechaLimite).getTime() - Date.now()) / 86400000) : null;
-            const venceColor = dias === null ? "" : dias < 0 ? "text-fraude font-semibold" : dias <= 3 ? "text-amber font-semibold" : "text-slate";
-            return (
-              <tr key={s.id} className="border-b border-line last:border-0 hover:bg-paper/60">
-                <td className="px-3 py-3">
-                  <a href={`/siniestros/${s.id}`} className="font-mono text-ink underline-offset-2 hover:underline">
-                    {s.numeroGestion ?? "—"}
-                  </a>
-                  <span className="ml-2 font-mono text-xs text-slate">{s.nroSiniestro ?? ""}</span>
-                </td>
-                <td className="px-3 py-3">{s.asegurado ?? "—"}</td>
-                <td className="px-3 py-3 text-slate">{s.tipo ?? "—"}</td>
-                <td className="px-3 py-3"><EstadoBadge estado={s.estado} /></td>
-                <td className="px-3 py-3"><CobroBadge estado={s.estadoCobro} /></td>
-                <td className={`px-3 py-3 ${venceColor}`}>
-                  {dias === null ? "—" : dias < 0 ? `hace ${Math.abs(dias)}d` : `${dias}d`}
-                </td>
-                <td className="tnum px-3 py-3 text-right font-medium">{formatARS(s.facturar)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </div>
   );
 }
