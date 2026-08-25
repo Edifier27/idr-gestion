@@ -28,7 +28,7 @@ export default function Login() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-8">
       <div className="mb-6 text-center">
-        <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">ATM · Siniestros</p>
+        <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">IDR Gestión</p>
         <h1 className="text-xl font-semibold text-ink">Iniciar sesión</h1>
       </div>
       <form onSubmit={onSubmit} className="space-y-3 rounded-lg border border-line bg-white p-5">

@@ -56,7 +56,7 @@ export default function Setup() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-8">
       <div className="mb-6 text-center">
-        <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">ATM · Siniestros</p>
+        <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">IDR Gestión</p>
         <h1 className="text-xl font-semibold text-ink">Crear administrador</h1>
         <p className="mt-1 text-sm text-slate">Primer ingreso: creá tu cuenta de admin. Después vos das de alta a cada vendedor.</p>
       </div>
