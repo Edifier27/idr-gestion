@@ -86,11 +86,25 @@ function envolverTexto(texto: string, font: Awaited<ReturnType<PDFDocument["embe
 
 export type ArchivoConBytes = { row: EvidenciaRow; bytes: Uint8Array | null };
 
+type FontDoc = Awaited<ReturnType<PDFDocument["embedFont"]>>;
+
+function agregarBloqueTexto(pdf: PDFDocument, titulo: string, texto: string, font: FontDoc, bold: FontDoc) {
+  let page = pdf.addPage(A4);
+  let y = 792;
+  page.drawText(titulo, { x: 50, y, size: 14, font: bold, color: INK });
+  y -= 30;
+  for (const linea of envolverTexto(texto, font, 10, 495)) {
+    if (y < 50) { page = pdf.addPage(A4); y = 792; }
+    page.drawText(linea, { x: 50, y, size: 10, font, color: INK });
+    y -= 14;
+  }
+}
+
 /**
- * Expediente completo: carátula → informe técnico-legal → fotos → documental.
- * Las fotos van como JPG/PNG (lo único que pdf-lib puede incrustar); el resto
- * de los adjuntos (Word, HEIC, etc.) quedan listados al final, no incrustados
- * — siguen disponibles para descargar desde el CRM.
+ * Expediente completo: carátula → descargo → informe técnico-legal → fotos
+ * → documental. Las fotos van como JPG/PNG (lo único que pdf-lib puede
+ * incrustar); el resto de los adjuntos (Word, HEIC, etc.) quedan listados
+ * al final, no incrustados — siguen disponibles para descargar desde el CRM.
  */
 export async function expedientePDF(s: SiniestroRow, archivos: ArchivoConBytes[]): Promise<Uint8Array> {
   const merged = await PDFDocument.create();
@@ -101,20 +115,17 @@ export async function expedientePDF(s: SiniestroRow, archivos: ArchivoConBytes[]
   const caratula = await PDFDocument.load(await caratulaPDF(s));
   (await merged.copyPages(caratula, caratula.getPageIndices())).forEach(p => merged.addPage(p));
 
-  // 2. Informe técnico-legal
-  if (s.informe?.trim()) {
-    let page = merged.addPage(A4);
-    let y = 792;
-    page.drawText("INFORME TÉCNICO-LEGAL", { x: 50, y, size: 14, font: bold, color: INK });
-    y -= 30;
-    for (const linea of envolverTexto(s.informe, font, 10, 495)) {
-      if (y < 50) { page = merged.addPage(A4); y = 792; }
-      page.drawText(linea, { x: 50, y, size: 10, font, color: INK });
-      y -= 14;
-    }
+  // 2. Descargo (relato del vendedor)
+  if (s.descargo?.trim()) {
+    agregarBloqueTexto(merged, "DESCARGO", s.descargo, font, bold);
   }
 
-  // 3. Fotos (solo JPG/PNG, que es lo que pdf-lib sabe incrustar)
+  // 3. Informe técnico-legal
+  if (s.informe?.trim()) {
+    agregarBloqueTexto(merged, "INFORME TÉCNICO-LEGAL", s.informe, font, bold);
+  }
+
+  // 4. Fotos (solo JPG/PNG, que es lo que pdf-lib sabe incrustar)
   const fotos = archivos.filter(a => (a.row.tipo === "image/jpeg" || a.row.tipo === "image/png") && a.bytes);
   if (fotos.length > 0) {
     merged.addPage(A4).drawText("FOTOGRAFÍAS", { x: 50, y: 792, size: 14, font: bold, color: INK });
@@ -129,7 +140,7 @@ export async function expedientePDF(s: SiniestroRow, archivos: ArchivoConBytes[]
     }
   }
 
-  // 4. Documental (otros PDFs adjuntos, se copian tal cual)
+  // 5. Documental (otros PDFs adjuntos, se copian tal cual)
   const documentos = archivos.filter(a => a.row.tipo === "application/pdf" && a.bytes);
   if (documentos.length > 0) {
     merged.addPage(A4).drawText("DOCUMENTAL", { x: 50, y: 792, size: 14, font: bold, color: INK });

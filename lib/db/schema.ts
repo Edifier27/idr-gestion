@@ -36,6 +36,7 @@ export const siniestros = pgTable("siniestros", {
   gastoFijo: integer("gasto_fijo"),
   operador: text("operador"),
   informe: text("informe"),                                // informe técnico-legal generado por IA
+  descargo: text("descargo"),                              // relato de lo sucedido, a cargo del vendedor
 
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
   actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),

@@ -7,6 +7,6 @@ export const config = {
   // El sitio público (home) y /login, /setup quedan libres.
   // Todo lo demás (panel, siniestros, admin, API de datos) requiere sesión.
   matcher: [
-    "/((?!$|api/auth|api/setup|login|setup|_next/static|_next/image|favicon.ico).*)",
+    "/((?!$|api/auth|api/setup|api/migrar|login|setup|_next/static|_next/image|favicon.ico).*)",
   ],
 };

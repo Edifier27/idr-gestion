@@ -9,6 +9,7 @@ import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
+import { DescargoPanel } from "@/components/descargo-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +90,13 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         <div className="md:col-span-2">
           <Bloque titulo="Evidencia">
             <EvidenciaPanel siniestroId={s.id} archivosIniciales={archivos} />
+          </Bloque>
+        </div>
+
+        {/* Descargo: relato de lo sucedido, a cargo del vendedor */}
+        <div className="md:col-span-2">
+          <Bloque titulo="Descargo">
+            <DescargoPanel siniestroId={s.id} descargoInicial={s.descargo} />
           </Bloque>
         </div>
 
