@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbConfigurada } from "@/lib/db";
 import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { asegurarColumnaDescargo } from "@/lib/db/asegurar-descargo";
+import { asegurarTablasGmail } from "@/lib/db/asegurar-gmail";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,5 +16,6 @@ export async function GET() {
   if (!dbConfigurada()) return NextResponse.json({ error: "DATABASE_URL no configurada." }, { status: 501 });
   await asegurarTablaEvidencia();
   await asegurarColumnaDescargo();
+  await asegurarTablasGmail();
   return NextResponse.json({ ok: true });
 }

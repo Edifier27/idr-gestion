@@ -10,6 +10,7 @@ import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
 import { DescargoPanel } from "@/components/descargo-panel";
+import { MailPanel } from "@/components/mail-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,15 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               <BtnLink href={`/api/caratula-pdf?id=${s.id}`} label="📋 Carátula PDF" />
               <BtnLink href={`/api/expediente-pdf?id=${s.id}`} label="🗂️ Expediente PDF" />
             </div>
+          </Bloque>
+
+          {/* Nuevo mensaje */}
+          <Bloque titulo="Enviar mail">
+            <MailPanel
+              siniestroId={s.id}
+              destinatarioSugerido={s.emailContacto}
+              archivos={archivos.map(a => ({ id: a.id, nombre: a.nombre, tipo: a.tipo }))}
+            />
           </Bloque>
         </div>
 

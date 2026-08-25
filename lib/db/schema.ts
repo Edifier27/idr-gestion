@@ -77,9 +77,34 @@ export const evidencia = pgTable("evidencia", {
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Conexión con la casilla de Gmail corporativa (para mandar mails desde el
+// CRM). Un solo registro activo a la vez; se pisa cuando se reconecta con
+// otra cuenta. El refresh token es lo único que hace falta guardar: los
+// access tokens se piden al vuelo cada vez que hay que mandar un mail.
+export const gmailConexion = pgTable("gmail_conexion", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  conectadoPor: text("conectado_por"),
+  conectadoEn: timestamp("conectado_en", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Registro de mails enviados desde un caso (para trazabilidad, no reemplaza
+// la bitácora).
+export const mailEnviado = pgTable("mail_enviado", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siniestroId: uuid("siniestro_id").notNull(),
+  para: text("para").notNull(),
+  asunto: text("asunto").notNull(),
+  enviadoPor: text("enviado_por"),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type SiniestroRow = typeof siniestros.$inferSelect;
 export type NuevoSiniestro = typeof siniestros.$inferInsert;
 export type BitacoraRow = typeof bitacora.$inferSelect;
 export type UsuarioRow = typeof usuarios.$inferSelect;
 export type NuevoUsuario = typeof usuarios.$inferInsert;
 export type EvidenciaRow = typeof evidencia.$inferSelect;
+export type GmailConexionRow = typeof gmailConexion.$inferSelect;
+export type MailEnviadoRow = typeof mailEnviado.$inferSelect;

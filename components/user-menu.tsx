@@ -9,7 +9,10 @@ export function UserMenu({ nombre, rol }: { nombre: string; rol: string }) {
         {nombre} <span className="text-xs uppercase text-slate/70">({rol})</span>
       </span>
       {rol === "admin" && (
-        <a href="/admin/usuarios" className="text-ink underline-offset-2 hover:underline">Usuarios</a>
+        <>
+          <a href="/admin/usuarios" className="text-ink underline-offset-2 hover:underline">Usuarios</a>
+          <a href="/admin/mail" className="text-ink underline-offset-2 hover:underline">Mail</a>
+        </>
       )}
       <button
         onClick={() => signOut({ callbackUrl: "/login" })}
