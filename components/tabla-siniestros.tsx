@@ -36,7 +36,7 @@ function esPorFacturar(r: SiniestroRow) { return r.estado === "elevado" && (r.es
 function esPorCobrar(r: SiniestroRow) { return r.estadoCobro === "facturado" || r.estadoCobro === "presentado"; }
 function esVencido(r: SiniestroRow) { const d = diasRestantes(r.fechaLimite); return d !== null && d < 0; }
 
-export function TablaSiniestros({ rows }: { rows: SiniestroRow[] }) {
+export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
   const [quick, setQuick] = useState<QuickFilter>("todos");
   const [operador, setOperador] = useState("");
   const [compania, setCompania] = useState("");
@@ -91,8 +91,8 @@ export function TablaSiniestros({ rows }: { rows: SiniestroRow[] }) {
         <div className="flex flex-wrap gap-2">
           <QuickBtn label="Todos" activo={quick === "todos"} n={conteos.todos} onClick={() => setQuick("todos")} />
           <QuickBtn label="Pendientes" activo={quick === "pendientes"} n={conteos.pendientes} onClick={() => setQuick("pendientes")} />
-          <QuickBtn label="Por facturar" activo={quick === "por_facturar"} n={conteos.por_facturar} onClick={() => setQuick("por_facturar")} />
-          <QuickBtn label="Por cobrar" activo={quick === "por_cobrar"} n={conteos.por_cobrar} onClick={() => setQuick("por_cobrar")} />
+          {esAdmin && <QuickBtn label="Por facturar" activo={quick === "por_facturar"} n={conteos.por_facturar} onClick={() => setQuick("por_facturar")} />}
+          {esAdmin && <QuickBtn label="Por cobrar" activo={quick === "por_cobrar"} n={conteos.por_cobrar} onClick={() => setQuick("por_cobrar")} />}
           <QuickBtn label="Vencidos" activo={quick === "vencidos"} n={conteos.vencidos} onClick={() => setQuick("vencidos")} />
         </div>
 
@@ -107,7 +107,7 @@ export function TablaSiniestros({ rows }: { rows: SiniestroRow[] }) {
           <Select value={operador} onChange={setOperador} placeholder="Operador" opciones={operadores.map(o => ({ value: o, label: o }))} />
           <Select value={compania} onChange={setCompania} placeholder="Compañía" opciones={companias.map(c => ({ value: c, label: c }))} />
           <Select value={estado} onChange={setEstado} placeholder="Estado" opciones={ESTADOS} />
-          <Select value={estadoCobro} onChange={setEstadoCobro} placeholder="Cobro" opciones={ESTADOS_COBRO} />
+          {esAdmin && <Select value={estadoCobro} onChange={setEstadoCobro} placeholder="Cobro" opciones={ESTADOS_COBRO} />}
         </div>
       </div>
 
@@ -116,7 +116,7 @@ export function TablaSiniestros({ rows }: { rows: SiniestroRow[] }) {
           <p className="text-sm text-slate">Ningún siniestro coincide con los filtros.</p>
         </div>
       ) : (
-        <Tabla rows={filtradas} />
+        <Tabla rows={filtradas} esAdmin={esAdmin} />
       )}
     </div>
   );
@@ -150,7 +150,7 @@ function Select({ value, onChange, placeholder, opciones }: {
   );
 }
 
-function Tabla({ rows }: { rows: SiniestroRow[] }) {
+function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-line bg-white">
       <table className="w-full text-sm">
@@ -160,9 +160,9 @@ function Tabla({ rows }: { rows: SiniestroRow[] }) {
             <th className="px-3 py-3 font-medium">Asegurado</th>
             <th className="px-3 py-3 font-medium">Tipo</th>
             <th className="px-3 py-3 font-medium">Estado</th>
-            <th className="px-3 py-3 font-medium">Cobro</th>
+            {esAdmin && <th className="px-3 py-3 font-medium">Cobro</th>}
             <th className="px-3 py-3 font-medium">Vence</th>
-            <th className="px-3 py-3 text-right font-medium">Facturar</th>
+            {esAdmin && <th className="px-3 py-3 text-right font-medium">Facturar</th>}
           </tr>
         </thead>
         <tbody>
@@ -180,11 +180,11 @@ function Tabla({ rows }: { rows: SiniestroRow[] }) {
                 <td className="px-3 py-3">{s.asegurado ?? "—"}</td>
                 <td className="px-3 py-3 text-slate">{s.tipo ?? "—"}</td>
                 <td className="px-3 py-3"><EstadoBadge estado={s.estado} /></td>
-                <td className="px-3 py-3"><CobroBadge estado={s.estadoCobro} /></td>
+                {esAdmin && <td className="px-3 py-3"><CobroBadge estado={s.estadoCobro} /></td>}
                 <td className={`px-3 py-3 ${venceColor}`}>
                   {dias === null ? "—" : dias < 0 ? `hace ${Math.abs(dias)}d` : `${dias}d`}
                 </td>
-                <td className="tnum px-3 py-3 text-right font-medium">{formatARS(s.facturar)}</td>
+                {esAdmin && <td className="tnum px-3 py-3 text-right font-medium">{formatARS(s.facturar)}</td>}
               </tr>
             );
           })}

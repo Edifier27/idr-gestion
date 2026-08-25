@@ -4,15 +4,16 @@ import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import { calcularKmRecorrido } from "@/lib/km";
 import { calcularFacturacion } from "@/lib/facturacion";
-import { sesionRequerida, puedeVerCaso } from "@/lib/acceso";
+import { sesionRequerida, puedeVerCaso, puedeVerFacturacion } from "@/lib/acceso";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-// POST /api/km  { siniestroId } -> calcula km con Maps y actualiza facturación
+// POST /api/km  { siniestroId } -> calcula km con Maps y actualiza facturación (solo admin)
 export async function POST(req: NextRequest) {
   const session = await sesionRequerida();
   if (!session) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  if (!puedeVerFacturacion(session)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (!dbConfigurada()) return NextResponse.json({ error: "DATABASE_URL no configurada." }, { status: 501 });
   try {
     const { siniestroId } = await req.json();

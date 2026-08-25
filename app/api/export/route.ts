@@ -3,7 +3,7 @@ import { desc } from "drizzle-orm";
 import * as XLSX from "xlsx";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
-import { sesionRequerida } from "@/lib/acceso";
+import { sesionRequerida, puedeVerFacturacion } from "@/lib/acceso";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +20,7 @@ export async function GET() {
   const db = getDb();
   const todas = await db.select().from(siniestros).orderBy(desc(siniestros.creadoEn));
   const rows = session.user.rol === "admin" ? todas : todas.filter(s => s.operador === session.user.operador);
+  const verFacturacion = puedeVerFacturacion(session);
 
   const data = rows.map((s, i) => {
     const lugar = (s.lugarSiniestro ?? {}) as Record<string, string>;
@@ -44,10 +45,12 @@ export async function GET() {
       DOMICILIO: s.domicilio,
       "FECHA DE OCURRENCIA": s.fechaOcurrencia,
       "LUGAR DEL SINIESTRO": lugarTxt,
-      "KM TOTAL": s.kmTotal,
-      FACTURAR: s.facturar,
-      "NUMERO FC": s.numeroFc,
-      "GASTO FIJO": s.gastoFijo,
+      ...(verFacturacion ? {
+        "KM TOTAL": s.kmTotal,
+        FACTURAR: s.facturar,
+        "NUMERO FC": s.numeroFc,
+        "GASTO FIJO": s.gastoFijo,
+      } : {}),
       OPERADOR: s.operador,
     };
   });

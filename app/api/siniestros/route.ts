@@ -3,7 +3,7 @@ import { desc } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import { calcularFacturacion } from "@/lib/facturacion";
-import { sesionRequerida } from "@/lib/acceso";
+import { sesionRequerida, puedeVerFacturacion, ocultarFacturacion } from "@/lib/acceso";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,8 @@ export async function GET() {
   try {
     const db = getDb();
     const todas = await db.select().from(siniestros).orderBy(desc(siniestros.creadoEn));
-    const rows = session.user.rol === "admin" ? todas : todas.filter(s => s.operador === session.user.operador);
+    const propias = session.user.rol === "admin" ? todas : todas.filter(s => s.operador === session.user.operador);
+    const rows = puedeVerFacturacion(session) ? propias : propias.map(ocultarFacturacion);
     return NextResponse.json({ siniestros: rows });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error al leer los siniestros.";

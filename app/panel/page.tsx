@@ -65,11 +65,11 @@ export default async function Dashboard() {
       </header>
 
       {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className={`mb-6 grid grid-cols-2 gap-3 ${esAdmin ? "md:grid-cols-4" : ""}`}>
         <Stat label="Siniestros" valor={String(total)} />
         <Stat label="En gestión" valor={String(enGestion)} />
-        <Stat label="Por cobrar" valor={formatARS(montoFacturado)} acento />
-        <Stat label="Cobrado" valor={formatARS(montoCobrado)} ok />
+        {esAdmin && <Stat label="Por cobrar" valor={formatARS(montoFacturado)} acento />}
+        {esAdmin && <Stat label="Cobrado" valor={formatARS(montoCobrado)} ok />}
       </div>
 
       {/* Alertas de vencimiento */}
@@ -90,7 +90,7 @@ export default async function Dashboard() {
         </div>
       )}
 
-      {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : <TablaSiniestros rows={rows} />}
+      {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : <TablaSiniestros rows={rows} esAdmin={esAdmin} />}
     </main>
   );
 }

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros, bitacora } from "@/lib/db/schema";
 import { desgloseFacturacion, formatARS } from "@/lib/facturacion";
+import { puedeVerCaso, puedeVerFacturacion } from "@/lib/acceso";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
 
@@ -16,7 +17,8 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   const db = getDb();
   const [s] = await db.select().from(siniestros).where(eq(siniestros.id, params.id));
   if (!s) notFound();
-  if (session.user.rol !== "admin" && s.operador !== session.user.operador) notFound();
+  if (!puedeVerCaso(session, s.operador)) notFound();
+  const verFacturacion = puedeVerFacturacion(session);
   const notas = await db.select().from(bitacora)
     .where(eq(bitacora.siniestroId, params.id))
     .orderBy(desc(bitacora.fecha));
@@ -37,7 +39,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         </div>
         <div className="flex flex-col items-end gap-2">
           <EstadoBadge estado={s.estado} />
-          <CobroBadge estado={s.estadoCobro} />
+          {verFacturacion && <CobroBadge estado={s.estadoCobro} />}
         </div>
       </div>
 
@@ -51,27 +53,28 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           <Dato k="Vencimiento gestión" v={s.fechaLimite} /><Dato k="Operador" v={s.operador} />
         </Bloque>
 
-        {/* Facturación + cobro */}
+        {/* Facturación + cobro (solo admin) */}
         <div className="space-y-4">
-          <Bloque titulo="Facturación">
-            <Dato k="Km total" v={s.kmTotal != null ? `${s.kmTotal} km` : null} />
-            <Dato k="Km bonificados" v={`${desg.kmBonificados} km`} />
-            <Dato k="Km facturables" v={`${desg.kmFacturables} km × $650`} />
-            <Dato k="Gasto km" v={formatARS(desg.montoKm)} />
-            <Dato k="Informe" v={formatARS(desg.montoInforme)} />
-            <div className="flex items-center justify-between border-t border-line pt-3 mt-2">
-              <span className="text-sm font-semibold text-ink">Total</span>
-              <span className="tnum text-lg font-bold text-amber">{formatARS(desg.total)}</span>
-            </div>
-          </Bloque>
+          {verFacturacion && (
+            <Bloque titulo="Facturación">
+              <Dato k="Km total" v={s.kmTotal != null ? `${s.kmTotal} km` : null} />
+              <Dato k="Km bonificados" v={`${desg.kmBonificados} km`} />
+              <Dato k="Km facturables" v={`${desg.kmFacturables} km × $650`} />
+              <Dato k="Gasto km" v={formatARS(desg.montoKm)} />
+              <Dato k="Informe" v={formatARS(desg.montoInforme)} />
+              <div className="flex items-center justify-between border-t border-line pt-3 mt-2">
+                <span className="text-sm font-semibold text-ink">Total</span>
+                <span className="tnum text-lg font-bold text-amber">{formatARS(desg.total)}</span>
+              </div>
+            </Bloque>
+          )}
 
           {/* Botones de acción */}
           <Bloque titulo="Acciones">
             <div className="grid grid-cols-2 gap-2">
-              <BtnLink href={`/api/factura-pdf?id=${s.id}`} label="📄 Factura PDF" />
+              {verFacturacion && <BtnLink href={`/api/factura-pdf?id=${s.id}`} label="📄 Factura PDF" />}
               <BtnLink href={`/api/caratula-pdf?id=${s.id}`} label="📋 Carátula PDF" />
             </div>
-            <p className="mt-2 text-xs text-slate">El km y el informe se calculan desde el detalle con los botones de abajo.</p>
           </Bloque>
         </div>
 

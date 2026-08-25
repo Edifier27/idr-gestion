@@ -3,14 +3,15 @@ import { eq } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import { facturaPDF } from "@/lib/pdf";
-import { sesionRequerida, puedeVerCaso } from "@/lib/acceso";
+import { sesionRequerida, puedeVerCaso, puedeVerFacturacion } from "@/lib/acceso";
 
 export const runtime = "nodejs";
 
-// GET /api/factura-pdf?id=... -> descarga la factura en PDF
+// GET /api/factura-pdf?id=... -> descarga la factura en PDF (solo admin: es un documento de facturación)
 export async function GET(req: NextRequest) {
   const session = await sesionRequerida();
   if (!session) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  if (!puedeVerFacturacion(session)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (!dbConfigurada()) return NextResponse.json({ error: "DATABASE_URL no configurada." }, { status: 501 });
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Falta id." }, { status: 400 });
