@@ -14,7 +14,7 @@ export function getDb() {
       "DATABASE_URL no está configurada. Creá una base gratis en neon.tech y pegá el connection string en .env"
     );
   }
-  _db = drizzle(neon(url), { schema });
+    _db = drizzle(neon(url, { fetchOptions: { cache: "no-store" } }), { schema });
   return _db;
 }
 
