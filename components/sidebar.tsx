@@ -11,17 +11,37 @@ const NAV = [
   { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true },
 ];
 
-export function Sidebar({ nombre, rol }: { nombre: string; rol: string }) {
+export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
+  nombre: string;
+  rol: string;
+  colapsado?: boolean;
+  onToggleColapsado?: () => void;
+}) {
   const pathname = usePathname();
   const [abierto, setAbierto] = useState(false);
   const esAdmin = rol === "admin";
 
+  // Los textos usan md:hidden condicionado a "colapsado" (en vez de sacarlos
+  // del DOM) para que solo se oculten en la sidebar fija de desktop: el
+  // drawer de mobile, que reusa este mismo bloque, siempre muestra todo.
+  const ocultarEnDesktop = colapsado ? "md:hidden" : "";
+
   const contenido = (
     <>
-      <div className="flex items-center gap-2 px-5 pb-6 pt-5">
-        <span className="flex h-8 w-8 items-center justify-center rounded bg-amber text-sm font-bold text-ink">IDR</span>
-        <span className="text-sm font-semibold uppercase tracking-[0.15em] text-paper">Gestión</span>
+      <div className={`flex items-center gap-2 px-5 pb-4 pt-5 ${colapsado ? "md:justify-center md:px-0" : ""}`}>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-amber text-sm font-bold text-ink">IDR</span>
+        <span className={`text-sm font-semibold uppercase tracking-[0.15em] text-paper ${ocultarEnDesktop}`}>Gestión</span>
       </div>
+
+      {onToggleColapsado && (
+        <button
+          onClick={onToggleColapsado}
+          title={colapsado ? "Expandir menú" : "Colapsar menú"}
+          className="mx-3 mb-3 hidden items-center justify-center rounded-md border border-white/10 py-1.5 text-paper/60 transition hover:bg-white/5 hover:text-paper md:flex"
+        >
+          <IconChevron colapsado={colapsado} />
+        </button>
+      )}
 
       <nav className="flex-1 space-y-1 px-3">
         {NAV.filter(item => !item.soloAdmin || esAdmin).map(item => {
@@ -31,28 +51,32 @@ export function Sidebar({ nombre, rol }: { nombre: string; rol: string }) {
             <a
               key={item.href}
               href={item.href}
+              title={item.label}
               className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
-                activo ? "bg-white/10 text-paper" : "text-paper/60 hover:bg-white/5 hover:text-paper"
-              }`}
+                colapsado ? "md:justify-center md:px-0" : ""
+              } ${activo ? "bg-white/10 text-paper" : "text-paper/60 hover:bg-white/5 hover:text-paper"}`}
             >
               <Icon />
-              {item.label}
+              <span className={ocultarEnDesktop}>{item.label}</span>
             </a>
           );
         })}
       </nav>
 
       <div className="border-t border-white/10 px-3 py-4">
-        <div className="mb-3 px-2">
+        <div className={`mb-3 px-2 ${ocultarEnDesktop}`}>
           <p className="truncate text-sm font-medium text-paper">{nombre}</p>
           <p className="text-xs uppercase tracking-wide text-paper/50">{rol}</p>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-paper/60 transition hover:bg-white/5 hover:text-paper"
+          title="Cerrar sesión"
+          className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-paper/60 transition hover:bg-white/5 hover:text-paper ${
+            colapsado ? "md:justify-center md:px-0" : ""
+          }`}
         >
           <IconLogout />
-          Cerrar sesión
+          <span className={ocultarEnDesktop}>Cerrar sesión</span>
         </button>
       </div>
     </>
@@ -72,7 +96,9 @@ export function Sidebar({ nombre, rol }: { nombre: string; rol: string }) {
       </div>
 
       {/* Sidebar fija en desktop */}
-      <aside className="hidden md:fixed md:inset-y-0 md:left-0 md:flex md:w-56 md:flex-col md:bg-ink">
+      <aside className={`hidden md:fixed md:inset-y-0 md:left-0 md:flex md:flex-col md:bg-ink md:transition-[width] md:duration-200 ${
+        colapsado ? "md:w-16" : "md:w-56"
+      }`}>
         {contenido}
       </aside>
 
@@ -89,6 +115,13 @@ export function Sidebar({ nombre, rol }: { nombre: string; rol: string }) {
   );
 }
 
+function IconChevron({ colapsado }: { colapsado: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className={`shrink-0 transition-transform ${colapsado ? "rotate-180" : ""}`}>
+      <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 function IconGrid() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/></svg>;
 }
