@@ -5,7 +5,7 @@ import { InboxPanel } from "@/components/inbox-panel";
 
 const CLAVE = "crm_mostrar_mail";
 
-export function PanelLayout({ esAdmin, children }: { esAdmin: boolean; children: React.ReactNode }) {
+export function PanelLayout({ esAdmin, operadoresExistentes, children }: { esAdmin: boolean; operadoresExistentes: string[]; children: React.ReactNode }) {
   const [mostrarMail, setMostrarMail] = useState(false);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export function PanelLayout({ esAdmin, children }: { esAdmin: boolean; children:
         <div className="grid items-start gap-5 lg:grid-cols-[1fr_360px]">
           <div className="min-w-0">{children}</div>
           <div className="lg:sticky lg:top-6">
-            <InboxPanel />
+            <InboxPanel operadoresExistentes={operadoresExistentes} />
           </div>
         </div>
       ) : (

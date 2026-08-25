@@ -12,12 +12,16 @@ function formatearTamano(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function InboxPanel() {
+export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes?: string[] }) {
   const [mensajes, setMensajes] = useState<Mensaje[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [abierto, setAbierto] = useState<MensajeCompleto | null>(null);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
+  const [importando, setImportando] = useState(false);
+  const [operador, setOperador] = useState("");
+  const [mostrarImportar, setMostrarImportar] = useState(false);
+  const [importado, setImportado] = useState<{ id: string; archivos: number } | null>(null);
 
   async function cargar() {
     setCargando(true);
@@ -39,6 +43,9 @@ export function InboxPanel() {
   async function abrir(id: string) {
     setCargandoDetalle(true);
     setAbierto(null);
+    setMostrarImportar(false);
+    setImportado(null);
+    setOperador("");
     try {
       const res = await fetch(`/api/gmail/mensajes/${id}`);
       const data = await res.json();
@@ -48,6 +55,28 @@ export function InboxPanel() {
       setError(e instanceof Error ? e.message : "Error al leer el mail.");
     } finally {
       setCargandoDetalle(false);
+    }
+  }
+
+  async function importar() {
+    if (!abierto) return;
+    if (!operador.trim()) { setError("Elegí a qué operador se le asigna el caso."); return; }
+    setError(null);
+    setImportando(true);
+    try {
+      const res = await fetch(`/api/gmail/mensajes/${abierto.id}/importar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operador: operador.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "No se pudo importar el caso.");
+      setImportado({ id: data.siniestro.id, archivos: data.archivosImportados });
+      setMostrarImportar(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al importar el caso.");
+    } finally {
+      setImportando(false);
     }
   }
 
@@ -91,6 +120,49 @@ export function InboxPanel() {
               </div>
             </div>
           )}
+
+          {importado ? (
+            <div className="mt-3 rounded border border-ok/30 bg-ok/5 p-3 text-sm">
+              <p className="text-ok">
+                Caso creado con {importado.archivos} archivo{importado.archivos === 1 ? "" : "s"} de evidencia.
+              </p>
+              <a href={`/siniestros/${importado.id}`} className="mt-1 inline-block text-xs font-medium text-ink underline underline-offset-2">
+                Ver el caso →
+              </a>
+            </div>
+          ) : abierto.adjuntos.some(a => a.tipo === "application/pdf") ? (
+            <div className="mt-3 border-t border-line pt-3">
+              {mostrarImportar ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    value={operador}
+                    onChange={e => setOperador(e.target.value)}
+                    list="operadores-existentes-inbox"
+                    placeholder="Operador, ej: NACHO"
+                    className="rounded border border-amber/50 bg-amber/5 px-2.5 py-1.5 text-xs uppercase focus:border-ink/40 focus:outline-none"
+                  />
+                  <datalist id="operadores-existentes-inbox">
+                    {operadoresExistentes.map(o => <option key={o} value={o} />)}
+                  </datalist>
+                  <button
+                    onClick={importar}
+                    disabled={importando}
+                    className="rounded bg-ink px-3 py-1.5 text-xs font-medium text-paper transition hover:opacity-90 disabled:opacity-50"
+                  >
+                    {importando ? "Creando caso…" : "Confirmar"}
+                  </button>
+                  <button onClick={() => setMostrarImportar(false)} className="text-xs text-slate hover:text-ink">Cancelar</button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setMostrarImportar(true)}
+                  className="rounded border border-ink/20 px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-ink hover:text-paper"
+                >
+                  🗂️ Crear legajo desde este mail
+                </button>
+              )}
+            </div>
+          ) : null}
         </div>
       )}
       {cargandoDetalle && <p className="mb-4 text-xs text-slate">Cargando mail…</p>}

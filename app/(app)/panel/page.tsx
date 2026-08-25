@@ -32,6 +32,7 @@ export default async function Dashboard() {
   const esAdmin = session.user.rol === "admin";
   const rows = esAdmin ? todas : todas.filter(r => r.operador === session.user.operador);
   const sinDb = !dbConfigurada();
+  const operadoresExistentes = Array.from(new Set(todas.map(r => r.operador).filter((v): v is string => !!v))).sort();
 
   const total = rows.length;
   const enGestion = rows.filter(r => !["facturado","cerrado"].includes(r.estado)).length;
@@ -87,7 +88,7 @@ export default async function Dashboard() {
         </div>
       )}
 
-      <PanelLayout esAdmin={esAdmin}>
+      <PanelLayout esAdmin={esAdmin} operadoresExistentes={operadoresExistentes}>
         {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : <TablaSiniestros rows={rows} esAdmin={esAdmin} />}
       </PanelLayout>
     </main>

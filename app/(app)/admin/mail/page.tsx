@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { getDb, dbConfigurada } from "@/lib/db";
+import { siniestros } from "@/lib/db/schema";
 import { conexionActiva } from "@/lib/gmail";
 import { InboxPanel } from "@/components/inbox-panel";
 
@@ -11,6 +13,10 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
   if (session.user.rol !== "admin") redirect("/panel");
 
   const conexion = await conexionActiva();
+  const operadoresExistentes = dbConfigurada()
+    ? Array.from(new Set((await getDb().select({ operador: siniestros.operador }).from(siniestros))
+        .map(r => r.operador).filter((v): v is string => !!v))).sort()
+    : [];
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 md:px-8 md:py-8">
@@ -57,7 +63,7 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
 
       {conexion && (
         <div className="mt-6">
-          <InboxPanel />
+          <InboxPanel operadoresExistentes={operadoresExistentes} />
         </div>
       )}
     </main>
