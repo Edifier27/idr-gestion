@@ -4,6 +4,9 @@ import { authConfig } from "./auth.config";
 export default NextAuth(authConfig).auth;
 
 export const config = {
-  // Todo requiere sesión salvo /login, /setup, las rutas de auth, y estáticos.
-  matcher: ["/((?!api/auth|api/setup|login|setup|_next/static|_next/image|favicon.ico).*)"],
+  // El sitio público (home) y /login, /setup quedan libres.
+  // Todo lo demás (panel, siniestros, admin, API de datos) requiere sesión.
+  matcher: [
+    "/((?!$|api/auth|api/setup|login|setup|_next/static|_next/image|favicon.ico).*)",
+  ],
 };

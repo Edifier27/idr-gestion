@@ -26,7 +26,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
-      <a href="/" className="mb-5 inline-block text-sm text-slate hover:text-ink">← Volver</a>
+      <a href="/panel" className="mb-5 inline-block text-sm text-slate hover:text-ink">← Volver</a>
 
       {/* Cabecera */}
       <div className="mb-6 flex items-start justify-between border-b border-line pb-5">

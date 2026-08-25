@@ -18,7 +18,7 @@ export default function Login() {
     try {
       const res = await signIn("credentials", { username, password, redirect: false });
       if (res?.error) { setError("Usuario o contraseña incorrectos."); return; }
-      router.push("/");
+      router.push("/panel");
       router.refresh();
     } finally {
       setEnviando(false);
