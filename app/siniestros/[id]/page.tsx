@@ -1,5 +1,6 @@
 import { eq, desc } from "drizzle-orm";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros, bitacora } from "@/lib/db/schema";
 import { desgloseFacturacion, formatARS } from "@/lib/facturacion";
@@ -9,10 +10,13 @@ import { CobroBadge } from "@/components/cobro-badge";
 export const dynamic = "force-dynamic";
 
 export default async function Detalle({ params }: { params: { id: string } }) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
   if (!dbConfigurada()) return <p className="p-10 text-slate">Conectá la base de datos.</p>;
   const db = getDb();
   const [s] = await db.select().from(siniestros).where(eq(siniestros.id, params.id));
   if (!s) notFound();
+  if (session.user.rol !== "admin" && s.operador !== session.user.operador) notFound();
   const notas = await db.select().from(bitacora)
     .where(eq(bitacora.siniestroId, params.id))
     .orderBy(desc(bitacora.fecha));

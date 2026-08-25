@@ -3,6 +3,7 @@ import { desc } from "drizzle-orm";
 import * as XLSX from "xlsx";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
+import { sesionRequerida } from "@/lib/acceso";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,11 +12,14 @@ export const dynamic = "force-dynamic";
 // para que el cliente lo baje cuando quiera. El CRM es la fuente de verdad;
 // el Excel es una exportación, no un segundo sistema en paralelo.
 export async function GET() {
+  const session = await sesionRequerida();
+  if (!session) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   if (!dbConfigurada()) {
     return NextResponse.json({ error: "DATABASE_URL no configurada." }, { status: 501 });
   }
   const db = getDb();
-  const rows = await db.select().from(siniestros).orderBy(desc(siniestros.creadoEn));
+  const todas = await db.select().from(siniestros).orderBy(desc(siniestros.creadoEn));
+  const rows = session.user.rol === "admin" ? todas : todas.filter(s => s.operador === session.user.operador);
 
   const data = rows.map((s, i) => {
     const lugar = (s.lugarSiniestro ?? {}) as Record<string, string>;

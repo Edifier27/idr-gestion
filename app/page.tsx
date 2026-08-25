@@ -1,9 +1,12 @@
 import { desc } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
 import { TablaSiniestros } from "@/components/tabla-siniestros";
+import { UserMenu } from "@/components/user-menu";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +23,12 @@ function diasRestantes(fechaLimite: string | null): number | null {
 }
 
 export default async function Dashboard() {
-  const rows = await cargar();
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
+  const todas = await cargar();
+  const esAdmin = session.user.rol === "admin";
+  const rows = esAdmin ? todas : todas.filter(r => r.operador === session.user.operador);
   const sinDb = !dbConfigurada();
 
   const total = rows.length;
@@ -46,9 +54,12 @@ export default async function Dashboard() {
           <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">ATM · Siniestros</p>
           <h1 className="text-2xl font-semibold text-ink">Gestión de siniestros</h1>
         </div>
-        <a href="/api/export" className="rounded border border-ink/20 px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-ink hover:text-paper">
-          Exportar Excel
-        </a>
+        <div className="flex items-center gap-4">
+          <UserMenu nombre={session.user.name ?? session.user.username} rol={session.user.rol} />
+          <a href="/api/export" className="rounded border border-ink/20 px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-ink hover:text-paper">
+            Exportar Excel
+          </a>
+        </div>
       </header>
 
       {/* Stats */}
@@ -111,6 +122,7 @@ function EmptyStateSinDb() {
         <li>· ANTHROPIC_API_KEY — parseo PDF + informe IA</li>
         <li>· GOOGLE_MAPS_API_KEY — cálculo de km</li>
         <li>· BASE_ORIGEN — (opcional) Gral. Deheza 527, Avellaneda, BA</li>
+        <li>· AUTH_SECRET — login (generar con: openssl rand -base64 32)</li>
       </ul>
     </div>
   );

@@ -4,18 +4,22 @@ import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import { calcularKmRecorrido } from "@/lib/km";
 import { calcularFacturacion } from "@/lib/facturacion";
+import { sesionRequerida, puedeVerCaso } from "@/lib/acceso";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 // POST /api/km  { siniestroId } -> calcula km con Maps y actualiza facturación
 export async function POST(req: NextRequest) {
+  const session = await sesionRequerida();
+  if (!session) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   if (!dbConfigurada()) return NextResponse.json({ error: "DATABASE_URL no configurada." }, { status: 501 });
   try {
     const { siniestroId } = await req.json();
     const db = getDb();
     const [s] = await db.select().from(siniestros).where(eq(siniestros.id, siniestroId));
     if (!s) return NextResponse.json({ error: "Siniestro no encontrado." }, { status: 404 });
+    if (!puedeVerCaso(session, s.operador)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
     const lugar = (s.lugarSiniestro ?? {}) as Record<string, string>;
     const lugarHecho = [lugar.calle1, lugar.altura1, lugar.localidad, lugar.provincia].filter(Boolean).join(", ");

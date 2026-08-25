@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, jsonb, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, jsonb, uuid, boolean } from "drizzle-orm/pg-core";
 
 export const siniestros = pgTable("siniestros", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -50,6 +50,20 @@ export const bitacora = pgTable("bitacora", {
   nota: text("nota").notNull(),
 });
 
+// Usuarios del CRM (login). Los crea el admin a mano; no hay alta pública.
+export const usuarios = pgTable("usuarios", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  nombre: text("nombre").notNull(),
+  rol: text("rol").notNull().default("vendedor"), // admin|vendedor
+  operador: text("operador"), // vincula al campo "operador" de siniestros; null para admin
+  activo: boolean("activo").notNull().default(true),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type SiniestroRow = typeof siniestros.$inferSelect;
 export type NuevoSiniestro = typeof siniestros.$inferInsert;
 export type BitacoraRow = typeof bitacora.$inferSelect;
+export type UsuarioRow = typeof usuarios.$inferSelect;
+export type NuevoUsuario = typeof usuarios.$inferInsert;
