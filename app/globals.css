@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: #f6f5f1;
+  color: #141b2e;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numeración tabular para columnas de plata y km */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
