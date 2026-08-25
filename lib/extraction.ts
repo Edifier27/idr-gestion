@@ -28,13 +28,19 @@ Si un dato no aparece, poné null. Fechas en formato YYYY-MM-DD, horas en HH:MM.
   "fecha_ocurrencia": null,
   "hora_ocurrencia": null,
   "fecha_denuncia": null,
+  "relato_denuncia": null,
   "lugar_siniestro": {
     "calle1": null, "altura1": null,
     "calle2": null, "altura2": null,
     "localidad": null, "provincia": null,
     "comisaria": null, "acta": null, "sumario": null
   }
-}`;
+}
+
+"relato_denuncia": resumen breve (2 a 4 oraciones) de lo que el denunciante/asegurado dice que
+pasó, tal como figura en el documento (circunstancias del hecho, qué relata). Si el documento no
+trae ninguna narración del hecho (solo datos de trámite), poné null. No opines ni agregues nada
+que no esté en el texto.`;
 
 /**
  * Extrae los datos de un PDF de carátula (base64) usando Claude.
@@ -111,13 +117,18 @@ dejalos fuera — no inventes campos nuevos ni fuerces el dato en otro lugar.
   "fecha_ocurrencia": null,
   "hora_ocurrencia": null,
   "fecha_denuncia": null,
+  "relato_denuncia": null,
   "lugar_siniestro": {
     "calle1": null, "altura1": null,
     "calle2": null, "altura2": null,
     "localidad": null, "provincia": null,
     "comisaria": null, "acta": null, "sumario": null
   }
-}`;
+}
+
+"relato_denuncia": resumen breve (2 a 4 oraciones) de lo que dice el "Motivo" o la narración del
+hecho en el mail, tal como lo cuenta el denunciante/asegurado. Si no hay ninguna narración, poné
+null. No opines ni agregues nada que no esté en el texto.`;
 
 /** Extrae los datos de un mail de derivación (texto plano) usando Claude. */
 export async function extraerDeMail(texto: string): Promise<CaratulaExtraida> {

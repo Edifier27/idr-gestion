@@ -23,7 +23,7 @@ const ESTADOS_COBRO = [
   { value: "rechazado", label: "Rechazado" },
 ];
 
-type QuickFilter = "todos" | "pendientes" | "por_facturar" | "por_cobrar" | "vencidos";
+type QuickFilter = "todos" | "pendientes" | "sin_informe" | "por_facturar" | "por_cobrar" | "vencidos";
 
 function diasRestantes(fechaLimite: string | null): number | null {
   if (!fechaLimite) return null;
@@ -35,6 +35,7 @@ function esPendiente(r: SiniestroRow) { return !["facturado", "cerrado"].include
 function esPorFacturar(r: SiniestroRow) { return r.estado === "elevado" && (r.estadoCobro ?? "no_facturado") === "no_facturado"; }
 function esPorCobrar(r: SiniestroRow) { return r.estadoCobro === "facturado" || r.estadoCobro === "presentado"; }
 function esVencido(r: SiniestroRow) { const d = diasRestantes(r.fechaLimite); return d !== null && d < 0; }
+function esSinInforme(r: SiniestroRow) { return !r.informe; }
 
 const SIN_ASIGNAR = "__sin_asignar__";
 function claveOperador(r: SiniestroRow) { return r.operador ?? SIN_ASIGNAR; }
@@ -59,6 +60,7 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
   const conteos = useMemo(() => ({
     todos: rows.length,
     pendientes: rows.filter(esPendiente).length,
+    sin_informe: rows.filter(esSinInforme).length,
     por_facturar: rows.filter(esPorFacturar).length,
     por_cobrar: rows.filter(esPorCobrar).length,
     vencidos: rows.filter(esVencido).length,
@@ -82,6 +84,7 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
   const filtradas = useMemo(() => {
     let out = rows;
     if (quick === "pendientes") out = out.filter(esPendiente);
+    else if (quick === "sin_informe") out = out.filter(esSinInforme);
     else if (quick === "por_facturar") out = out.filter(esPorFacturar);
     else if (quick === "por_cobrar") out = out.filter(esPorCobrar);
     else if (quick === "vencidos") out = out.filter(esVencido);
@@ -133,6 +136,7 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
         <div className="flex flex-wrap gap-2">
           <QuickBtn label="Todos" activo={quick === "todos"} n={conteos.todos} onClick={() => setQuick("todos")} />
           <QuickBtn label="Pendientes" activo={quick === "pendientes"} n={conteos.pendientes} onClick={() => setQuick("pendientes")} />
+          <QuickBtn label="Sin informe" activo={quick === "sin_informe"} n={conteos.sin_informe} onClick={() => setQuick("sin_informe")} />
           {esAdmin && <QuickBtn label="Por facturar" activo={quick === "por_facturar"} n={conteos.por_facturar} onClick={() => setQuick("por_facturar")} />}
           {esAdmin && <QuickBtn label="Por cobrar" activo={quick === "por_cobrar"} n={conteos.por_cobrar} onClick={() => setQuick("por_cobrar")} />}
           <QuickBtn label="Vencidos" activo={quick === "vencidos"} n={conteos.vencidos} onClick={() => setQuick("vencidos")} />

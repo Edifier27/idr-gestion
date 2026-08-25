@@ -12,6 +12,7 @@ import { EvidenciaPanel } from "@/components/evidencia-panel";
 import { DescargoPanel } from "@/components/descargo-panel";
 import { MailPanel } from "@/components/mail-panel";
 import { KmPanel } from "@/components/km-panel";
+import { InformePanel } from "@/components/informe-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -106,21 +107,26 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           </Bloque>
         </div>
 
-        {/* Descargo: relato de lo sucedido, a cargo del vendedor */}
-        <div className="md:col-span-2">
-          <Bloque titulo="Descargo">
+        {/* Relato de la denuncia vs. descargo del investigador, uno al lado del otro para cotejar */}
+        <div className="md:col-span-2 grid gap-5 md:grid-cols-2">
+          <Bloque titulo="Relato de la denuncia (según la aseguradora)">
+            {s.relatoDenuncia ? (
+              <p className="whitespace-pre-wrap text-sm text-ink">{s.relatoDenuncia}</p>
+            ) : (
+              <p className="text-sm text-slate">No se extrajo un relato de la denuncia para este caso.</p>
+            )}
+          </Bloque>
+          <Bloque titulo="Descargo (según el investigador)">
             <DescargoPanel siniestroId={s.id} descargoInicial={s.descargo} />
           </Bloque>
         </div>
 
-        {/* Informe técnico-legal */}
-        {s.informe && (
-          <div className="md:col-span-2">
-            <Bloque titulo="Informe técnico-legal (borrador IA)">
-              <pre className="whitespace-pre-wrap text-xs leading-relaxed text-ink">{s.informe}</pre>
-            </Bloque>
-          </div>
-        )}
+        {/* Informe técnico-legal: lo genera la IA cotejando denuncia vs. descargo */}
+        <div className="md:col-span-2">
+          <Bloque titulo="Informe técnico-legal (borrador IA)">
+            <InformePanel siniestroId={s.id} informeInicial={s.informe} />
+          </Bloque>
+        </div>
 
         {/* Bitácora */}
         <div className="md:col-span-2">

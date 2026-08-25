@@ -33,6 +33,7 @@ export interface CaratulaExtraida {
   fecha_ocurrencia: string | null; // YYYY-MM-DD
   hora_ocurrencia: string | null; // HH:MM
   fecha_denuncia: string | null; // YYYY-MM-DD
+  relato_denuncia: string | null; // qué dice la denuncia que pasó (resumen breve)
   lugar_siniestro: {
     calle1: string | null;
     altura1: string | null;

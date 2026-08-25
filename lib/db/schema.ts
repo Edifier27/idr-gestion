@@ -24,6 +24,7 @@ export const siniestros = pgTable("siniestros", {
   horaOcurrencia: text("hora_ocurrencia"),
   fechaDenuncia: text("fecha_denuncia"),
   lugarSiniestro: jsonb("lugar_siniestro"),
+  relatoDenuncia: text("relato_denuncia"),                  // qué dice la denuncia que pasó (extraído por LLM)
 
   // Gestión interna
   estado: text("estado").notNull().default("ingresado"),

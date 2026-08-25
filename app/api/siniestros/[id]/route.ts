@@ -33,13 +33,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const patch: Record<string, unknown> = { actualizadoEn: new Date() };
   const campos = verFacturacion
-    ? ["estado","resultado","numero_fc","gasto_fijo","operador","km_total","fecha_limite","estado_cobro","informe","descargo"]
-    : ["estado","resultado","operador","fecha_limite","informe","descargo"];
+    ? ["estado","resultado","numero_fc","gasto_fijo","operador","km_total","fecha_limite","estado_cobro","informe","descargo","relato_denuncia"]
+    : ["estado","resultado","operador","fecha_limite","informe","descargo","relato_denuncia"];
   const colMap: Record<string,string> = {
     estado:"estado", resultado:"resultado", numero_fc:"numeroFc",
     gasto_fijo:"gastoFijo", operador:"operador", km_total:"kmTotal",
     fecha_limite:"fechaLimite", estado_cobro:"estadoCobro", informe:"informe",
-    descargo:"descargo"
+    descargo:"descargo", relato_denuncia:"relatoDenuncia"
   };
   for (const k of campos) { if (k in body) patch[colMap[k]] = body[k]; }
   if (verFacturacion && "km_total" in body) patch.facturar = calcularFacturacion(body.km_total);

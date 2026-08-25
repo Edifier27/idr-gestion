@@ -31,6 +31,7 @@ export async function crearSiniestro(datos: CaratulaExtraida, operador: string) 
       fechaOcurrencia: datos.fecha_ocurrencia ?? null,
       horaOcurrencia: datos.hora_ocurrencia ?? null,
       fechaDenuncia: datos.fecha_denuncia ?? null,
+      relatoDenuncia: datos.relato_denuncia ?? null,
       lugarSiniestro: datos.lugar_siniestro ?? null,
       operador,
       kmTotal,

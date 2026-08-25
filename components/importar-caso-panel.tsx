@@ -22,6 +22,7 @@ type Datos = {
   fecha_ocurrencia: string | null;
   hora_ocurrencia: string | null;
   fecha_denuncia: string | null;
+  relato_denuncia: string | null;
   lugar_siniestro: {
     calle1: string | null; altura1: string | null;
     calle2: string | null; altura2: string | null;
@@ -35,6 +36,7 @@ const VACIO: Datos = {
   poliza: null, asegurado: null, denunciante: null, dni: null, email_contacto: null,
   tel_contacto: null, cel_contacto: null, tel: null, domicilio: null, estado_origen: null,
   fecha_ingreso: null, fecha_ocurrencia: null, hora_ocurrencia: null, fecha_denuncia: null,
+  relato_denuncia: null,
   lugar_siniestro: { calle1: null, altura1: null, calle2: null, altura2: null, localidad: null, provincia: null, comisaria: null, acta: null, sumario: null },
 };
 
@@ -206,6 +208,16 @@ export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistent
             <Campo label="Fecha ocurrencia"><Input v={datos.fecha_ocurrencia} onChange={v => set("fecha_ocurrencia", v)} placeholder="YYYY-MM-DD" /></Campo>
             <Campo label="Localidad del hecho"><Input v={datos.lugar_siniestro.localidad} onChange={v => setLugar("localidad", v)} /></Campo>
             <Campo label="Provincia del hecho"><Input v={datos.lugar_siniestro.provincia} onChange={v => setLugar("provincia", v)} /></Campo>
+          </div>
+          <div className="mt-3">
+            <Campo label="Relato de la denuncia (qué dice que pasó)">
+              <textarea
+                value={datos.relato_denuncia ?? ""}
+                onChange={e => set("relato_denuncia", e.target.value)}
+                rows={3}
+                className="w-full resize-y rounded border border-line px-3 py-1.5 text-sm focus:border-ink/40 focus:outline-none"
+              />
+            </Campo>
           </div>
           <button
             onClick={crear}
