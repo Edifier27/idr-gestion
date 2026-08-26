@@ -21,7 +21,14 @@ export function AppShell({ nombre, rol, children }: { nombre: string; rol: strin
   }
 
   return (
-    <div className={`min-h-screen bg-paper transition-[padding] duration-200 ${colapsado ? "md:pl-16" : "md:pl-56"}`}>
+    <div className={`relative min-h-screen bg-paper transition-[padding] duration-200 ${colapsado ? "md:pl-16" : "md:pl-56"}`}>
+      {/* Fondo decorativo: dos manchas de color muy tenues, fijas al viewport,
+          para que el CRM no se sienta un formulario plano. No interactivo ni
+          parte del layout (position: fixed + pointer-events-none). */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-ink/[0.04] blur-3xl" />
+        <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amber/[0.06] blur-3xl" />
+      </div>
       <Sidebar nombre={nombre} rol={rol} colapsado={colapsado} onToggleColapsado={toggle} />
       {children}
     </div>

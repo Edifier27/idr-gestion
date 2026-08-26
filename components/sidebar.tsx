@@ -30,7 +30,7 @@ export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
   const contenido = (
     <>
       <div className={`flex items-center gap-2 px-5 pb-4 pt-5 ${colapsado ? "md:justify-center md:px-0" : ""}`}>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-amber text-sm font-bold text-ink">IDR</span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-amber to-amber/70 text-sm font-bold text-ink shadow-sm">IDR</span>
         <span className={`text-sm font-semibold uppercase tracking-[0.15em] text-paper ${ocultarEnDesktop}`}>Gestión</span>
       </div>
 
@@ -53,10 +53,11 @@ export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
               key={item.href}
               href={item.href}
               title={item.label}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
+              className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
                 colapsado ? "md:justify-center md:px-0" : ""
               } ${activo ? "bg-white/10 text-paper" : "text-paper/60 hover:bg-white/5 hover:text-paper"}`}
             >
+              {activo && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-amber" />}
               <Icon />
               <span className={ocultarEnDesktop}>{item.label}</span>
             </a>

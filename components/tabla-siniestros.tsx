@@ -5,6 +5,7 @@ import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
+import { tarjetaElevada } from "@/lib/ui";
 
 const ESTADOS = [
   { value: "ingresado", label: "Ingresado" },
@@ -109,7 +110,7 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
   return (
     <div>
       {esAdmin && porOperador.length > 0 && (
-        <div className="mb-4 rounded-lg border border-line bg-white p-4 shadow-sm">
+        <div className={`mb-4 p-4 ${tarjetaElevada}`}>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Por operador</h2>
             {operador && (
@@ -193,7 +194,14 @@ function TarjetaOperador({ nombre, total, pendientes, resueltos, vencidos, activ
       }`}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-semibold text-ink" title={nombre}>{nombre}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+            activo ? "bg-ink text-paper" : "bg-ink/10 text-ink"
+          }`}>
+            {nombre.trim()[0]?.toUpperCase() ?? "?"}
+          </span>
+          <span className="truncate text-sm font-semibold text-ink" title={nombre}>{nombre}</span>
+        </span>
         {vencidos > 0 && (
           <span className="shrink-0 rounded-full bg-fraude/10 px-1.5 py-0.5 text-[10px] font-semibold text-fraude">
             {vencidos} venc.
@@ -228,7 +236,7 @@ function Select({ value, onChange, placeholder, opciones }: {
 
 function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
+    <div className={`overflow-x-auto ${tarjetaElevada}`}>
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-line bg-paper text-left text-xs uppercase tracking-wide text-slate">

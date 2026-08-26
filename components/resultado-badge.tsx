@@ -1,3 +1,5 @@
+import { badge, badgeDot } from "@/lib/ui";
+
 const ESTILOS: Record<string, string> = {
   pendiente: "bg-line text-slate",
   sin_fraude: "bg-ok/15 text-ok",
@@ -19,7 +21,8 @@ const ETIQUETAS: Record<string, string> = {
 export function ResultadoBadge({ resultado }: { resultado: string }) {
   const cls = ESTILOS[resultado] ?? "bg-line text-slate";
   return (
-    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${cls}`}>
+    <span className={`${badge} ${cls}`}>
+      <span className={badgeDot} />
       {ETIQUETAS[resultado] ?? resultado}
     </span>
   );

@@ -8,6 +8,7 @@ import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
 import { TablaSiniestros } from "@/components/tabla-siniestros";
 import { PanelLayout } from "@/components/panel-layout";
+import { tarjetaElevada } from "@/lib/ui";
 
 export const metadata: Metadata = { title: "Tablero · IDR Gestión" };
 export const dynamic = "force-dynamic";
@@ -54,7 +55,8 @@ export default async function Dashboard() {
     <main className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-8">
       <header className="mb-7 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Tablero</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-amber">IDR Gestión</p>
+          <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-ink">Tablero</h1>
           <p className="text-sm text-slate">Casos de investigación de siniestros</p>
         </div>
         <a href="/api/export" className="rounded-md border border-ink/15 bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-ink/30 hover:bg-paper">
@@ -98,13 +100,15 @@ export default async function Dashboard() {
 function Stat({ label, valor, icon, accent }: { label:string; valor:string; icon: React.ReactNode; accent?: "amber" | "ok" }) {
   const colorTexto = accent === "ok" ? "text-ok" : accent === "amber" ? "text-amber" : "text-ink";
   const colorIcono = accent === "ok" ? "bg-ok/10 text-ok" : accent === "amber" ? "bg-amber/10 text-amber" : "bg-ink/5 text-ink";
+  const colorBarra = accent === "ok" ? "bg-ok" : accent === "amber" ? "bg-amber" : "bg-ink";
   return (
-    <div className="rounded-lg border border-line bg-white p-4 shadow-sm">
+    <div className={`relative overflow-hidden p-4 pl-5 ${tarjetaElevada}`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${colorBarra}`} />
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs uppercase tracking-wide text-slate">{label}</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-slate">{label}</p>
         <span className={`flex h-7 w-7 items-center justify-center rounded-md ${colorIcono}`}>{icon}</span>
       </div>
-      <p className={`tnum text-2xl font-semibold ${colorTexto}`}>{valor}</p>
+      <p className={`tnum text-3xl font-bold tracking-tight ${colorTexto}`}>{valor}</p>
     </div>
   );
 }

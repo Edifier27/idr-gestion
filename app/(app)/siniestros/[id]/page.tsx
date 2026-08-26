@@ -15,7 +15,7 @@ import { MailPanel } from "@/components/mail-panel";
 import { KmPanel } from "@/components/km-panel";
 import { InformePanel } from "@/components/informe-panel";
 import { EstadoResultadoPanel } from "@/components/estado-resultado-panel";
-import { boton, tarjeta } from "@/lib/ui";
+import { boton, tarjeta, tarjetaElevada, RESULTADO_ACENTO } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -65,16 +65,19 @@ export default async function Detalle({ params }: { params: { id: string } }) {
       </a>
 
       {/* Cabecera */}
-      <div className="mb-6 flex items-start justify-between rounded-lg border border-line bg-white p-5 shadow-sm">
-        <div>
-          <p className="font-mono text-xs text-slate">Gestión {s.numeroGestion ?? "—"} · Siniestro {s.nroSiniestro ?? "—"}</p>
-          <h1 className="mt-1 text-xl font-semibold text-ink">{s.asegurado ?? "Sin asegurado"}</h1>
-          <p className="text-sm text-slate">{s.tipo ?? "—"} · {s.compania ?? "—"}</p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <EstadoBadge estado={s.estado} />
-          <ResultadoBadge resultado={s.resultado} />
-          {verFacturacion && <CobroBadge estado={s.estadoCobro} />}
+      <div className={`relative mb-6 overflow-hidden ${tarjetaElevada}`}>
+        <span className={`absolute inset-x-0 top-0 h-1.5 ${RESULTADO_ACENTO[s.resultado] ?? "bg-slate"}`} />
+        <div className="flex items-start justify-between gap-3 p-5 pt-6">
+          <div>
+            <p className="font-mono text-xs text-slate">Gestión {s.numeroGestion ?? "—"} · Siniestro {s.nroSiniestro ?? "—"}</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">{s.asegurado ?? "Sin asegurado"}</h1>
+            <p className="text-sm text-slate">{s.tipo ?? "—"} · {s.compania ?? "—"}</p>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <EstadoBadge estado={s.estado} />
+            <ResultadoBadge resultado={s.resultado} />
+            {verFacturacion && <CobroBadge estado={s.estadoCobro} />}
+          </div>
         </div>
       </div>
 
