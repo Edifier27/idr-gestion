@@ -71,7 +71,16 @@ export function MailPanel({ siniestroId, destinatarioSugerido, archivos }: {
 
       {archivos.length > 0 && (
         <div>
-          <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Adjuntar de la evidencia</span>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="block text-xs font-medium uppercase tracking-wide text-slate">Adjuntar de la evidencia</span>
+            <button
+              type="button"
+              onClick={() => setSeleccionados(s => s.size === archivos.length ? new Set() : new Set(archivos.map(a => a.id)))}
+              className="text-xs font-medium text-ink underline-offset-2 hover:underline"
+            >
+              {seleccionados.size === archivos.length ? "Quitar selección" : "Seleccionar todo"}
+            </button>
+          </div>
           <div className="max-h-32 space-y-1 overflow-y-auto rounded border border-line p-2">
             {archivos.map(a => (
               <label key={a.id} className="flex items-center gap-2 text-xs text-ink">
