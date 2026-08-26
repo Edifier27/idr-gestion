@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { boton, campo, tarjeta } from "@/lib/ui";
 
 type Archivo = { id: string; nombre: string; tipo: string };
 
@@ -51,53 +52,55 @@ export function MailPanel({ siniestroId, destinatarioSugerido, archivos }: {
     }
   }
 
+  const todoSeleccionado = archivos.length > 0 && seleccionados.size === archivos.length;
+
   return (
     <form onSubmit={enviar} className="space-y-3">
       <label className="block">
         <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Para</span>
         <input type="email" value={para} onChange={e => setPara(e.target.value)} required
-          className="w-full rounded border border-line px-3 py-1.5 text-sm focus:border-ink/40 focus:outline-none" />
+          className={`w-full ${campo}`} />
       </label>
       <label className="block">
         <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Asunto</span>
         <input value={asunto} onChange={e => setAsunto(e.target.value)} required
-          className="w-full rounded border border-line px-3 py-1.5 text-sm focus:border-ink/40 focus:outline-none" />
+          className={`w-full ${campo}`} />
       </label>
       <label className="block">
         <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Mensaje</span>
         <textarea value={cuerpo} onChange={e => setCuerpo(e.target.value)} rows={5}
-          className="w-full resize-y rounded border border-line px-3 py-2 text-sm focus:border-ink/40 focus:outline-none" />
+          className={`w-full resize-y ${campo}`} />
       </label>
 
       {archivos.length > 0 && (
         <div>
-          <div className="mb-1 flex items-center justify-between">
+          <div className="mb-1.5 flex items-center justify-between">
             <span className="block text-xs font-medium uppercase tracking-wide text-slate">Adjuntar de la evidencia</span>
             <button
               type="button"
-              onClick={() => setSeleccionados(s => s.size === archivos.length ? new Set() : new Set(archivos.map(a => a.id)))}
-              className="text-xs font-medium text-ink underline-offset-2 hover:underline"
+              onClick={() => setSeleccionados(todoSeleccionado ? new Set() : new Set(archivos.map(a => a.id)))}
+              className="rounded px-1.5 py-0.5 text-xs font-medium text-ink transition hover:bg-line/60"
             >
-              {seleccionados.size === archivos.length ? "Quitar selección" : "Seleccionar todo"}
+              {todoSeleccionado ? "Quitar selección" : "Seleccionar todo"}
             </button>
           </div>
-          <div className="max-h-32 space-y-1 overflow-y-auto rounded border border-line p-2">
+          <div className={`max-h-32 space-y-0.5 overflow-y-auto p-1.5 ${tarjeta}`}>
             {archivos.map(a => (
-              <label key={a.id} className="flex items-center gap-2 text-xs text-ink">
-                <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => toggle(a.id)} />
-                {a.nombre}
+              <label key={a.id} className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs text-ink transition hover:bg-paper">
+                <input type="checkbox" checked={seleccionados.has(a.id)} onChange={() => toggle(a.id)}
+                  className="h-3.5 w-3.5 accent-ink" />
+                <span className="truncate">{a.nombre}</span>
               </label>
             ))}
           </div>
         </div>
       )}
 
-      <button type="submit" disabled={enviando}
-        className="rounded bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:opacity-90 disabled:opacity-50">
+      <button type="submit" disabled={enviando} className={boton.primario}>
         {enviando ? "Enviando…" : "Enviar mail"}
       </button>
-      {resultado === "ok" && <p className="text-xs text-ok">Mail enviado.</p>}
-      {resultado === "error" && <p className="text-xs text-fraude">{error}</p>}
+      {resultado === "ok" && <p className="text-xs font-medium text-ok">Mail enviado.</p>}
+      {resultado === "error" && <p className="text-xs font-medium text-fraude">{error}</p>}
     </form>
   );
 }
