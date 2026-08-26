@@ -9,7 +9,7 @@ import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
-import { DescargoPanel } from "@/components/descargo-panel";
+import { TextoPanel } from "@/components/texto-panel";
 import { MailPanel } from "@/components/mail-panel";
 import { KmPanel } from "@/components/km-panel";
 import { InformePanel } from "@/components/informe-panel";
@@ -110,14 +110,22 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         {/* Relato de la denuncia vs. descargo del investigador, uno al lado del otro para cotejar */}
         <div className="md:col-span-2 grid gap-5 md:grid-cols-2">
           <Bloque titulo="Relato de la denuncia (según la aseguradora)">
-            {s.relatoDenuncia ? (
-              <p className="whitespace-pre-wrap text-sm text-ink">{s.relatoDenuncia}</p>
-            ) : (
-              <p className="text-sm text-slate">No se extrajo un relato de la denuncia para este caso.</p>
-            )}
+            <TextoPanel
+              siniestroId={s.id}
+              campo="relato_denuncia"
+              valorInicial={s.relatoDenuncia}
+              placeholder="Qué dice la denuncia que pasó: si no se extrajo solo del PDF, cargalo a mano acá…"
+              etiquetaGuardar="Guardar relato"
+            />
           </Bloque>
           <Bloque titulo="Descargo (según el investigador)">
-            <DescargoPanel siniestroId={s.id} descargoInicial={s.descargo} />
+            <TextoPanel
+              siniestroId={s.id}
+              campo="descargo"
+              valorInicial={s.descargo}
+              placeholder="Relato de lo sucedido: qué encontraste, qué te dijeron, cómo se compara con la denuncia…"
+              etiquetaGuardar="Guardar descargo"
+            />
           </Bloque>
         </div>
 
