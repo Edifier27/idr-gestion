@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { boton, campo, tarjeta } from "@/lib/ui";
 
 type Mensaje = { id: string; asunto: string; de: string; fecha: string; snippet: string; noLeido: boolean };
 type Adjunto = { attachmentId: string; nombre: string; tipo: string; tamano: number };
@@ -112,18 +113,18 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
   }
 
   return (
-    <div className="rounded-lg border border-line bg-white p-5">
+    <div className={`p-5 ${tarjeta}`}>
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Bandeja de entrada (últimos 25)</h2>
-        <button onClick={cargar} disabled={cargando} className="text-xs text-ink underline-offset-2 hover:underline">
+        <button onClick={cargar} disabled={cargando} className={boton.ghost}>
           {cargando ? "Actualizando…" : "Actualizar"}
         </button>
       </div>
 
-      {error && <p className="mb-3 text-sm text-fraude">{error}</p>}
+      {error && <p className="mb-3 text-sm font-medium text-fraude">{error}</p>}
 
       {abierto && (
-        <div className="mb-4 overflow-hidden rounded-lg border border-line bg-white shadow-sm">
+        <div className={`mb-4 overflow-hidden ${tarjeta}`}>
           <div className="flex items-start justify-between gap-3 border-b border-line bg-paper/60 p-4">
             <div className="flex min-w-0 items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-paper">
@@ -162,8 +163,8 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
             )}
 
             {importado ? (
-              <div className="mt-3 rounded border border-ok/30 bg-ok/5 p-3 text-sm">
-                <p className="text-ok">
+              <div className="mt-3 rounded-lg border border-ok/30 bg-ok/5 p-3 text-sm shadow-sm">
+                <p className="font-medium text-ok">
                   Caso creado con {importado.archivos} archivo{importado.archivos === 1 ? "" : "s"} de evidencia.
                 </p>
                 <a href={`/siniestros/${importado.id}`} className="mt-1 inline-block text-xs font-medium text-ink underline underline-offset-2">
@@ -179,7 +180,7 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
                       onChange={e => setOperador(e.target.value)}
                       list="operadores-existentes-inbox"
                       placeholder="Operador, ej: NACHO"
-                      className="rounded border border-amber/50 bg-amber/5 px-2.5 py-1.5 text-xs uppercase focus:border-ink/40 focus:outline-none"
+                      className={`border-amber/50 bg-amber/5 px-2.5 py-1.5 text-xs uppercase ${campo}`}
                     />
                     <datalist id="operadores-existentes-inbox">
                       {operadoresExistentes.map(o => <option key={o} value={o} />)}
@@ -187,16 +188,16 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
                     <button
                       onClick={importar}
                       disabled={importando}
-                      className="rounded bg-ink px-3 py-1.5 text-xs font-medium text-paper transition hover:opacity-90 disabled:opacity-50"
+                      className={`px-3 py-1.5 text-xs ${boton.primario}`}
                     >
                       {importando ? "Creando caso…" : "Confirmar"}
                     </button>
-                    <button onClick={() => setMostrarImportar(false)} className="text-xs text-slate hover:text-ink">Cancelar</button>
+                    <button onClick={() => setMostrarImportar(false)} className={boton.ghost}>Cancelar</button>
                   </div>
                 ) : (
                   <button
                     onClick={() => setMostrarImportar(true)}
-                    className="rounded border border-ink/20 px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-ink hover:text-paper"
+                    className={`px-3 py-1.5 text-xs ${boton.secundario}`}
                   >
                     🗂️ Crear legajo desde este mail
                   </button>

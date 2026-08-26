@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { boton, campo, tarjeta } from "@/lib/ui";
 
 type Datos = {
   nro_siniestro: string | null;
@@ -126,9 +127,9 @@ export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistent
 
   if (creado) {
     return (
-      <div className="rounded-lg border border-ok/30 bg-ok/5 p-6 text-center">
-        <p className="mb-3 text-sm text-ok">Caso creado correctamente.</p>
-        <a href={`/siniestros/${creado}`} className="inline-block rounded bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:opacity-90">
+      <div className="rounded-lg border border-ok/30 bg-ok/5 p-6 text-center shadow-sm">
+        <p className="mb-3 text-sm font-medium text-ok">Caso creado correctamente.</p>
+        <a href={`/siniestros/${creado}`} className={boton.primario}>
           Ver el caso
         </a>
       </div>
@@ -137,7 +138,7 @@ export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistent
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-line bg-white p-5">
+      <div className={`p-5 ${tarjeta}`}>
         <div className="mb-4 flex gap-2">
           <TabBtn label="Subir PDF de carátula" activo={modo === "pdf"} onClick={() => { setModo("pdf"); setError(null); }} />
           <TabBtn label="Pegar texto de mail" activo={modo === "texto"} onClick={() => { setModo("texto"); setError(null); }} />
@@ -151,7 +152,7 @@ export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistent
               type="file"
               accept="application/pdf"
               onChange={e => setArchivo(e.target.files?.[0] ?? null)}
-              className="block w-full rounded border border-line px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-ink file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-paper"
+              className={`block w-full file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-paper ${campo}`}
             />
           </label>
         ) : (
@@ -162,7 +163,7 @@ export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistent
               onChange={e => setTexto(e.target.value)}
               rows={10}
               placeholder="Pegá acá el mail completo..."
-              className="w-full resize-y rounded border border-line px-3 py-2 font-mono text-xs focus:border-ink/40 focus:outline-none"
+              className={`w-full resize-y font-mono text-xs ${campo}`}
             />
           </label>
         )}
@@ -170,22 +171,22 @@ export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistent
         <button
           onClick={extraer}
           disabled={extrayendo || (modo === "pdf" ? !archivo : !texto.trim())}
-          className="mt-3 rounded bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:opacity-90 disabled:opacity-50"
+          className={`mt-3 ${boton.primario}`}
         >
           {extrayendo ? "Leyendo…" : "Extraer con IA"}
         </button>
       </div>
 
-      {error && <p className="text-sm text-fraude">{error}</p>}
+      {error && <p className="text-sm font-medium text-fraude">{error}</p>}
 
       {datos && (
-        <div className="rounded-lg border border-line bg-white p-5">
+        <div className={`p-5 ${tarjeta}`}>
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Revisá los datos antes de crear el caso</h2>
           <div className="mb-4">
             <Campo label="Operador (a quién se asigna)">
               <input value={operador} onChange={e => setOperador(e.target.value)} required
                 list="operadores-existentes" placeholder="Ej: NACHO"
-                className="w-full rounded border border-amber/50 bg-amber/5 px-3 py-1.5 text-sm uppercase focus:border-ink/40 focus:outline-none" />
+                className={`w-full border-amber/50 bg-amber/5 uppercase ${campo}`} />
               <datalist id="operadores-existentes">
                 {operadoresExistentes.map(o => <option key={o} value={o} />)}
               </datalist>
@@ -215,14 +216,14 @@ export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistent
                 value={datos.relato_denuncia ?? ""}
                 onChange={e => set("relato_denuncia", e.target.value)}
                 rows={3}
-                className="w-full resize-y rounded border border-line px-3 py-1.5 text-sm focus:border-ink/40 focus:outline-none"
+                className={`w-full resize-y ${campo}`}
               />
             </Campo>
           </div>
           <button
             onClick={crear}
             disabled={creando}
-            className="mt-5 rounded bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:opacity-90 disabled:opacity-50"
+            className={`mt-5 ${boton.primario}`}
           >
             {creando ? "Creando…" : "Crear caso"}
           </button>
@@ -237,8 +238,8 @@ function TabBtn({ label, activo, onClick }: { label: string; activo: boolean; on
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-        activo ? "bg-ink text-paper" : "border border-ink/20 text-ink hover:bg-ink/5"
+      className={`rounded-full px-3 py-1.5 text-xs font-medium shadow-sm transition ${
+        activo ? "bg-ink text-paper" : "border border-ink/15 bg-white text-ink hover:border-ink/30 hover:bg-paper"
       }`}
     >
       {label}
@@ -256,6 +257,6 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
 function Input({ v, onChange, placeholder }: { v: string | null; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <input value={v ?? ""} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full rounded border border-line px-3 py-1.5 text-sm focus:border-ink/40 focus:outline-none" />
+      className={`w-full ${campo}`} />
   );
 }
