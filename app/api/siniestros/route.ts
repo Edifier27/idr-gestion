@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // GET /api/siniestros — lista los siniestros (más nuevos primero).
-// Un vendedor solo ve los suyos; el admin los ve todos.
+// Un operador solo ve los suyos; el admin los ve todos.
 export async function GET() {
   const session = await sesionRequerida();
   if (!session) return NextResponse.json({ error: "No autorizado." }, { status: 401 });

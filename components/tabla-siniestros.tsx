@@ -111,7 +111,7 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
       {esAdmin && porOperador.length > 0 && (
         <div className="mb-4 rounded-lg border border-line bg-white p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Por vendedor</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Por operador</h2>
             {operador && (
               <button onClick={() => setOperador("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
                 Ver todos

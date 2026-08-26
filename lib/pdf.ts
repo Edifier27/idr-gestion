@@ -115,7 +115,7 @@ export async function expedientePDF(s: SiniestroRow, archivos: ArchivoConBytes[]
   const caratula = await PDFDocument.load(await caratulaPDF(s));
   (await merged.copyPages(caratula, caratula.getPageIndices())).forEach(p => merged.addPage(p));
 
-  // 2. Descargo (relato del vendedor)
+  // 2. Descargo (relato del operador)
   if (s.descargo?.trim()) {
     agregarBloqueTexto(merged, "DESCARGO", s.descargo, font, bold);
   }

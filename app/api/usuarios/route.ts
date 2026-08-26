@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Usuario requerido y contraseña de al menos 6 caracteres." }, { status: 400 });
   }
   if (rol === "vendedor" && !operador) {
-    return NextResponse.json({ error: "Los vendedores necesitan un operador vinculado (define qué casos ve)." }, { status: 400 });
+    return NextResponse.json({ error: "Falta el código de operador vinculado a esta cuenta (define qué casos ve)." }, { status: 400 });
   }
 
   const db = getDb();

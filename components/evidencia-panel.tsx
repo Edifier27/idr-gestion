@@ -8,9 +8,30 @@ type Archivo = {
   nombre: string;
   url: string;
   tipo: string;
+  categoria?: string | null;
   subidoPor: string | null;
   creadoEn: Date | string;
 };
+
+const CATEGORIAS = [
+  { value: "", label: "Sin categoría" },
+  { value: "dni", label: "DNI asegurado" },
+  { value: "registro_conducir", label: "Registro de conducir" },
+  { value: "cedula_vehiculo", label: "Cédula del vehículo" },
+  { value: "denuncia", label: "Denuncia penal/ciudadana" },
+  { value: "ampliacion", label: "Ampliación (manuscrita)" },
+  { value: "desiste", label: "Desistimiento firmado" },
+  { value: "geolocalizacion", label: "Geolocalización" },
+  { value: "llamadas", label: "Registro de llamadas" },
+  { value: "mensajes", label: "Mensajes / chats" },
+  { value: "fotos", label: "Fotos" },
+  { value: "otro", label: "Otro" },
+];
+
+function etiquetaCategoria(cat?: string | null): string | null {
+  if (!cat) return null;
+  return CATEGORIAS.find(c => c.value === cat)?.label ?? cat;
+}
 
 export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
   siniestroId: string;
@@ -19,6 +40,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
   const [archivos, setArchivos] = useState(archivosIniciales);
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categoria, setCategoria] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function onFiles(files: FileList | null) {
@@ -38,6 +60,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
           body: JSON.stringify({
             siniestroId, nombre: file.name, url: blob.url,
             tipo: file.type || "application/octet-stream", tamano: file.size,
+            categoria: categoria || null,
           }),
         });
         const data = await res.json();
@@ -61,19 +84,28 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <label className="cursor-pointer rounded border border-ink/20 px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-ink hover:text-paper">
-          {subiendo ? "Subiendo…" : "+ Subir archivos"}
-          <input
-            ref={inputRef}
-            type="file"
-            multiple
-            accept="image/*,.pdf,.doc,.docx"
-            className="hidden"
-            disabled={subiendo}
-            onChange={e => onFiles(e.target.files)}
-          />
-        </label>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={categoria}
+            onChange={e => setCategoria(e.target.value)}
+            className="rounded border border-line bg-white px-2 py-1.5 text-xs text-ink focus:border-ink/40 focus:outline-none"
+          >
+            {CATEGORIAS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+          <label className="cursor-pointer rounded border border-ink/20 px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-ink hover:text-paper">
+            {subiendo ? "Subiendo…" : "+ Subir archivos"}
+            <input
+              ref={inputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.doc,.docx"
+              className="hidden"
+              disabled={subiendo}
+              onChange={e => onFiles(e.target.files)}
+            />
+          </label>
+        </div>
         <span className="text-xs text-slate">{archivos.length} archivo{archivos.length === 1 ? "" : "s"}</span>
       </div>
 
@@ -102,6 +134,11 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
               >
                 Borrar
               </button>
+              {etiquetaCategoria(f.categoria) && (
+                <span className="absolute left-1 top-1 rounded bg-ink/80 px-1.5 py-0.5 text-[9px] font-medium text-paper">
+                  {etiquetaCategoria(f.categoria)}
+                </span>
+              )}
               <div className="truncate px-1.5 py-1 text-[10px] text-slate">
                 {f.subidoPor ?? "—"} · {new Date(f.creadoEn).toLocaleDateString("es-AR")}
               </div>

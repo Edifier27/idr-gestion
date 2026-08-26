@@ -37,7 +37,7 @@ export const siniestros = pgTable("siniestros", {
   gastoFijo: integer("gasto_fijo"),
   operador: text("operador"),
   informe: text("informe"),                                // informe técnico-legal generado por IA
-  descargo: text("descargo"),                              // relato de lo sucedido, a cargo del vendedor
+  descargo: text("descargo"),                              // relato de lo sucedido, a cargo del operador
 
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
   actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),
@@ -74,6 +74,7 @@ export const evidencia = pgTable("evidencia", {
   url: text("url").notNull(),            // URL pública en Vercel Blob
   tipo: text("tipo").notNull(),          // mime type
   tamano: integer("tamano"),             // bytes
+  categoria: text("categoria"),          // dni|registro_conducir|cedula_vehiculo|denuncia|ampliacion|desiste|geolocalizacion|llamadas|mensajes|fotos|otro
   subidoPor: text("subido_por"),         // username de quien lo subió
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
 });

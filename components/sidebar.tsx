@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
+import { etiquetaRol } from "@/lib/roles";
 
 const NAV = [
   { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false },
@@ -66,7 +67,7 @@ export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
       <div className="border-t border-white/10 px-3 py-4">
         <div className={`mb-3 px-2 ${ocultarEnDesktop}`}>
           <p className="truncate text-sm font-medium text-paper">{nombre}</p>
-          <p className="text-xs uppercase tracking-wide text-paper/50">{rol}</p>
+          <p className="text-xs uppercase tracking-wide text-paper/50">{etiquetaRol(rol)}</p>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}

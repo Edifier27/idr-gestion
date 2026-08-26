@@ -58,7 +58,7 @@ export default function Setup() {
       <div className="mb-6 text-center">
         <p className="mb-1 text-xs uppercase tracking-[0.2em] text-slate">IDR Gestión</p>
         <h1 className="text-xl font-semibold text-ink">Crear administrador</h1>
-        <p className="mt-1 text-sm text-slate">Primer ingreso: creá tu cuenta de admin. Después vos das de alta a cada vendedor.</p>
+        <p className="mt-1 text-sm text-slate">Primer ingreso: creá tu cuenta de admin. Después vos das de alta a cada operador.</p>
       </div>
       <form onSubmit={onSubmit} className="space-y-3 rounded-lg border border-line bg-white p-5">
         <Campo label="Usuario">

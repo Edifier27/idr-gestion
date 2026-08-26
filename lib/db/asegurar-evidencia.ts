@@ -17,9 +17,11 @@ export async function asegurarTablaEvidencia() {
       url text NOT NULL,
       tipo text NOT NULL,
       tamano integer,
+      categoria text,
       subido_por text,
       creado_en timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await db.execute(sql`ALTER TABLE evidencia ADD COLUMN IF NOT EXISTS categoria text`);
   asegurada = true;
 }

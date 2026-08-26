@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { etiquetaRol } from "@/lib/roles";
 
 type Usuario = {
   id: string;
@@ -89,7 +90,7 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
           <Campo label="Rol">
             <select value={rol} onChange={e => setRol(e.target.value as "vendedor" | "admin")}
               className="w-full rounded border border-line px-3 py-2 text-sm focus:border-ink/40 focus:outline-none">
-              <option value="vendedor">Vendedor / operador</option>
+              <option value="vendedor">Operador</option>
               <option value="admin">Admin</option>
             </select>
           </Campo>
@@ -131,7 +132,7 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
               <tr key={u.id} className="border-b border-line last:border-0">
                 <td className="px-3 py-3 font-mono text-ink">{u.username}</td>
                 <td className="px-3 py-3">{u.nombre}</td>
-                <td className="px-3 py-3 capitalize text-slate">{u.rol}</td>
+                <td className="px-3 py-3 text-slate">{etiquetaRol(u.rol)}</td>
                 <td className="px-3 py-3 text-slate">{u.operador ?? "—"}</td>
                 <td className="px-3 py-3">
                   <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${u.activo ? "bg-ok/15 text-ok" : "bg-fraude/15 text-fraude"}`}>

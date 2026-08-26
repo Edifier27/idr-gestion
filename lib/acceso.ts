@@ -9,13 +9,13 @@ export async function sesionRequerida(): Promise<Sesion | null> {
   return session;
 }
 
-// Un admin ve cualquier caso; un vendedor solo el suyo (operador vinculado a su cuenta).
+// Un admin ve cualquier caso; un operador solo el suyo (operador vinculado a su cuenta).
 export function puedeVerCaso(session: Sesion, operador: string | null) {
   return session.user.rol === "admin" || session.user.operador === operador;
 }
 
 // Datos de facturación (monto a facturar, estado de cobro, N° de factura, km,
-// factura en PDF) son solo para el admin. El vendedor gestiona el caso pero no
+// factura en PDF) son solo para el admin. El operador gestiona el caso pero no
 // ve ni toca esa parte.
 export function puedeVerFacturacion(session: Sesion) {
   return session.user.rol === "admin";

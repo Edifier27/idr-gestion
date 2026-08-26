@@ -16,6 +16,25 @@ import { InformePanel } from "@/components/informe-panel";
 
 export const dynamic = "force-dynamic";
 
+// Guía para que el operador no se olvide de ningún paso al escribir la
+// ampliación: antes/durante/después del hecho + qué se verificó. Se precarga
+// en el textarea cuando el caso todavía no tiene descargo cargado.
+const PLANTILLA_DESCARGO = `ANTES DEL HECHO (de dónde venía, hacia dónde iba, qué estaba haciendo):
+
+
+DURANTE EL HECHO (qué pasó — cotejar con la denuncia):
+
+
+DESPUÉS DEL HECHO (cómo reaccionó, a quién llamó/avisó, a quién no):
+
+
+VERIFICACIONES REALIZADAS:
+- Llamados verificados:
+- Mensajes revisados:
+- Fotos/comprobantes:
+- Geolocalización:
+`;
+
 export default async function Detalle({ params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -118,13 +137,14 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               etiquetaGuardar="Guardar relato"
             />
           </Bloque>
-          <Bloque titulo="Descargo (según el investigador)">
+          <Bloque titulo="Descargo / Ampliación (según el operador)">
             <TextoPanel
               siniestroId={s.id}
               campo="descargo"
               valorInicial={s.descargo}
               placeholder="Relato de lo sucedido: qué encontraste, qué te dijeron, cómo se compara con la denuncia…"
               etiquetaGuardar="Guardar descargo"
+              plantilla={PLANTILLA_DESCARGO}
             />
           </Bloque>
         </div>

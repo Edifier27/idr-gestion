@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
   const url = typeof body?.url === "string" ? body.url : "";
   const tipo = typeof body?.tipo === "string" ? body.tipo : "application/octet-stream";
   const tamano = typeof body?.tamano === "number" ? body.tamano : null;
+  const categoria = typeof body?.categoria === "string" && body.categoria ? body.categoria : null;
   if (!siniestroId || !nombre || !url) {
     return NextResponse.json({ error: "Datos incompletos." }, { status: 400 });
   }
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [row] = await db.insert(evidencia)
-    .values({ siniestroId, nombre, url, tipo, tamano, subidoPor: session.user.username })
+    .values({ siniestroId, nombre, url, tipo, tamano, categoria, subidoPor: session.user.username })
     .returning();
   return NextResponse.json({ archivo: row }, { status: 201 });
 }

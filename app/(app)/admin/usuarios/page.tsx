@@ -25,7 +25,7 @@ export default async function AdminUsuarios() {
     <main className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Usuarios</h1>
-        <p className="text-sm text-slate">Creá una cuenta por cada vendedor/operador. Cada uno ve solo los casos donde su "operador" vinculado coincide con el campo Operador del caso.</p>
+        <p className="text-sm text-slate">Creá una cuenta por cada operador. Cada uno ve solo los casos donde su "operador" vinculado coincide con el campo Operador del caso.</p>
       </header>
       <UsuariosPanel usuariosIniciales={lista} operadoresExistentes={operadoresExistentes} />
     </main>

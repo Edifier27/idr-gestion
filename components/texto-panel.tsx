@@ -5,14 +5,15 @@ import { useState } from "react";
 // Editor genérico de un campo de texto libre del caso (descargo, relato_denuncia,
 // etc.), guardado vía PATCH /api/siniestros/[id]. Reusado donde haga falta cargar
 // o corregir a mano un texto que normalmente viene de la extracción con IA.
-export function TextoPanel({ siniestroId, campo, valorInicial, placeholder, etiquetaGuardar }: {
+export function TextoPanel({ siniestroId, campo, valorInicial, placeholder, etiquetaGuardar, plantilla }: {
   siniestroId: string;
   campo: string;
   valorInicial: string | null;
   placeholder: string;
   etiquetaGuardar: string;
+  plantilla?: string;
 }) {
-  const [texto, setTexto] = useState(valorInicial ?? "");
+  const [texto, setTexto] = useState(valorInicial ?? plantilla ?? "");
   const [guardando, setGuardando] = useState(false);
   const [guardado, setGuardado] = useState(false);
   const [error, setError] = useState<string | null>(null);
