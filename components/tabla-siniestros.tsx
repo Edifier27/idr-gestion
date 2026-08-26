@@ -246,10 +246,15 @@ function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
             const dias = s.fechaLimite ? Math.ceil((new Date(s.fechaLimite).getTime() - Date.now()) / 86400000) : null;
             const venceColor = dias === null ? "" : dias < 0 ? "text-fraude font-semibold" : dias <= 3 ? "text-amber font-semibold" : "text-slate";
             return (
-              <tr key={s.id} className="border-b border-line last:border-0 hover:bg-paper/60">
+              <tr key={s.id} className="group border-b border-line last:border-0 hover:bg-paper/60">
                 <td className="px-3 py-3">
-                  <a href={`/siniestros/${s.id}`} className="font-mono text-ink underline-offset-2 hover:underline">
-                    {s.numeroGestion ?? "—"}
+                  <a href={`/siniestros/${s.id}`} className="inline-flex items-center gap-1.5 font-mono text-ink">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-line/70 text-ink transition group-hover:bg-ink group-hover:text-paper">
+                      <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3 transition group-hover:translate-x-0.5">
+                        <path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <span className="underline-offset-2 group-hover:underline">{s.numeroGestion ?? "—"}</span>
                   </a>
                   <span className="ml-2 font-mono text-xs text-slate">{s.nroSiniestro ?? ""}</span>
                 </td>
