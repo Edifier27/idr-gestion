@@ -8,11 +8,14 @@ import { puedeVerCaso, puedeVerFacturacion } from "@/lib/acceso";
 import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
+import { ResultadoBadge } from "@/components/resultado-badge";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
 import { TextoPanel } from "@/components/texto-panel";
 import { MailPanel } from "@/components/mail-panel";
 import { KmPanel } from "@/components/km-panel";
 import { InformePanel } from "@/components/informe-panel";
+import { EstadoResultadoPanel } from "@/components/estado-resultado-panel";
+import { boton, tarjeta } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +73,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         </div>
         <div className="flex flex-col items-end gap-2">
           <EstadoBadge estado={s.estado} />
+          <ResultadoBadge resultado={s.resultado} />
           {verFacturacion && <CobroBadge estado={s.estadoCobro} />}
         </div>
       </div>
@@ -84,8 +88,18 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           <Dato k="Vencimiento gestión" v={s.fechaLimite} /><Dato k="Operador" v={s.operador} />
         </Bloque>
 
-        {/* Facturación + cobro (solo admin) */}
+        {/* Estado, resultado y cobro del caso */}
         <div className="space-y-4">
+          <Bloque titulo="Estado del caso">
+            <EstadoResultadoPanel
+              siniestroId={s.id}
+              estado={s.estado}
+              resultado={s.resultado}
+              estadoCobro={s.estadoCobro}
+              verFacturacion={verFacturacion}
+            />
+          </Bloque>
+
           {verFacturacion && (
             <Bloque titulo="Facturación">
               <KmPanel siniestroId={s.id} kmTotal={s.kmTotal} domicilio={s.domicilio} lugarHecho={lugarTxt} />
@@ -180,7 +194,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
 function Bloque({ titulo, children }: { titulo:string; children:React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-line bg-white p-5">
+    <section className={`${tarjeta} p-5`}>
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">{titulo}</h2>
       <div className="space-y-2">{children}</div>
     </section>
@@ -196,7 +210,7 @@ function Dato({ k, v }: { k:string; v:string|null }) {
 }
 function BtnLink({ href, label }: { href:string; label:string }) {
   return (
-    <a href={href} className="block rounded border border-ink/20 px-3 py-2 text-center text-xs font-medium text-ink transition hover:bg-ink hover:text-paper">
+    <a href={href} className={`${boton.secundario} w-full`}>
       {label}
     </a>
   );

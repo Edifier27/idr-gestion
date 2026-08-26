@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { boton } from "@/lib/ui";
 
 export function InformePanel({ siniestroId, informeInicial }: { siniestroId: string; informeInicial: string | null }) {
   const router = useRouter();
@@ -33,7 +34,7 @@ export function InformePanel({ siniestroId, informeInicial }: { siniestroId: str
         <button
           onClick={generar}
           disabled={generando}
-          className="rounded bg-ink px-3 py-1.5 text-sm font-medium text-paper transition hover:opacity-90 disabled:opacity-50"
+          className={boton.primario}
         >
           {generando ? "Generando…" : informeInicial ? "Regenerar informe con IA" : "Generar informe con IA"}
         </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { boton, campo } from "@/lib/ui";
 
 // Editor genérico de un campo de texto libre del caso (descargo, relato_denuncia,
 // etc.), guardado vía PATCH /api/siniestros/[id]. Reusado donde haga falta cargar
@@ -50,13 +51,13 @@ export function TextoPanel({ siniestroId, campo, valorInicial, placeholder, etiq
         onChange={e => setTexto(e.target.value)}
         rows={6}
         placeholder={placeholder}
-        className="w-full resize-y rounded border border-line bg-white p-3 text-sm text-ink focus:border-ink/40 focus:outline-none"
+        className={`w-full resize-y ${campo}`}
       />
       <div className="flex items-center gap-3">
         <button
           onClick={guardar}
           disabled={guardando || !cambio}
-          className="rounded bg-ink px-3 py-1.5 text-xs font-medium text-paper transition hover:opacity-90 disabled:opacity-40"
+          className={boton.primario}
         >
           {guardando ? "Guardando…" : etiquetaGuardar}
         </button>

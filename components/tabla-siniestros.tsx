@@ -109,7 +109,7 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
   return (
     <div>
       {esAdmin && porOperador.length > 0 && (
-        <div className="mb-4 rounded-lg border border-line bg-white p-4">
+        <div className="mb-4 rounded-lg border border-line bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Por operador</h2>
             {operador && (
@@ -148,7 +148,7 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             placeholder="Buscar por asegurado, DNI o N° siniestro..."
-            className="min-w-[220px] flex-1 rounded border border-line bg-white px-3 py-1.5 text-sm text-ink placeholder:text-slate/60 focus:border-ink/40 focus:outline-none"
+            className="min-w-[220px] flex-1 rounded-md border border-line bg-white px-3 py-1.5 text-sm text-ink shadow-sm transition placeholder:text-slate/60 focus:border-ink/40 focus:outline-none"
           />
           <Select value={operador} onChange={setOperador} placeholder="Operador" opciones={operadores.map(o => ({ value: o, label: o }))} />
           <Select value={compania} onChange={setCompania} placeholder="Compañía" opciones={companias.map(c => ({ value: c, label: c }))} />
@@ -172,8 +172,8 @@ function QuickBtn({ label, n, activo, onClick }: { label: string; n: number; act
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-        activo ? "bg-ink text-paper" : "border border-ink/20 text-ink hover:bg-ink/5"
+      className={`rounded-full px-3 py-1.5 text-xs font-medium shadow-sm transition ${
+        activo ? "bg-ink text-paper" : "border border-ink/20 bg-white text-ink hover:bg-ink/5"
       }`}
     >
       {label} <span className={activo ? "text-paper/70" : "text-slate"}>({n})</span>
@@ -188,8 +188,8 @@ function TarjetaOperador({ nombre, total, pendientes, resueltos, vencidos, activ
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg border p-3 text-left transition ${
-        activo ? "border-ink bg-ink/5" : "border-line bg-white hover:border-ink/30 hover:bg-paper"
+      className={`rounded-lg border p-3 text-left shadow-sm transition hover:shadow-md ${
+        activo ? "border-ink bg-ink/5" : "border-line bg-white hover:border-ink/30"
       }`}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -218,7 +218,7 @@ function Select({ value, onChange, placeholder, opciones }: {
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="rounded border border-line bg-white px-2.5 py-1.5 text-sm text-ink focus:border-ink/40 focus:outline-none"
+      className="rounded-md border border-line bg-white px-2.5 py-1.5 text-sm text-ink shadow-sm transition focus:border-ink/40 focus:outline-none"
     >
       <option value="">{placeholder}</option>
       {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -228,7 +228,7 @@ function Select({ value, onChange, placeholder, opciones }: {
 
 function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-line bg-white">
+    <div className="overflow-x-auto rounded-lg border border-line bg-white shadow-sm">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-line bg-paper text-left text-xs uppercase tracking-wide text-slate">

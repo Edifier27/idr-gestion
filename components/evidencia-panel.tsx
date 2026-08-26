@@ -89,11 +89,11 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
           <select
             value={categoria}
             onChange={e => setCategoria(e.target.value)}
-            className="rounded border border-line bg-white px-2 py-1.5 text-xs text-ink focus:border-ink/40 focus:outline-none"
+            className="rounded-md border border-line bg-white px-2 py-1.5 text-xs text-ink shadow-sm transition focus:border-ink/40 focus:outline-none"
           >
             {CATEGORIAS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
-          <label className="cursor-pointer rounded border border-ink/20 px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-ink hover:text-paper">
+          <label className="cursor-pointer rounded-md border border-ink/20 bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-sm transition hover:bg-ink hover:text-paper">
             {subiendo ? "Subiendo…" : "+ Subir archivos"}
             <input
               ref={inputRef}
@@ -116,7 +116,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {archivos.map(f => (
-            <div key={f.id} className="group relative overflow-hidden rounded border border-line bg-paper">
+            <div key={f.id} className="group relative overflow-hidden rounded-lg border border-line bg-paper shadow-sm transition hover:shadow-md">
               <a href={f.url} target="_blank" rel="noopener noreferrer" className="block">
                 {f.tipo.startsWith("image/") ? (
                   // eslint-disable-next-line @next/next/no-img-element

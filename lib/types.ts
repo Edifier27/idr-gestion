@@ -10,7 +10,13 @@ export type EstadoSiniestro =
   | "facturado"
   | "cerrado";
 
-export type ResultadoInvestigacion = "pendiente" | "sin_fraude" | "con_fraude" | "sin_cobertura";
+export type ResultadoInvestigacion =
+  | "pendiente"
+  | "sin_fraude"
+  | "con_fraude"
+  | "posible_fraude"
+  | "desistido"
+  | "sin_cobertura";
 
 // Lo que el LLM extrae del PDF de carátula (banca los dos formatos).
 export interface CaratulaExtraida {
