@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
-import { siniestros, evidencia } from "@/lib/db/schema";
+import { siniestros, evidencia, bitacora } from "@/lib/db/schema";
 import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { expedientePDF, type ArchivoConBytes } from "@/lib/pdf";
 import { sesionRequerida, puedeVerCaso } from "@/lib/acceso";
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
 
   await asegurarTablaEvidencia();
   const rows = await db.select().from(evidencia).where(eq(evidencia.siniestroId, id));
+  const notas = await db.select().from(bitacora).where(eq(bitacora.siniestroId, id));
 
   const archivos: ArchivoConBytes[] = await Promise.all(rows.map(async row => {
     try {
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
     }
   }));
 
-  const bytes = await expedientePDF(s, archivos);
+  const bytes = await expedientePDF(s, archivos, notas);
   return new NextResponse(Buffer.from(bytes), {
     headers: {
       "Content-Type": "application/pdf",

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia } from "@/lib/categorias-evidencia";
 
 type Archivo = {
   id: string;
@@ -13,24 +14,10 @@ type Archivo = {
   creadoEn: Date | string;
 };
 
-const CATEGORIAS = [
-  { value: "", label: "Sin categoría" },
-  { value: "dni", label: "DNI asegurado" },
-  { value: "registro_conducir", label: "Registro de conducir" },
-  { value: "cedula_vehiculo", label: "Cédula del vehículo" },
-  { value: "denuncia", label: "Denuncia penal/ciudadana" },
-  { value: "ampliacion", label: "Ampliación (manuscrita)" },
-  { value: "desiste", label: "Desistimiento firmado" },
-  { value: "geolocalizacion", label: "Geolocalización" },
-  { value: "llamadas", label: "Registro de llamadas" },
-  { value: "mensajes", label: "Mensajes / chats" },
-  { value: "fotos", label: "Fotos" },
-  { value: "otro", label: "Otro" },
-];
+const CATEGORIAS = [{ value: "", label: "Sin categoría" }, ...CATEGORIAS_EVIDENCIA];
 
 function etiquetaCategoria(cat?: string | null): string | null {
-  if (!cat) return null;
-  return CATEGORIAS.find(c => c.value === cat)?.label ?? cat;
+  return cat ? etiquetaCategoriaEvidencia(cat) : null;
 }
 
 export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
