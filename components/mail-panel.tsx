@@ -14,6 +14,7 @@ export function MailPanel({ siniestroId, destinatarioSugerido, archivos }: {
   const [asunto, setAsunto] = useState("");
   const [cuerpo, setCuerpo] = useState("");
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
+  const [adjuntarExpediente, setAdjuntarExpediente] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<"ok" | "error" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,12 +39,13 @@ export function MailPanel({ siniestroId, destinatarioSugerido, archivos }: {
         body: JSON.stringify({
           siniestroId, para, asunto, cuerpo,
           evidenciaIds: Array.from(seleccionados),
+          adjuntarExpediente,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "No se pudo enviar.");
       setResultado("ok");
-      setAsunto(""); setCuerpo(""); setSeleccionados(new Set());
+      setAsunto(""); setCuerpo(""); setSeleccionados(new Set()); setAdjuntarExpediente(false);
     } catch (e) {
       setResultado("error");
       setError(e instanceof Error ? e.message : "Error al enviar.");
@@ -95,6 +97,12 @@ export function MailPanel({ siniestroId, destinatarioSugerido, archivos }: {
           </div>
         </div>
       )}
+
+      <label className="flex cursor-pointer items-center gap-2 rounded-md border border-line bg-white px-2.5 py-2 text-xs text-ink shadow-sm transition hover:border-ink/30">
+        <input type="checkbox" checked={adjuntarExpediente} onChange={e => setAdjuntarExpediente(e.target.checked)}
+          className="h-3.5 w-3.5 accent-ink" />
+        <span className="font-medium">🗂️ Adjuntar expediente completo (PDF)</span>
+      </label>
 
       <button type="submit" disabled={enviando} className={boton.primario}>
         {enviando ? "Enviando…" : "Enviar mail"}

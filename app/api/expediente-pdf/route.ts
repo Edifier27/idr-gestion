@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
-import { siniestros, evidencia, bitacora } from "@/lib/db/schema";
-import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
-import { expedientePDF, type ArchivoConBytes } from "@/lib/pdf";
+import { siniestros } from "@/lib/db/schema";
+import { construirExpedientePDF } from "@/lib/expediente";
 import { sesionRequerida, puedeVerCaso } from "@/lib/acceso";
 
 export const runtime = "nodejs";
@@ -22,22 +21,10 @@ export async function GET(req: NextRequest) {
   if (!s) return NextResponse.json({ error: "No encontrado." }, { status: 404 });
   if (!puedeVerCaso(session, s.operador)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
-  await asegurarTablaEvidencia();
-  const rows = await db.select().from(evidencia).where(eq(evidencia.siniestroId, id));
-  const notas = await db.select().from(bitacora).where(eq(bitacora.siniestroId, id));
+  const resultado = await construirExpedientePDF(id);
+  if (!resultado) return NextResponse.json({ error: "No encontrado." }, { status: 404 });
 
-  const archivos: ArchivoConBytes[] = await Promise.all(rows.map(async row => {
-    try {
-      const res = await fetch(row.url);
-      if (!res.ok) return { row, bytes: null };
-      return { row, bytes: new Uint8Array(await res.arrayBuffer()) };
-    } catch {
-      return { row, bytes: null };
-    }
-  }));
-
-  const bytes = await expedientePDF(s, archivos, notas);
-  return new NextResponse(Buffer.from(bytes), {
+  return new NextResponse(Buffer.from(resultado.bytes), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="expediente-${s.nroSiniestro ?? s.id}.pdf"`,

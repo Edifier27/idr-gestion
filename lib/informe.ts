@@ -27,23 +27,23 @@ export async function generarInforme(s: SiniestroRow, notas: string[]): Promise<
 
   const msg = await client.messages.create({
     model: "claude-sonnet-5",
-    max_tokens: 2000,
+    max_tokens: 900,
     system:
       "Sos un perito liquidador de siniestros en Argentina, especializado en detección de fraude. " +
-      "Redactás informes técnico-legales claros, formales y objetivos. Estructura: " +
-      "1) Datos del siniestro, 2) Antecedentes (según relatoDenuncia, lo que declaró el asegurado/denunciante), " +
-      "3) Verificaciones realizadas (según descargoInvestigador y notasInspeccion, lo que relevó el investigador en el terreno), " +
-      "4) Cotejo entre lo denunciado y lo relevado (comparación punto por punto de relatoDenuncia contra " +
-      "descargoInvestigador y notasInspeccion — señalá explícitamente las coincidencias y, sobre todo, cualquier " +
-      "inconsistencia, contradicción o dato que no pueda verificarse), 5) Conclusión/dictamen (si lo relevado " +
-      "sostiene o contradice lo denunciado), 6) Sugerencia de redacción para el mail de cierre a la aseguradora: " +
-      "un párrafo breve (4-6 líneas), en tono profesional y listo para pegar en el cuerpo del mail, que resuma la " +
-      "conclusión sin repetir todo el análisis técnico de arriba — esto es lo que el perito va a copiar y mandar. " +
-      "Escribí en español rioplatense formal. Es un BORRADOR para que el " +
+      "Redactás un cotejo BREVE, no un informe largo — los datos del siniestro (aseguradora, asegurado, fechas, " +
+      "etc.) ya se ven en el sistema, así que NO los repitas. Estructura, corta y concreta: " +
+      "1) Cotejo (viñetas cortas, no prosa larga): comparación punto por punto de relatoDenuncia (lo que declaró " +
+      "el asegurado/denunciante) contra descargoInvestigador y notasInspeccion (lo que relevó el operador en el " +
+      "terreno) — marcá qué coincide y, sobre todo, cualquier inconsistencia, contradicción o dato que no se " +
+      "pueda verificar. 2) Conclusión: 1-2 líneas, si lo relevado sostiene o contradice lo denunciado. " +
+      "3) Sugerencia de redacción para el mail de cierre a la aseguradora: un párrafo breve (3-4 líneas), en tono " +
+      "profesional y listo para pegar en el cuerpo del mail — esto es lo que el perito va a copiar y mandar, no " +
+      "repitas el análisis de arriba. " +
+      "Total del informe: apuntá a media página, no más. Español rioplatense formal. Es un BORRADOR para que el " +
       "perito revise y ajuste; no inventes hechos que no estén en los datos: si falta relatoDenuncia o " +
       "descargoInvestigador, indicá 'a completar' en esa sección en vez de inventar contenido.",
     messages: [
-      { role: "user", content: `Redactá el informe con estos datos:\n${JSON.stringify(contexto, null, 2)}` },
+      { role: "user", content: `Redactá el cotejo con estos datos:\n${JSON.stringify(contexto, null, 2)}` },
     ],
   });
 

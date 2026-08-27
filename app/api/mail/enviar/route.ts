@@ -4,11 +4,12 @@ import { getDb } from "@/lib/db";
 import { siniestros, evidencia, mailEnviado, bitacora } from "@/lib/db/schema";
 import { sesionRequerida, puedeVerCaso } from "@/lib/acceso";
 import { enviarMail, type AdjuntoMail } from "@/lib/gmail";
+import { construirExpedientePDF } from "@/lib/expediente";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// POST /api/mail/enviar { siniestroId, para, asunto, cuerpo, evidenciaIds? }
+// POST /api/mail/enviar { siniestroId, para, asunto, cuerpo, evidenciaIds?, adjuntarExpediente? }
 export async function POST(req: NextRequest) {
   const session = await sesionRequerida();
   if (!session) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
   const asunto = typeof body?.asunto === "string" ? body.asunto.trim() : "";
   const cuerpo = typeof body?.cuerpo === "string" ? body.cuerpo : "";
   const evidenciaIds: string[] = Array.isArray(body?.evidenciaIds) ? body.evidenciaIds : [];
+  const adjuntarExpediente = body?.adjuntarExpediente === true;
 
   if (!siniestroId || !para || !asunto) {
     return NextResponse.json({ error: "Faltan datos (destinatario o asunto)." }, { status: 400 });
@@ -40,6 +42,17 @@ export async function POST(req: NextRequest) {
         const bytes = new Uint8Array(await res.arrayBuffer());
         return { nombre: f.nombre, tipo: f.tipo, bytes };
       }));
+    }
+
+    if (adjuntarExpediente) {
+      const expediente = await construirExpedientePDF(siniestroId);
+      if (expediente) {
+        adjuntos.push({
+          nombre: `expediente-${expediente.siniestro.nroSiniestro ?? siniestroId}.pdf`,
+          tipo: "application/pdf",
+          bytes: expediente.bytes,
+        });
+      }
     }
 
     await enviarMail({ para, asunto, cuerpo, adjuntos });
