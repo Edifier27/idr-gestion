@@ -226,9 +226,12 @@ function Select({ value, onChange, placeholder, opciones }: {
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="rounded-md border border-line bg-white px-2.5 py-1.5 text-sm text-ink shadow-sm transition focus:border-ink/40 focus:outline-none"
+      title={placeholder}
+      className={`rounded-md border px-2.5 py-1.5 text-sm shadow-sm transition focus:border-ink/40 focus:outline-none ${
+        value ? "border-ink/30 bg-ink/5 font-medium text-ink" : "border-line bg-white text-ink"
+      }`}
     >
-      <option value="">{placeholder}</option>
+      <option value="">Todos — {placeholder}</option>
       {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   );

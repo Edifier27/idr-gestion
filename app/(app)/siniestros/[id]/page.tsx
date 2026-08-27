@@ -15,7 +15,7 @@ import { MailPanel } from "@/components/mail-panel";
 import { KmPanel } from "@/components/km-panel";
 import { InformePanel } from "@/components/informe-panel";
 import { EstadoResultadoPanel } from "@/components/estado-resultado-panel";
-import { boton, tarjeta, tarjetaElevada, RESULTADO_ACENTO } from "@/lib/ui";
+import { boton, tarjetaElevada, RESULTADO_ACENTO } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -93,7 +93,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
         {/* Estado, resultado y cobro del caso */}
         <div className="space-y-4">
-          <Bloque titulo="Estado del caso">
+          <Bloque titulo="Estado del caso" accento="ink">
             <EstadoResultadoPanel
               siniestroId={s.id}
               estado={s.estado}
@@ -104,7 +104,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           </Bloque>
 
           {verFacturacion && (
-            <Bloque titulo="Facturación">
+            <Bloque titulo="Facturación" accento="amber">
               <KmPanel siniestroId={s.id} kmTotal={s.kmTotal} domicilio={s.domicilio} lugarHecho={lugarTxt} />
               <Dato k="Km bonificados" v={`${desg.kmBonificados} km`} />
               <Dato k="Km facturables" v={`${desg.kmFacturables} km × $650`} />
@@ -118,7 +118,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           )}
 
           {/* Botones de acción */}
-          <Bloque titulo="Acciones">
+          <Bloque titulo="Acciones" accento="slate">
             <div className="grid grid-cols-2 gap-2">
               {verFacturacion && <BtnLink href={`/api/factura-pdf?id=${s.id}`} label="📄 Factura PDF" />}
               <BtnLink href={`/api/caratula-pdf?id=${s.id}`} label="📋 Carátula PDF" />
@@ -127,7 +127,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           </Bloque>
 
           {/* Nuevo mensaje */}
-          <Bloque titulo="Enviar mail">
+          <Bloque titulo="Enviar mail" accento="slate">
             <MailPanel
               siniestroId={s.id}
               destinatarioSugerido={s.emailContacto}
@@ -138,14 +138,18 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
         {/* Evidencia */}
         <div className="md:col-span-2">
-          <Bloque titulo="Evidencia">
+          <Bloque titulo="Evidencia" accento="ok">
             <EvidenciaPanel siniestroId={s.id} archivosIniciales={archivos} />
           </Bloque>
         </div>
 
         {/* Relato de la denuncia vs. descargo del investigador, uno al lado del otro para cotejar */}
         <div className="md:col-span-2 grid gap-5 md:grid-cols-2">
-          <Bloque titulo="Relato de la denuncia (según la aseguradora)">
+          <Bloque
+            titulo="Relato de la denuncia"
+            accento="slate"
+            extra={<span className="rounded-full bg-slate/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate">Según la aseguradora</span>}
+          >
             <TextoPanel
               siniestroId={s.id}
               campo="relato_denuncia"
@@ -154,7 +158,11 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               etiquetaGuardar="Guardar relato"
             />
           </Bloque>
-          <Bloque titulo="Descargo / Ampliación (según el operador)">
+          <Bloque
+            titulo="Descargo / Ampliación"
+            accento="amber"
+            extra={<span className="rounded-full bg-amber/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber">Según el operador</span>}
+          >
             <TextoPanel
               siniestroId={s.id}
               campo="descargo"
@@ -168,14 +176,18 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
         {/* Informe técnico-legal: lo genera la IA cotejando denuncia vs. descargo */}
         <div className="md:col-span-2">
-          <Bloque titulo="Informe técnico-legal (borrador IA)">
+          <Bloque
+            titulo="Informe técnico-legal"
+            accento="ink"
+            extra={<span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber to-amber/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">✨ Generado con IA</span>}
+          >
             <InformePanel siniestroId={s.id} informeInicial={s.informe} />
           </Bloque>
         </div>
 
         {/* Bitácora */}
         <div className="md:col-span-2">
-          <Bloque titulo={`Bitácora (${notas.length} entradas)`}>
+          <Bloque titulo={`Bitácora (${notas.length} entradas)`} accento="slate">
             {notas.length === 0
               ? <p className="text-sm text-slate">Sin entradas todavía.</p>
               : notas.map(n => (
@@ -195,10 +207,20 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   );
 }
 
-function Bloque({ titulo, children }: { titulo:string; children:React.ReactNode }) {
+const ACENTO_BARRA: Record<string, string> = {
+  ink: "bg-ink", slate: "bg-slate", amber: "bg-amber", ok: "bg-ok", fraude: "bg-fraude",
+};
+
+function Bloque({ titulo, children, accento = "ink", extra }: {
+  titulo: string; children: React.ReactNode; accento?: keyof typeof ACENTO_BARRA; extra?: React.ReactNode;
+}) {
   return (
-    <section className={`${tarjeta} p-5`}>
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">{titulo}</h2>
+    <section className={`relative overflow-hidden p-5 pl-6 ${tarjetaElevada}`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${ACENTO_BARRA[accento]}`} />
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">{titulo}</h2>
+        {extra}
+      </div>
       <div className="space-y-2">{children}</div>
     </section>
   );
