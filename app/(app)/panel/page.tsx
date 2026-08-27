@@ -100,15 +100,18 @@ export default async function Dashboard() {
 function Stat({ label, valor, icon, accent }: { label:string; valor:string; icon: React.ReactNode; accent?: "amber" | "ok" }) {
   const colorTexto = accent === "ok" ? "text-ok" : accent === "amber" ? "text-amber" : "text-ink";
   const colorIcono = accent === "ok" ? "bg-ok/10 text-ok" : accent === "amber" ? "bg-amber/10 text-amber" : "bg-ink/5 text-ink";
-  const colorBarra = accent === "ok" ? "bg-ok" : accent === "amber" ? "bg-amber" : "bg-ink";
+  const colorCinta = accent === "ok" ? "bg-ok" : accent === "amber" ? "bg-amber" : "bg-ink";
   return (
-    <div className={`relative overflow-hidden p-4 pl-5 ${tarjetaElevada}`}>
-      <span className={`absolute inset-y-0 left-0 w-1 ${colorBarra}`} />
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate">{label}</p>
-        <span className={`flex h-7 w-7 items-center justify-center rounded-md ${colorIcono}`}>{icon}</span>
+    <div className={`group flex overflow-hidden ${tarjetaElevada}`}>
+      <span className={`flex w-7 shrink-0 items-center justify-center py-3 text-[10px] font-bold uppercase tracking-wide text-white ${colorCinta}`}>
+        <span className="[writing-mode:vertical-rl] whitespace-nowrap rotate-180">{label}</span>
+      </span>
+      <div className="min-w-0 flex-1 p-4">
+        <div className="mb-1.5 flex items-center justify-end">
+          <span className={`flex h-7 w-7 items-center justify-center rounded-md ${colorIcono}`}>{icon}</span>
+        </div>
+        <p className={`tnum text-3xl font-bold tracking-tight ${colorTexto}`}>{valor}</p>
       </div>
-      <p className={`tnum text-3xl font-bold tracking-tight ${colorTexto}`}>{valor}</p>
     </div>
   );
 }

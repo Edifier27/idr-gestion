@@ -5,7 +5,7 @@ import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
-import { tarjetaElevada } from "@/lib/ui";
+import { tarjetaElevada, colorPorTexto, cinta, cintaTexto } from "@/lib/ui";
 
 const ESTADOS = [
   { value: "ingresado", label: "Ingresado" },
@@ -189,31 +189,29 @@ function TarjetaOperador({ nombre, total, pendientes, resueltos, vencidos, activ
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg border p-3 text-left shadow-sm transition hover:shadow-md ${
-        activo ? "border-ink bg-ink/5" : "border-line bg-white hover:border-ink/30"
+      className={`group flex overflow-hidden rounded-lg border text-left shadow-sm transition hover:shadow-md ${
+        activo ? "border-ink" : "border-line hover:border-ink/30"
       }`}
     >
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-2">
-          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-            activo ? "bg-ink text-paper" : "bg-ink/10 text-ink"
-          }`}>
-            {nombre.trim()[0]?.toUpperCase() ?? "?"}
-          </span>
+      <span className={`w-6 py-2 text-[9px] ${cinta}`} style={{ background: colorPorTexto(nombre) }} title={nombre}>
+        <span className={cintaTexto}>{nombre}</span>
+      </span>
+      <div className={`min-w-0 flex-1 p-3 ${activo ? "bg-ink/5" : "bg-white"}`}>
+        <div className="mb-2 flex items-center justify-between gap-2">
           <span className="truncate text-sm font-semibold text-ink" title={nombre}>{nombre}</span>
-        </span>
-        {vencidos > 0 && (
-          <span className="shrink-0 rounded-full bg-fraude/10 px-1.5 py-0.5 text-[10px] font-semibold text-fraude">
-            {vencidos} venc.
-          </span>
-        )}
-      </div>
-      <div className="mb-1.5 h-1.5 overflow-hidden rounded-full bg-line">
-        <div className="h-full bg-ok transition-[width]" style={{ width: `${pctResuelto}%` }} />
-      </div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-amber">{pendientes} pendiente{pendientes === 1 ? "" : "s"}</span>
-        <span className="text-ok">{resueltos} resuelto{resueltos === 1 ? "" : "s"}</span>
+          {vencidos > 0 && (
+            <span className="shrink-0 rounded-full bg-fraude/10 px-1.5 py-0.5 text-[10px] font-semibold text-fraude">
+              {vencidos} venc.
+            </span>
+          )}
+        </div>
+        <div className="mb-1.5 h-1.5 overflow-hidden rounded-full bg-line">
+          <div className="h-full bg-ok transition-[width]" style={{ width: `${pctResuelto}%` }} />
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-amber">{pendientes} pendiente{pendientes === 1 ? "" : "s"}</span>
+          <span className="text-ok">{resueltos} resuelto{resueltos === 1 ? "" : "s"}</span>
+        </div>
       </div>
     </button>
   );
@@ -237,16 +235,6 @@ function Select({ value, onChange, placeholder, opciones }: {
   );
 }
 
-// Color determinístico por compañía (mismo hash siempre da el mismo color),
-// para que la cinta lateral de cada card se distinga sin tener que mantener
-// una paleta a mano por cada aseguradora nueva que aparezca.
-function colorPorTexto(texto: string): string {
-  let hash = 0;
-  for (let i = 0; i < texto.length; i++) hash = texto.charCodeAt(i) + ((hash << 5) - hash);
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue} 45% 34%)`;
-}
-
 function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
   return (
     <div className="space-y-2">
@@ -261,12 +249,8 @@ function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
             href={`/siniestros/${s.id}`}
             className={`group flex overflow-hidden ${tarjetaElevada}`}
           >
-            <span
-              className="flex w-7 shrink-0 items-center justify-center overflow-hidden py-3 text-center text-[10px] font-bold uppercase tracking-wide text-white"
-              style={{ background: colorPorTexto(compania) }}
-              title={compania}
-            >
-              <span className="[writing-mode:vertical-rl] whitespace-nowrap rotate-180">{compania}</span>
+            <span className={`w-7 py-3 text-[10px] ${cinta}`} style={{ background: colorPorTexto(compania) }} title={compania}>
+              <span className={cintaTexto}>{compania}</span>
             </span>
             <div className="min-w-0 flex-1 p-3.5">
               <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">

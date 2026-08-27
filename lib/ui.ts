@@ -35,3 +35,20 @@ export const RESULTADO_ACENTO: Record<string, string> = {
   desistido: "bg-ink",
   sin_cobertura: "bg-ink",
 };
+
+// Cinta lateral de color en las listas de tarjetas (compañía, operador,
+// usuario…): mismo texto siempre da el mismo color, así una entidad nueva
+// se distingue sola sin tener que mantener una paleta a mano.
+export function colorPorTexto(texto: string): string {
+  let hash = 0;
+  for (let i = 0; i < texto.length; i++) hash = texto.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue} 45% 34%)`;
+}
+
+// Cinta vertical reusable: bloque de color angosto con el texto rotado, a la
+// izquierda de una tarjeta de lista (fila de caso, operador, usuario…). No
+// incluye ancho/padding/tamaño de texto (varían según la tarjeta) para no
+// pisar esas utilidades con las del propio uso — cada lugar las suma aparte.
+export const cinta = "flex shrink-0 items-center justify-center overflow-hidden font-bold uppercase tracking-wide text-white";
+export const cintaTexto = "[writing-mode:vertical-rl] whitespace-nowrap rotate-180";

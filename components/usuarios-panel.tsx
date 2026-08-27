@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { etiquetaRol } from "@/lib/roles";
-import { boton, campo, tarjeta } from "@/lib/ui";
+import { boton, campo, tarjeta, tarjetaElevada, colorPorTexto, cinta, cintaTexto, badge, badgeDot } from "@/lib/ui";
 
 type Usuario = {
   id: string;
@@ -115,44 +115,39 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
         </form>
       </section>
 
-      <section className={`overflow-x-auto ${tarjeta}`}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-line bg-paper text-left text-xs uppercase tracking-wide text-slate">
-              <th className="px-3 py-3 font-medium">Usuario</th>
-              <th className="px-3 py-3 font-medium">Nombre</th>
-              <th className="px-3 py-3 font-medium">Rol</th>
-              <th className="px-3 py-3 font-medium">Operador</th>
-              <th className="px-3 py-3 font-medium">Estado</th>
-              <th className="px-3 py-3 font-medium">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.map(u => (
-              <tr key={u.id} className="border-b border-line last:border-0">
-                <td className="px-3 py-3 font-mono text-ink">{u.username}</td>
-                <td className="px-3 py-3">{u.nombre}</td>
-                <td className="px-3 py-3 text-slate">{etiquetaRol(u.rol)}</td>
-                <td className="px-3 py-3 text-slate">{u.operador ?? "—"}</td>
-                <td className="px-3 py-3">
-                  <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${u.activo ? "bg-ok/15 text-ok" : "bg-fraude/15 text-fraude"}`}>
+      <section className="space-y-2">
+        {lista.map(u => {
+          const etiqueta = u.nombre || u.username;
+          return (
+            <div key={u.id} className={`flex overflow-hidden ${tarjetaElevada}`}>
+              <span className={`w-7 py-3 text-[10px] ${cinta}`} style={{ background: colorPorTexto(etiqueta) }} title={etiqueta}>
+                <span className={cintaTexto}>{etiqueta}</span>
+              </span>
+              <div className="min-w-0 flex-1 p-3.5">
+                <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
+                  <div className="min-w-0">
+                    <p className="font-mono text-base font-bold text-ink">{u.username}</p>
+                    <p className="truncate text-sm text-slate">
+                      {u.nombre} · {etiquetaRol(u.rol)}{u.operador ? ` · Operador ${u.operador}` : ""}
+                    </p>
+                  </div>
+                  <span className={`${badge} ${u.activo ? "bg-ok/15 text-ok" : "bg-fraude/15 text-fraude"}`}>
+                    <span className={badgeDot} />
                     {u.activo ? "Activo" : "Desactivado"}
                   </span>
-                </td>
-                <td className="px-3 py-3">
-                  <div className="flex gap-1">
-                    <button onClick={() => toggleActivo(u)} className={boton.ghost}>
-                      {u.activo ? "Desactivar" : "Activar"}
-                    </button>
-                    <button onClick={() => resetPassword(u)} className={boton.ghost}>
-                      Cambiar contraseña
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+                <div className="mt-2.5 flex flex-wrap items-center gap-1 border-t border-line pt-2">
+                  <button onClick={() => toggleActivo(u)} className={boton.ghost}>
+                    {u.activo ? "Desactivar" : "Activar"}
+                  </button>
+                  <button onClick={() => resetPassword(u)} className={boton.ghost}>
+                    Cambiar contraseña
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </section>
     </div>
   );
