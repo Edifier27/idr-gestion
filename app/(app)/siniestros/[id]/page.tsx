@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros, bitacora, evidencia } from "@/lib/db/schema";
 import { desgloseFacturacion, formatARS } from "@/lib/facturacion";
-import { puedeVerCaso, puedeVerFacturacion } from "@/lib/acceso";
+import { puedeVerCaso, puedeVerFacturacion, puedeVerInformeFinal } from "@/lib/acceso";
 import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
@@ -14,6 +14,7 @@ import { TextoPanel } from "@/components/texto-panel";
 import { MailPanel } from "@/components/mail-panel";
 import { KmPanel } from "@/components/km-panel";
 import { InformePanel } from "@/components/informe-panel";
+import { InformeFinalPanel } from "@/components/informe-final-panel";
 import { EstadoResultadoPanel } from "@/components/estado-resultado-panel";
 import { boton, tarjetaElevada, RESULTADO_ACENTO } from "@/lib/ui";
 
@@ -47,6 +48,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   if (!s) notFound();
   if (!puedeVerCaso(session, s.operador)) notFound();
   const verFacturacion = puedeVerFacturacion(session);
+  const verInformeFinal = puedeVerInformeFinal(session);
   const notas = await db.select().from(bitacora)
     .where(eq(bitacora.siniestroId, params.id))
     .orderBy(desc(bitacora.fecha));
@@ -143,12 +145,13 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           </Bloque>
         </div>
 
-        {/* Las 3 ventanas del cierre del caso: lo que dice la denuncia, lo que
-            dice el operador, y la resolución armada con IA comparando las
-            dos — lista para copiar al mail de cierre a la aseguradora. */}
+        {/* Las 3 ventanas para cotejar el caso: lo que dice la denuncia, lo
+            que dice el operador, y el borrador con IA que arma comparando
+            las dos (herramienta compartida, visible para operador y admin). */}
         <div className="md:col-span-2">
           <p className="mb-3 text-sm text-slate">
-            <span className="font-semibold text-ink">Cierre del caso:</span> comparás lo que dice la denuncia contra lo que relevó el operador, y con eso armás la resolución que le mandás a la aseguradora por mail.
+            <span className="font-semibold text-ink">Cotejo:</span> comparás lo que dice la denuncia contra lo que relevó el operador.
+            {verInformeFinal && " La resolución final que se manda por mail (④, más abajo) la armás vos aparte — el operador no la ve."}
           </p>
           <div className="grid gap-5 lg:grid-cols-3">
             <Bloque
@@ -181,12 +184,26 @@ export default async function Detalle({ params }: { params: { id: string } }) {
             <Bloque
               titulo="③ Informe técnico-legal"
               accento="ink"
-              extra={<span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber to-amber/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">✨ Resolución para el mail</span>}
+              extra={<span className="inline-flex items-center gap-1 rounded-full bg-line px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate">✨ Borrador (herramienta IA)</span>}
             >
               <InformePanel siniestroId={s.id} informeInicial={s.informe} />
             </Bloque>
           </div>
         </div>
+
+        {/* Resolución final: privada, solo para el admin (puedeVerInformeFinal).
+            El operador no ve este bloque ni el contenido del campo informe_final. */}
+        {verInformeFinal && (
+          <div className="md:col-span-2">
+            <Bloque
+              titulo="④ Resolución final"
+              accento="ink"
+              extra={<span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber to-amber/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">🔒 Solo vos — para el mail</span>}
+            >
+              <InformeFinalPanel siniestroId={s.id} informeInicial={s.informeFinal} />
+            </Bloque>
+          </div>
+        )}
 
         {/* Bitácora */}
         <div className="md:col-span-2">

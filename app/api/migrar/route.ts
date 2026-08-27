@@ -4,6 +4,7 @@ import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { asegurarColumnaDescargo } from "@/lib/db/asegurar-descargo";
 import { asegurarTablasGmail } from "@/lib/db/asegurar-gmail";
 import { asegurarColumnaRelatoDenuncia } from "@/lib/db/asegurar-relato-denuncia";
+import { asegurarColumnaInformeFinal } from "@/lib/db/asegurar-informe-final";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,5 +20,6 @@ export async function GET() {
   await asegurarColumnaDescargo();
   await asegurarTablasGmail();
   await asegurarColumnaRelatoDenuncia();
+  await asegurarColumnaInformeFinal();
   return NextResponse.json({ ok: true });
 }

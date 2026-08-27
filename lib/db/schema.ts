@@ -36,7 +36,8 @@ export const siniestros = pgTable("siniestros", {
   numeroFc: text("numero_fc"),
   gastoFijo: integer("gasto_fijo"),
   operador: text("operador"),
-  informe: text("informe"),                                // informe técnico-legal generado por IA
+  informe: text("informe"),                                // informe técnico-legal (borrador del operador, IA) — visible para admin y operador
+  informeFinal: text("informe_final"),                     // resolución final que arma el admin — solo la ve el admin
   descargo: text("descargo"),                              // relato de lo sucedido, a cargo del operador
 
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
