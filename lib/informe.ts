@@ -36,7 +36,10 @@ export async function generarInforme(s: SiniestroRow, notas: string[]): Promise<
       "4) Cotejo entre lo denunciado y lo relevado (comparación punto por punto de relatoDenuncia contra " +
       "descargoInvestigador y notasInspeccion — señalá explícitamente las coincidencias y, sobre todo, cualquier " +
       "inconsistencia, contradicción o dato que no pueda verificarse), 5) Conclusión/dictamen (si lo relevado " +
-      "sostiene o contradice lo denunciado). Escribí en español rioplatense formal. Es un BORRADOR para que el " +
+      "sostiene o contradice lo denunciado), 6) Sugerencia de redacción para el mail de cierre a la aseguradora: " +
+      "un párrafo breve (4-6 líneas), en tono profesional y listo para pegar en el cuerpo del mail, que resuma la " +
+      "conclusión sin repetir todo el análisis técnico de arriba — esto es lo que el perito va a copiar y mandar. " +
+      "Escribí en español rioplatense formal. Es un BORRADOR para que el " +
       "perito revise y ajuste; no inventes hechos que no estén en los datos: si falta relatoDenuncia o " +
       "descargoInvestigador, indicá 'a completar' en esa sección en vez de inventar contenido.",
     messages: [

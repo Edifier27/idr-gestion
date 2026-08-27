@@ -82,7 +82,7 @@ export function InformePanel({ siniestroId, informeInicial }: { siniestroId: str
         </div>
       ) : (
         <p className="text-sm text-slate">
-          Todavía no se generó. Usa el descargo del investigador, el relato de la denuncia y la bitácora cargados hasta ahora, y coteja los dos relatos.
+          Todavía no se generó. Compara ① la denuncia con ② el descargo del operador (más la bitácora) y arma el cotejo, la conclusión y una sugerencia de redacción lista para el mail de cierre.
         </p>
       )}
     </div>

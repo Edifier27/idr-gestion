@@ -59,7 +59,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   const desg = desgloseFacturacion(s.kmTotal);
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
+    <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">
       <a href="/panel" className="mb-4 inline-flex items-center gap-1 text-sm text-slate hover:text-ink">
         <span aria-hidden>←</span> Tablero
       </a>
@@ -143,46 +143,49 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           </Bloque>
         </div>
 
-        {/* Relato de la denuncia vs. descargo del investigador, uno al lado del otro para cotejar */}
-        <div className="md:col-span-2 grid gap-5 md:grid-cols-2">
-          <Bloque
-            titulo="Relato de la denuncia"
-            accento="slate"
-            extra={<span className="rounded-full bg-slate/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate">Según la aseguradora</span>}
-          >
-            <TextoPanel
-              siniestroId={s.id}
-              campo="relato_denuncia"
-              valorInicial={s.relatoDenuncia}
-              placeholder="Qué dice la denuncia que pasó: si no se extrajo solo del PDF, cargalo a mano acá…"
-              etiquetaGuardar="Guardar relato"
-            />
-          </Bloque>
-          <Bloque
-            titulo="Descargo / Ampliación"
-            accento="amber"
-            extra={<span className="rounded-full bg-amber/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber">Según el operador</span>}
-          >
-            <TextoPanel
-              siniestroId={s.id}
-              campo="descargo"
-              valorInicial={s.descargo}
-              placeholder="Relato de lo sucedido: qué encontraste, qué te dijeron, cómo se compara con la denuncia…"
-              etiquetaGuardar="Guardar descargo"
-              plantilla={PLANTILLA_DESCARGO}
-            />
-          </Bloque>
-        </div>
-
-        {/* Informe técnico-legal: lo genera la IA cotejando denuncia vs. descargo */}
+        {/* Las 3 ventanas del cierre del caso: lo que dice la denuncia, lo que
+            dice el operador, y la resolución armada con IA comparando las
+            dos — lista para copiar al mail de cierre a la aseguradora. */}
         <div className="md:col-span-2">
-          <Bloque
-            titulo="Informe técnico-legal"
-            accento="ink"
-            extra={<span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber to-amber/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">✨ Generado con IA</span>}
-          >
-            <InformePanel siniestroId={s.id} informeInicial={s.informe} />
-          </Bloque>
+          <p className="mb-3 text-sm text-slate">
+            <span className="font-semibold text-ink">Cierre del caso:</span> comparás lo que dice la denuncia contra lo que relevó el operador, y con eso armás la resolución que le mandás a la aseguradora por mail.
+          </p>
+          <div className="grid gap-5 lg:grid-cols-3">
+            <Bloque
+              titulo="① Relato de la denuncia"
+              accento="slate"
+              extra={<span className="rounded-full bg-slate/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate">Según la aseguradora</span>}
+            >
+              <TextoPanel
+                siniestroId={s.id}
+                campo="relato_denuncia"
+                valorInicial={s.relatoDenuncia}
+                placeholder="Qué dice la denuncia que pasó: si no se extrajo solo del PDF, cargalo a mano acá…"
+                etiquetaGuardar="Guardar relato"
+              />
+            </Bloque>
+            <Bloque
+              titulo="② Descargo / Ampliación"
+              accento="amber"
+              extra={<span className="rounded-full bg-amber/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber">Según el operador</span>}
+            >
+              <TextoPanel
+                siniestroId={s.id}
+                campo="descargo"
+                valorInicial={s.descargo}
+                placeholder="Relato de lo sucedido: qué encontraste, qué te dijeron, cómo se compara con la denuncia…"
+                etiquetaGuardar="Guardar descargo"
+                plantilla={PLANTILLA_DESCARGO}
+              />
+            </Bloque>
+            <Bloque
+              titulo="③ Informe técnico-legal"
+              accento="ink"
+              extra={<span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber to-amber/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">✨ Resolución para el mail</span>}
+            >
+              <InformePanel siniestroId={s.id} informeInicial={s.informe} />
+            </Bloque>
+          </div>
         </div>
 
         {/* Bitácora */}
