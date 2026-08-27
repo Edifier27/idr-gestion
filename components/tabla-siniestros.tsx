@@ -237,51 +237,68 @@ function Select({ value, onChange, placeholder, opciones }: {
   );
 }
 
+// Color determinístico por compañía (mismo hash siempre da el mismo color),
+// para que la cinta lateral de cada card se distinga sin tener que mantener
+// una paleta a mano por cada aseguradora nueva que aparezca.
+function colorPorTexto(texto: string): string {
+  let hash = 0;
+  for (let i = 0; i < texto.length; i++) hash = texto.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue} 45% 34%)`;
+}
+
 function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
   return (
-    <div className={`overflow-x-auto ${tarjetaElevada}`}>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-line bg-paper text-left text-xs uppercase tracking-wide text-slate">
-            <th className="px-3 py-3 font-medium">Gestión</th>
-            <th className="px-3 py-3 font-medium">Asegurado</th>
-            <th className="px-3 py-3 font-medium">Tipo</th>
-            <th className="px-3 py-3 font-medium">Estado</th>
-            {esAdmin && <th className="px-3 py-3 font-medium">Cobro</th>}
-            <th className="px-3 py-3 font-medium">Vence</th>
-            {esAdmin && <th className="px-3 py-3 text-right font-medium">Facturar</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(s => {
-            const dias = s.fechaLimite ? Math.ceil((new Date(s.fechaLimite).getTime() - Date.now()) / 86400000) : null;
-            const venceColor = dias === null ? "" : dias < 0 ? "text-fraude font-semibold" : dias <= 3 ? "text-amber font-semibold" : "text-slate";
-            return (
-              <tr key={s.id} className="group border-b border-line last:border-0 hover:bg-paper/60">
-                <td className="px-3 py-3">
-                  <a href={`/siniestros/${s.id}`} className="inline-flex items-center gap-1.5 font-mono text-ink">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-line/70 text-ink transition group-hover:bg-ink group-hover:text-paper">
-                      <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3 transition group-hover:translate-x-0.5">
-                        <path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                    <span className="underline-offset-2 group-hover:underline">{s.numeroGestion ?? "—"}</span>
-                  </a>
-                  <span className="ml-2 font-mono text-xs text-slate">{s.nroSiniestro ?? ""}</span>
-                </td>
-                <td className="px-3 py-3">{s.asegurado ?? "—"}</td>
-                <td className="px-3 py-3 text-slate">{s.tipo ?? "—"}</td>
-                <td className="px-3 py-3"><EstadoBadge estado={s.estado} /></td>
-                {esAdmin && <td className="px-3 py-3"><CobroBadge estado={s.estadoCobro} /></td>}
-                <td className={`px-3 py-3 ${venceColor}`}>
-                  {dias === null ? "—" : dias < 0 ? `hace ${Math.abs(dias)}d` : `${dias}d`}
-                </td>
-                {esAdmin && <td className="tnum px-3 py-3 text-right font-medium">{formatARS(s.facturar)}</td>}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="space-y-2">
+      {rows.map(s => {
+        const dias = s.fechaLimite ? Math.ceil((new Date(s.fechaLimite).getTime() - Date.now()) / 86400000) : null;
+        const venceColor = dias === null ? "text-slate" : dias < 0 ? "text-fraude" : dias <= 3 ? "text-amber" : "text-slate";
+        const venceTexto = dias === null ? "Sin vencimiento" : dias < 0 ? `Vencido hace ${Math.abs(dias)}d` : `Vence en ${dias}d`;
+        const compania = s.compania ?? "Sin compañía";
+        return (
+          <a
+            key={s.id}
+            href={`/siniestros/${s.id}`}
+            className={`group flex overflow-hidden ${tarjetaElevada}`}
+          >
+            <span
+              className="flex w-7 shrink-0 items-center justify-center overflow-hidden py-3 text-center text-[10px] font-bold uppercase tracking-wide text-white"
+              style={{ background: colorPorTexto(compania) }}
+              title={compania}
+            >
+              <span className="[writing-mode:vertical-rl] whitespace-nowrap rotate-180">{compania}</span>
+            </span>
+            <div className="min-w-0 flex-1 p-3.5">
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
+                <div className="min-w-0">
+                  <p className="font-mono text-base font-bold text-ink">
+                    #{s.numeroGestion ?? s.nroSiniestro ?? "—"}
+                  </p>
+                  <p className="truncate text-sm text-slate">
+                    {s.asegurado ?? "—"} · {s.dni ?? "—"} · {s.tipo ?? "—"}{s.operador ? ` · ${s.operador}` : ""}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                  <EstadoBadge estado={s.estado} />
+                  {esAdmin && <CobroBadge estado={s.estadoCobro} />}
+                </div>
+              </div>
+              <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line pt-2">
+                <span className="inline-flex items-center gap-1 text-sm font-semibold text-ok transition group-hover:gap-1.5">
+                  Abrir caso
+                  <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3">
+                    <path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                <span className={`flex items-center gap-3 text-xs font-medium ${venceColor}`}>
+                  {venceTexto}
+                  {esAdmin && <span className="tnum text-ink">{formatARS(s.facturar)}</span>}
+                </span>
+              </div>
+            </div>
+          </a>
+        );
+      })}
     </div>
   );
 }
