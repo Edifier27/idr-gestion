@@ -76,6 +76,8 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
   const [compania, setCompania] = useState("");
   const [estado, setEstado] = useState("");
   const [estadoCobro, setEstadoCobro] = useState("");
+  const [etapaContacto, setEtapaContacto] = useState("");
+  const [resultado, setResultado] = useState("");
   const [busqueda, setBusqueda] = useState("");
 
   const operadores = useMemo(
@@ -102,6 +104,22 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
     vencidos: activos.filter(esVencido).length,
     cerrados: rows.filter(esCerrado).length,
   }), [rows, activos]);
+
+  // Semáforos: conteo por etapa de contacto y por resultado (entre los casos
+  // activos), clickeables como filtro — mismo patrón que "Por operador".
+  const porEtapa = useMemo(() => ({
+    contacto_fallido: activos.filter(r => r.etapaContacto === "contacto_fallido").length,
+    contactado: activos.filter(r => r.etapaContacto === "contactado").length,
+    entrevista_pactada: activos.filter(r => r.etapaContacto === "entrevista_pactada").length,
+    informe_enviado: activos.filter(r => r.etapaContacto === "informe_enviado").length,
+  }), [activos]);
+  const porResultado = useMemo(() => ({
+    sin_fraude: activos.filter(r => r.resultado === "sin_fraude").length,
+    posible_fraude: activos.filter(r => r.resultado === "posible_fraude").length,
+    con_fraude: activos.filter(r => r.resultado === "con_fraude").length,
+    desistido: activos.filter(r => r.resultado === "desistido").length,
+    rechazo: activos.filter(r => r.resultado === "rechazo").length,
+  }), [activos]);
 
   const porOperador = useMemo(() => {
     const mapa = new Map<string, { pendientes: number; resueltos: number; vencidos: number; total: number }>();
@@ -135,6 +153,8 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
     if (compania) out = out.filter(r => r.compania === compania);
     if (estado) out = out.filter(r => r.estado === estado);
     if (estadoCobro) out = out.filter(r => (r.estadoCobro ?? "no_facturado") === estadoCobro);
+    if (etapaContacto) out = out.filter(r => r.etapaContacto === etapaContacto);
+    if (resultado) out = out.filter(r => r.resultado === resultado);
 
     if (busqueda.trim()) {
       const q = busqueda.trim().toLowerCase();
@@ -147,7 +167,7 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
     }
     // Lo más urgente primero, siempre — no solo en la pestaña "Hoy".
     return [...out].sort((a, b) => prioridad(b) - prioridad(a));
-  }, [rows, quick, operador, compania, estado, estadoCobro, busqueda]);
+  }, [rows, quick, operador, compania, estado, estadoCobro, etapaContacto, resultado, busqueda]);
 
   return (
     <div>
@@ -174,6 +194,44 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
           </div>
         </div>
       )}
+
+      {/* Semáforos: conteo por etapa y por resultado — tocá uno para filtrar
+          la tabla por ese valor, igual que las tarjetas "Por operador". */}
+      <div className="mb-4 space-y-3">
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate">Seguimiento operativo</p>
+            {etapaContacto && (
+              <button onClick={() => setEtapaContacto("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
+                Ver todos
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <MiniStat label="Contacto fallido" valor={porEtapa.contacto_fallido} accent="fraude" activo={etapaContacto === "contacto_fallido"} onClick={() => setEtapaContacto(v => v === "contacto_fallido" ? "" : "contacto_fallido")} />
+            <MiniStat label="Contactado" valor={porEtapa.contactado} accent="ok" activo={etapaContacto === "contactado"} onClick={() => setEtapaContacto(v => v === "contactado" ? "" : "contactado")} />
+            <MiniStat label="Entrevista pactada" valor={porEtapa.entrevista_pactada} accent="amber" activo={etapaContacto === "entrevista_pactada"} onClick={() => setEtapaContacto(v => v === "entrevista_pactada" ? "" : "entrevista_pactada")} />
+            <MiniStat label="Informe enviado" valor={porEtapa.informe_enviado} accent="ok" activo={etapaContacto === "informe_enviado"} onClick={() => setEtapaContacto(v => v === "informe_enviado" ? "" : "informe_enviado")} />
+          </div>
+        </div>
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate">Resultados</p>
+            {resultado && (
+              <button onClick={() => setResultado("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
+                Ver todos
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            <MiniStat label="Sin fraude" valor={porResultado.sin_fraude} accent="ok" activo={resultado === "sin_fraude"} onClick={() => setResultado(v => v === "sin_fraude" ? "" : "sin_fraude")} />
+            <MiniStat label="Posible fraude" valor={porResultado.posible_fraude} accent="amber" activo={resultado === "posible_fraude"} onClick={() => setResultado(v => v === "posible_fraude" ? "" : "posible_fraude")} />
+            <MiniStat label="Fraude" valor={porResultado.con_fraude} accent="fraude" activo={resultado === "con_fraude"} onClick={() => setResultado(v => v === "con_fraude" ? "" : "con_fraude")} />
+            <MiniStat label="Desistido" valor={porResultado.desistido} accent="slate" activo={resultado === "desistido"} onClick={() => setResultado(v => v === "desistido" ? "" : "desistido")} />
+            <MiniStat label="Rechazo" valor={porResultado.rechazo} accent="fraude" activo={resultado === "rechazo"} onClick={() => setResultado(v => v === "rechazo" ? "" : "rechazo")} />
+          </div>
+        </div>
+      </div>
 
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2">
@@ -225,6 +283,28 @@ function QuickBtn({ label, n, activo, urgente, onClick }: { label: string; n: nu
     >
       {urgente && <PuntoUrgente />}
       {label} <span className={activo ? "text-paper/70" : "text-slate"}>({n})</span>
+    </button>
+  );
+}
+
+const COLOR_TEXTO_MINI: Record<string, string> = { ok: "text-ok", amber: "text-amber", fraude: "text-fraude", slate: "text-slate", ink: "text-ink" };
+const COLOR_BARRA_MINI: Record<string, string> = { ok: "bg-ok", amber: "bg-amber", fraude: "bg-fraude", slate: "bg-slate", ink: "bg-ink" };
+
+// Caja chica de "semáforo" (conteo por etapa/resultado), clickeable como
+// filtro — mismo patrón que TarjetaOperador.
+function MiniStat({ label, valor, accent, activo, onClick }: {
+  label: string; valor: number; accent: keyof typeof COLOR_TEXTO_MINI; activo: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative overflow-hidden p-3 pl-4 text-left shadow-sm transition hover:shadow-md ${
+        activo ? "rounded-lg border border-ink bg-ink/5" : `rounded-lg border border-line bg-white hover:border-ink/30`
+      }`}
+    >
+      <span className={`absolute inset-y-0 left-0 w-1 ${COLOR_BARRA_MINI[accent]}`} />
+      <p className="truncate text-[11px] font-medium uppercase tracking-wide text-slate">{label}</p>
+      <p className={`tnum text-xl font-bold ${COLOR_TEXTO_MINI[accent]}`}>{valor}</p>
     </button>
   );
 }
