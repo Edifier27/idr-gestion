@@ -195,11 +195,20 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
             </button>
           )}
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <QuickBtn label="Recibido" n={porEtapa.recibido} activo={etapaContacto === "recibido"} onClick={() => setEtapaContacto(v => v === "recibido" ? "" : "recibido")} />
-          <QuickBtn label="Contactado (sin respuesta)" n={porEtapa.contacto_fallido} urgente={porEtapa.contacto_fallido > 0} activo={etapaContacto === "contacto_fallido"} onClick={() => setEtapaContacto(v => v === "contacto_fallido" ? "" : "contacto_fallido")} />
-          <QuickBtn label="Contactado (OK)" n={porEtapa.contactado} activo={etapaContacto === "contactado"} onClick={() => setEtapaContacto(v => v === "contactado" ? "" : "contactado")} />
+          <FlechaFlujo />
+          {/* Las dos variantes de "Contactado" son ramas del mismo paso (no una
+              sigue a la otra), por eso van agrupadas con un "o" en vez de una
+              flecha entre ellas. */}
+          <div className="flex items-center gap-1">
+            <QuickBtn label="Contactado (sin respuesta)" n={porEtapa.contacto_fallido} urgente={porEtapa.contacto_fallido > 0} activo={etapaContacto === "contacto_fallido"} onClick={() => setEtapaContacto(v => v === "contacto_fallido" ? "" : "contacto_fallido")} />
+            <span className="text-[10px] font-medium uppercase text-slate/50">o</span>
+            <QuickBtn label="Contactado (OK)" n={porEtapa.contactado} activo={etapaContacto === "contactado"} onClick={() => setEtapaContacto(v => v === "contactado" ? "" : "contactado")} />
+          </div>
+          <FlechaFlujo />
           <QuickBtn label="Entrevista pactada" n={porEtapa.entrevista_pactada} activo={etapaContacto === "entrevista_pactada"} onClick={() => setEtapaContacto(v => v === "entrevista_pactada" ? "" : "entrevista_pactada")} />
+          <FlechaFlujo />
           <QuickBtn label="Informe enviado" n={porEtapa.informe_enviado} activo={etapaContacto === "informe_enviado"} onClick={() => setEtapaContacto(v => v === "informe_enviado" ? "" : "informe_enviado")} />
         </div>
       </div>
@@ -300,6 +309,16 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
         <Tabla rows={filtradas} esAdmin={esAdmin} />
       )}
     </div>
+  );
+}
+
+// Separador visual entre pasos de la caja "Seguimiento" — marca el orden del
+// flujo (recibido -> contactado -> entrevista -> informe) sin agregar texto.
+function FlechaFlujo() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3 shrink-0 text-line" aria-hidden="true">
+      <path d="M6.5 4L12.5 10L6.5 16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
