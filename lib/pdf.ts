@@ -25,7 +25,7 @@ export async function facturaPDF(s: SiniestroRow): Promise<Uint8Array> {
   const d = desgloseFacturacion(s.kmTotal);
   let y = 790;
   const line = (t: string, f = font, size = 11, color = INK) => {
-    page.drawText(t, { x: 50, y, size, font: f, color });
+    page.drawText(sanear(t), { x: 50, y, size, font: f, color });
     y -= size + 8;
   };
   line("FACTURA DE HONORARIOS Y GASTOS", bold, 16);
@@ -49,8 +49,8 @@ export async function caratulaPDF(s: SiniestroRow): Promise<Uint8Array> {
   const lugar = (s.lugarSiniestro ?? {}) as Record<string, string>;
   let y = 790;
   const row = (k: string, v: string | null) => {
-    page.drawText(k, { x: 50, y, size: 10, font: bold, color: GREY });
-    page.drawText(v ?? "-", { x: 200, y, size: 10, font, color: INK });
+    page.drawText(sanear(k), { x: 50, y, size: 10, font: bold, color: GREY });
+    page.drawText(sanear(v ?? "-"), { x: 200, y, size: 10, font, color: INK });
     y -= 20;
   };
   page.drawText("CARÁTULA DE SINIESTRO", { x: 50, y, size: 16, font: bold, color: INK });
@@ -67,6 +67,31 @@ export async function caratulaPDF(s: SiniestroRow): Promise<Uint8Array> {
   row("Lugar del hecho", [lugar.calle1, lugar.altura1, lugar.localidad, lugar.provincia].filter(Boolean).join(" "));
   row("Estado", s.estado);
   return pdf.save();
+}
+
+// Las fuentes estándar de pdf-lib (Helvetica) usan WinAnsiEncoding (cp1252):
+// cualquier carácter fuera de ese rango — flechas, emojis, tildes "raras",
+// símbolos que suele meter la IA en el texto libre (informe, descargo,
+// relato) o un nombre de archivo con caracteres poco comunes — hace que
+// page.drawText tire un error y rompa TODA la generación del PDF (ya pasó
+// antes con "↳" y ahora con "→"). En vez de ir parcheando símbolo por
+// símbolo cada vez que aparece uno nuevo, se sanea cualquier texto libre
+// antes de dibujarlo: reemplaza los más comunes por su equivalente ASCII, y
+// cualquier otro carácter fuera del rango seguro de WinAnsi por "?".
+const REEMPLAZOS_TEXTO: Record<string, string> = {
+  "→": "->", "←": "<-", "↔": "<->", "⇒": "=>", "↳": ">>", "↓": "v", "↑": "^",
+  "✓": "OK", "✔": "OK", "✗": "X", "✘": "X", "★": "*", "…": "...",
+  "‘": "'", "’": "'", "“": '"', "”": '"', "–": "-", "—": "-",
+};
+function sanear(texto: string): string {
+  let out = texto;
+  for (const [k, v] of Object.entries(REEMPLAZOS_TEXTO)) out = out.split(k).join(v);
+  // WinAnsi cubre ASCII imprimible (0x20-0x7E) y Latin-1 (0xA0-0xFF: tildes,
+  // ñ, °, ¿, ¡, etc.) — cualquier código fuera de esos rangos se reemplaza.
+  return Array.from(out).map(ch => {
+    const cp = ch.codePointAt(0) ?? 0;
+    return (cp >= 0x20 && cp <= 0x7e) || (cp >= 0xa0 && cp <= 0xff) ? ch : "?";
+  }).join("");
 }
 
 const A4: [number, number] = [595, 842];
@@ -127,7 +152,7 @@ function subtitulo(c: Cursor, texto: string) {
 }
 
 function parrafo(c: Cursor, texto: string, size = 10) {
-  for (const linea of envolverTexto(texto, c.font, size, ANCHO_UTIL)) {
+  for (const linea of envolverTexto(sanear(texto), c.font, size, ANCHO_UTIL)) {
     espacio(c, size + 4);
     c.page.drawText(linea, { x: MARGEN, y: c.y, size, font: c.font, color: INK });
     c.y -= size + 4;
@@ -139,8 +164,8 @@ function parrafo(c: Cursor, texto: string, size = 10) {
 function filaDoble(c: Cursor, a: [string, string | null], b?: [string, string | null]) {
   espacio(c, 15);
   const escribir = (x: number, campo: string, valor: string | null) => {
-    c.page.drawText(campo.toUpperCase(), { x, y: c.y, size: 7.5, font: c.bold, color: GREY });
-    c.page.drawText(valor?.trim() || "—", { x, y: c.y - 10, size: 9.5, font: c.font, color: INK });
+    c.page.drawText(sanear(campo.toUpperCase()), { x, y: c.y, size: 7.5, font: c.bold, color: GREY });
+    c.page.drawText(sanear(valor?.trim() || "—"), { x, y: c.y - 10, size: 9.5, font: c.font, color: INK });
   };
   escribir(MARGEN, a[0], a[1]);
   if (b) escribir(MARGEN + ANCHO_UTIL / 2, b[0], b[1]);
@@ -180,7 +205,7 @@ function franjaClasificacion(c: Cursor, resultado: string) {
 function etiquetaGrupo(c: Cursor, texto: string) {
   espacio(c, 22);
   c.page.drawRectangle({ x: MARGEN, y: c.y - 2, width: ANCHO_UTIL, height: 16, color: PAPER });
-  c.page.drawText(texto.toUpperCase(), { x: MARGEN + 6, y: c.y + 2, size: 8.5, font: c.bold, color: INK });
+  c.page.drawText(sanear(texto.toUpperCase()), { x: MARGEN + 6, y: c.y + 2, size: 8.5, font: c.bold, color: INK });
   c.y -= 22;
 }
 
@@ -192,13 +217,13 @@ async function incrustarImagen(c: Cursor, row: EvidenciaRow, bytes: Uint8Array) 
   espacio(c, h + 20);
   c.page.drawImage(img, { x: MARGEN, y: c.y - h, width: w, height: h });
   c.y -= h + 4;
-  c.page.drawText(row.nombre, { x: MARGEN, y: c.y, size: 7.5, font: c.font, color: GREY });
+  c.page.drawText(sanear(row.nombre), { x: MARGEN, y: c.y, size: 7.5, font: c.font, color: GREY });
   c.y -= 16;
 }
 
 async function incrustarPDF(c: Cursor, row: EvidenciaRow, bytes: Uint8Array) {
   espacio(c, 16);
-  c.page.drawText(`» ${row.nombre} (PDF adjunto — páginas a continuación)`, {
+  c.page.drawText(sanear(`» ${row.nombre} (PDF adjunto — páginas a continuación)`), {
     x: MARGEN, y: c.y, size: 8.5, font: c.font, color: GREY,
   });
   c.y -= 16;
@@ -221,7 +246,7 @@ async function volcarGrupo(c: Cursor, categoria: string, archivos: ArchivoConByt
   for (const { row, bytes } of delGrupo) {
     if (!bytes) {
       espacio(c, 14);
-      c.page.drawText(`· ${row.nombre} (no se pudo descargar)`, { x: MARGEN, y: c.y, size: 9, font: c.font, color: GREY });
+      c.page.drawText(sanear(`· ${row.nombre} (no se pudo descargar)`), { x: MARGEN, y: c.y, size: 9, font: c.font, color: GREY });
       c.y -= 16;
       continue;
     }
@@ -229,7 +254,7 @@ async function volcarGrupo(c: Cursor, categoria: string, archivos: ArchivoConByt
     else if (row.tipo === "application/pdf") await incrustarPDF(c, row, bytes);
     else {
       espacio(c, 14);
-      c.page.drawText(`· ${row.nombre} (descargar desde el CRM)`, { x: MARGEN, y: c.y, size: 9, font: c.font, color: GREY });
+      c.page.drawText(sanear(`· ${row.nombre} (descargar desde el CRM)`), { x: MARGEN, y: c.y, size: 9, font: c.font, color: GREY });
       c.y -= 16;
     }
   }
