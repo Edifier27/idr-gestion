@@ -5,10 +5,8 @@ import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import type { SiniestroRow } from "@/lib/db/schema";
-import { formatARS } from "@/lib/facturacion";
 import { TablaSiniestros } from "@/components/tabla-siniestros";
 import { PanelLayout } from "@/components/panel-layout";
-import { tarjetaElevada } from "@/lib/ui";
 
 export const metadata: Metadata = { title: "Tablero · IDR Gestión" };
 export const dynamic = "force-dynamic";
@@ -30,7 +28,6 @@ export default async function Dashboard() {
   const operadoresExistentes = Array.from(new Set(todas.map(r => r.operador).filter((v): v is string => !!v))).sort();
 
   const total = rows.length;
-  const enGestion = rows.filter(r => !["facturado","cerrado"].includes(r.estado)).length;
   const montoFacturado = rows.filter(r => r.estadoCobro === "facturado" || r.estadoCobro === "presentado")
     .reduce((a,r) => a + (r.facturar ?? 0), 0);
   const montoCobrado = rows.filter(r => r.estadoCobro === "cobrado")
@@ -38,62 +35,27 @@ export default async function Dashboard() {
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-8">
-      <header className="mb-7 flex flex-wrap items-center justify-between gap-3">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-amber">IDR Gestión</p>
           <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-ink">Tablero</h1>
-          <p className="text-sm text-slate">Casos de investigación de siniestros</p>
+          {/* La cantidad total de siniestros va acá, chica y de paso — ya no
+              como una caja grande arriba de todo: lo que importa mirar
+              primero es el seguimiento operativo, no el conteo total. */}
+          <p className="text-sm text-slate">{total} siniestro{total === 1 ? "" : "s"} en gestión</p>
         </div>
         <a href="/api/export" className="rounded-md border border-ink/15 bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-ink/30 hover:bg-paper">
           Exportar Excel
         </a>
       </header>
 
-      {/* Stats */}
-      <div className={`mb-6 grid grid-cols-2 gap-3 ${esAdmin ? "md:grid-cols-4" : ""}`}>
-        <Stat label="Siniestros" valor={String(total)} icon={<IconFolder />} />
-        <Stat label="En gestión" valor={String(enGestion)} icon={<IconClock />} accent="amber" />
-        {esAdmin && <Stat label="Por cobrar" valor={formatARS(montoFacturado)} icon={<IconInvoice />} accent="amber" />}
-        {esAdmin && <Stat label="Cobrado" valor={formatARS(montoCobrado)} icon={<IconCheck />} accent="ok" />}
-      </div>
-
       <PanelLayout esAdmin={esAdmin} operadoresExistentes={operadoresExistentes}>
-        {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : <TablaSiniestros rows={rows} esAdmin={esAdmin} />}
+        {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : (
+          <TablaSiniestros rows={rows} esAdmin={esAdmin} montoFacturado={montoFacturado} montoCobrado={montoCobrado} />
+        )}
       </PanelLayout>
     </main>
   );
-}
-
-function Stat({ label, valor, icon, accent }: { label:string; valor:string; icon: React.ReactNode; accent?: "amber" | "ok" }) {
-  const colorTexto = accent === "ok" ? "text-ok" : accent === "amber" ? "text-amber" : "text-ink";
-  const colorIcono = accent === "ok" ? "bg-ok/10 text-ok" : accent === "amber" ? "bg-amber/10 text-amber" : "bg-ink/5 text-ink";
-  const colorCinta = accent === "ok" ? "bg-ok" : accent === "amber" ? "bg-amber" : "bg-ink";
-  return (
-    <div className={`group flex overflow-hidden ${tarjetaElevada}`}>
-      <span className={`flex w-7 shrink-0 items-center justify-center py-3 text-[10px] font-bold uppercase tracking-wide text-white ${colorCinta}`}>
-        <span className="[writing-mode:vertical-rl] whitespace-nowrap rotate-180">{label}</span>
-      </span>
-      <div className="min-w-0 flex-1 p-4">
-        <div className="mb-1.5 flex items-center justify-end">
-          <span className={`flex h-7 w-7 items-center justify-center rounded-md ${colorIcono}`}>{icon}</span>
-        </div>
-        <p className={`tnum text-3xl font-bold tracking-tight ${colorTexto}`}>{valor}</p>
-      </div>
-    </div>
-  );
-}
-
-function IconFolder() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1.5 3.5A1 1 0 012.5 2.5H6l1.5 1.5h6a1 1 0 011 1v8a1 1 0 01-1 1h-11a1 1 0 01-1-1v-9.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>;
-}
-function IconClock() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.3" stroke="currentColor" strokeWidth="1.3"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
-}
-function IconInvoice() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="3" y="1.5" width="10" height="13" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 5h5M5.5 8h5M5.5 11h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
-}
-function IconCheck() {
-  return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.3" stroke="currentColor" strokeWidth="1.3"/><path d="M5.2 8.2l1.8 1.8 3.8-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 }
 
 function EmptyStateSinDatos() {

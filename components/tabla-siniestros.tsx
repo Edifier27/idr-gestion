@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
 import { EstadoBadge } from "@/components/estado-badge";
@@ -70,8 +71,15 @@ function prioridad(r: SiniestroRow): number {
 const SIN_ASIGNAR = "__sin_asignar__";
 function claveOperador(r: SiniestroRow) { return r.operador ?? SIN_ASIGNAR; }
 
-export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
-  const [quick, setQuick] = useState<QuickFilter>("hoy");
+export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }: {
+  rows: SiniestroRow[]; esAdmin: boolean; montoFacturado?: number; montoCobrado?: number;
+}) {
+  // El link "Cerrados" de la sidebar manda a /panel?quick=cerrados — si viene
+  // ese parámetro, la tabla arranca ya parada en esa bandeja.
+  const searchParams = useSearchParams();
+  const quickUrl = searchParams.get("quick");
+  const quickInicial: QuickFilter = quickUrl === "cerrados" ? "cerrados" : "hoy";
+  const [quick, setQuick] = useState<QuickFilter>(quickInicial);
   const [mostrarResumen, setMostrarResumen] = useState(false);
   const [operador, setOperador] = useState("");
   const [compania, setCompania] = useState("");
@@ -180,36 +188,39 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
   // no quede un filtro "invisible" aplicado.
   const hayFiltroEnResumen = !!operador || !!resultado;
 
+  const totalSeguimiento = activos.length;
+  const pct = (n: number) => totalSeguimiento === 0 ? 0 : Math.round((n / totalSeguimiento) * 100);
+
   return (
     <div>
-      {/* Caja chica con el flujo operativo día a día — nada más que esto,
-          a pedido de Dario: recibido → contactado (sin respuesta u OK) →
-          entrevista pactada → informe enviado. Siempre visible, no detrás
-          del desplegable, porque es el filtro que más se usa. */}
-      <div className="mb-4 rounded-lg border border-line bg-white p-2.5 shadow-sm">
-        <div className="mb-1.5 flex items-center justify-between px-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate">Seguimiento</p>
+      {/* Bandera principal del tablero: el flujo operativo día a día,
+          recibido → contactado (sin respuesta u OK) → entrevista pactada →
+          informe enviado. Reemplaza a las cajas de "Siniestros/En gestión"
+          de antes — es lo que Dario mira primero cada mañana. */}
+      <div className="mb-5 overflow-hidden rounded-xl border border-line bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-line bg-paper/60 px-3.5 py-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate">Seguimiento operativo</p>
           {etapaContacto && (
-            <button onClick={() => setEtapaContacto("")} className="text-[10px] text-slate underline-offset-2 hover:text-ink hover:underline">
+            <button onClick={() => setEtapaContacto("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
               Ver todos
             </button>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <QuickBtn label="Recibido" n={porEtapa.recibido} activo={etapaContacto === "recibido"} onClick={() => setEtapaContacto(v => v === "recibido" ? "" : "recibido")} />
+        <div className="flex flex-wrap items-stretch gap-2 p-3.5">
+          <EtapaCard label="Recibido" valor={porEtapa.recibido} pct={pct(porEtapa.recibido)} accent="ink" activo={etapaContacto === "recibido"} onClick={() => setEtapaContacto(v => v === "recibido" ? "" : "recibido")} />
           <FlechaFlujo />
           {/* Las dos variantes de "Contactado" son ramas del mismo paso (no una
               sigue a la otra), por eso van agrupadas con un "o" en vez de una
               flecha entre ellas. */}
-          <div className="flex items-center gap-1">
-            <QuickBtn label="Contactado (sin respuesta)" n={porEtapa.contacto_fallido} urgente={porEtapa.contacto_fallido > 0} activo={etapaContacto === "contacto_fallido"} onClick={() => setEtapaContacto(v => v === "contacto_fallido" ? "" : "contacto_fallido")} />
-            <span className="text-[10px] font-medium uppercase text-slate/50">o</span>
-            <QuickBtn label="Contactado (OK)" n={porEtapa.contactado} activo={etapaContacto === "contactado"} onClick={() => setEtapaContacto(v => v === "contactado" ? "" : "contactado")} />
+          <div className="flex items-stretch gap-1.5">
+            <EtapaCard label="Contactado (sin respuesta)" valor={porEtapa.contacto_fallido} pct={pct(porEtapa.contacto_fallido)} accent="fraude" urgente={porEtapa.contacto_fallido > 0} activo={etapaContacto === "contacto_fallido"} onClick={() => setEtapaContacto(v => v === "contacto_fallido" ? "" : "contacto_fallido")} />
+            <span className="self-center text-[10px] font-medium uppercase text-slate/50">o</span>
+            <EtapaCard label="Contactado (OK)" valor={porEtapa.contactado} pct={pct(porEtapa.contactado)} accent="ok" activo={etapaContacto === "contactado"} onClick={() => setEtapaContacto(v => v === "contactado" ? "" : "contactado")} />
           </div>
           <FlechaFlujo />
-          <QuickBtn label="Entrevista pactada" n={porEtapa.entrevista_pactada} activo={etapaContacto === "entrevista_pactada"} onClick={() => setEtapaContacto(v => v === "entrevista_pactada" ? "" : "entrevista_pactada")} />
+          <EtapaCard label="Entrevista pactada" valor={porEtapa.entrevista_pactada} pct={pct(porEtapa.entrevista_pactada)} accent="amber" activo={etapaContacto === "entrevista_pactada"} onClick={() => setEtapaContacto(v => v === "entrevista_pactada" ? "" : "entrevista_pactada")} />
           <FlechaFlujo />
-          <QuickBtn label="Informe enviado" n={porEtapa.informe_enviado} activo={etapaContacto === "informe_enviado"} onClick={() => setEtapaContacto(v => v === "informe_enviado" ? "" : "informe_enviado")} />
+          <EtapaCard label="Informe enviado" valor={porEtapa.informe_enviado} pct={pct(porEtapa.informe_enviado)} accent="ok" activo={etapaContacto === "informe_enviado"} onClick={() => setEtapaContacto(v => v === "informe_enviado" ? "" : "informe_enviado")} />
         </div>
       </div>
 
@@ -226,6 +237,13 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
 
       {(mostrarResumen || hayFiltroEnResumen) && (
         <>
+          {esAdmin && (montoFacturado !== undefined || montoCobrado !== undefined) && (
+            <div className="mb-4 grid grid-cols-2 gap-2.5 sm:max-w-xs">
+              <MiniStatMoney label="Por cobrar" valor={formatARS(montoFacturado ?? 0)} accent="amber" />
+              <MiniStatMoney label="Cobrado" valor={formatARS(montoCobrado ?? 0)} accent="ok" />
+            </div>
+          )}
+
           {esAdmin && porOperador.length > 0 && (
             <div className={`mb-4 p-4 ${tarjetaElevada}`}>
               <div className="mb-3 flex items-center justify-between">
@@ -338,6 +356,50 @@ function QuickBtn({ label, n, activo, urgente, onClick }: { label: string; n: nu
 
 const COLOR_TEXTO_MINI: Record<string, string> = { ok: "text-ok", amber: "text-amber", fraude: "text-fraude", slate: "text-slate", ink: "text-ink" };
 const COLOR_BARRA_MINI: Record<string, string> = { ok: "bg-ok", amber: "bg-amber", fraude: "bg-fraude", slate: "bg-slate", ink: "bg-ink" };
+
+// Tarjeta de paso del flujo de seguimiento — cinta de color ARRIBA (no al
+// costado como el resto de las tarjetas de lista) para que se lea como un
+// mini-KPI, con el porcentaje sobre el total de casos activos al lado del
+// número.
+function EtapaCard({ label, valor, pct, accent, activo, urgente, onClick }: {
+  label: string; valor: number; pct: number; accent: keyof typeof COLOR_TEXTO_MINI; activo: boolean; urgente?: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex min-w-[8.5rem] flex-1 flex-col overflow-hidden text-left shadow-sm transition hover:shadow-md ${
+        activo ? "rounded-lg border border-ink" : "rounded-lg border border-line hover:border-ink/30"
+      }`}
+    >
+      <span className={`h-1.5 w-full ${COLOR_BARRA_MINI[accent]}`} />
+      <span className={`flex-1 px-3 py-2.5 ${activo ? "bg-ink/5" : "bg-white"}`}>
+        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate">
+          {urgente && <PuntoUrgente />}
+          {label}
+        </span>
+        <span className="mt-0.5 flex items-baseline gap-1.5">
+          <span className={`tnum text-xl font-bold ${COLOR_TEXTO_MINI[accent]}`}>{valor}</span>
+          <span className="text-[11px] font-medium text-slate/60">{pct}%</span>
+        </span>
+      </span>
+    </button>
+  );
+}
+
+// Cajita de plata (no clickeable, no es filtro) con el mismo lenguaje visual
+// que EtapaCard — cinta arriba — para "Por cobrar"/"Cobrado" dentro del
+// resumen colapsado.
+function MiniStatMoney({ label, valor, accent }: { label: string; valor: string; accent: "amber" | "ok" }) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-line bg-white shadow-sm">
+      <span className={`block h-1.5 w-full ${COLOR_BARRA_MINI[accent]}`} />
+      <div className="px-3 py-2.5">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate">{label}</p>
+        <p className={`tnum text-lg font-bold ${COLOR_TEXTO_MINI[accent]}`}>{valor}</p>
+      </div>
+    </div>
+  );
+}
 
 // Caja chica de "semáforo" (conteo por etapa/resultado), clickeable como
 // filtro — mismo patrón que TarjetaOperador.

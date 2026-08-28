@@ -90,13 +90,31 @@ export default async function Detalle({ params }: { params: { id: string } }) {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
-        {/* Datos del siniestro */}
+        {/* Datos del siniestro — con look de formulario/comprobante de
+            denuncia (recuadros con título en la solapa, filas con puntitos),
+            a pedido de Dario, comparando con el comprobante real de ATM
+            Seguros. Abajo del todo, la descripción de la denuncia. */}
         <Bloque titulo="Datos del siniestro">
-          <Dato k="DNI" v={s.dni} /><Dato k="Póliza" v={s.poliza} />
-          <Dato k="Denunciante" v={s.denunciante} /><Dato k="Domicilio" v={s.domicilio} />
-          <Dato k="Fecha ocurrencia" v={s.fechaOcurrencia} /><Dato k="Lugar del hecho" v={lugarTxt} />
-          <Dato k="Contacto" v={s.telContacto ?? s.celContacto} /><Dato k="Email" v={s.emailContacto} />
-          <Dato k="Vencimiento gestión" v={s.fechaLimite} /><Dato k="Operador" v={s.operador} />
+          <fieldset className="rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
+            <legend className="px-1.5 text-[10px] font-bold uppercase tracking-wide text-ink">Siniestro</legend>
+            <DatoForm k="DNI" v={s.dni} />
+            <DatoForm k="Póliza" v={s.poliza} />
+            <DatoForm k="Denunciante" v={s.denunciante} />
+            <DatoForm k="Domicilio" v={s.domicilio} />
+            <DatoForm k="Fecha ocurrencia" v={s.fechaOcurrencia} />
+            <DatoForm k="Lugar del hecho" v={lugarTxt || null} />
+            <DatoForm k="Contacto" v={s.telContacto ?? s.celContacto} />
+            <DatoForm k="Email" v={s.emailContacto} />
+            <DatoForm k="Vencimiento gestión" v={s.fechaLimite} />
+            <DatoForm k="Operador" v={s.operador} />
+          </fieldset>
+
+          {s.relatoDenuncia && (
+            <fieldset className="mt-3 rounded-md border border-ink/20 px-3 pb-2.5 pt-0.5">
+              <legend className="px-1.5 text-[10px] font-bold uppercase tracking-wide text-ink">Descripción</legend>
+              <p className="whitespace-pre-wrap text-xs leading-relaxed text-ink">{s.relatoDenuncia}</p>
+            </fieldset>
+          )}
         </Bloque>
 
         {/* Estado, resultado y cobro del caso */}
@@ -288,6 +306,18 @@ function Dato({ k, v }: { k:string; v:string|null }) {
     <div className="flex justify-between gap-4 text-sm">
       <span className="text-slate">{k}</span>
       <span className="text-right text-ink">{v ?? "—"}</span>
+    </div>
+  );
+}
+// Fila "Etiqueta ......... Valor" con línea de puntos rellenando el medio,
+// como en el comprobante de denuncia en papel — más compacta y monoespaciada
+// que Dato, para las secciones con look de formulario.
+function DatoForm({ k, v }: { k: string; v: string | null }) {
+  return (
+    <div className="flex items-baseline gap-2 border-b border-dotted border-ink/15 py-1 font-mono text-[11px] last:border-0">
+      <span className="shrink-0 uppercase tracking-wide text-slate">{k}</span>
+      <span className="min-w-[0.5rem] flex-1 border-b border-dotted border-ink/25" />
+      <span className="shrink-0 max-w-[60%] truncate text-right text-ink" title={v ?? undefined}>{v ?? "—"}</span>
     </div>
   );
 }

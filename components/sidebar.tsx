@@ -1,15 +1,20 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
 import { etiquetaRol } from "@/lib/roles";
 
+// "quick" distingue entre los dos accesos directos a /panel: Tablero abre en
+// la bandeja de hoy, Cerrados manda directo a la pestaña de casos cerrados
+// (mismo query param que ya lee TablaSiniestros al montar). undefined = sin
+// query — cualquier otra pestaña activada a mano no rompe el resaltado.
 const NAV = [
-  { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false },
-  { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true },
-  { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true },
-  { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true },
+  { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false, quick: undefined as string | undefined },
+  { href: "/panel?quick=cerrados", label: "Cerrados", icon: IconArchive, soloAdmin: false, quick: "cerrados" },
+  { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined },
+  { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true, quick: undefined as string | undefined },
+  { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined },
 ];
 
 export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
@@ -19,6 +24,8 @@ export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
   onToggleColapsado?: () => void;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const quickActual = searchParams.get("quick") ?? undefined;
   const [abierto, setAbierto] = useState(false);
   const esAdmin = rol === "admin";
 
@@ -46,7 +53,9 @@ export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
 
       <nav className="flex-1 space-y-1 px-3">
         {NAV.filter(item => !item.soloAdmin || esAdmin).map(item => {
-          const activo = pathname === item.href || (item.href !== "/panel" && pathname.startsWith(item.href));
+          const activo = item.href.startsWith("/panel")
+            ? pathname === "/panel" && quickActual === item.quick
+            : pathname === item.href || pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <a
@@ -126,6 +135,9 @@ function IconChevron({ colapsado }: { colapsado: boolean }) {
 }
 function IconGrid() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/></svg>;
+}
+function IconArchive() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1.5" y="2" width="13" height="3.2" rx="0.8" stroke="currentColor" strokeWidth="1.4"/><path d="M2.3 5.2v7.3a1.5 1.5 0 001.5 1.5h8.4a1.5 1.5 0 001.5-1.5V5.2" stroke="currentColor" strokeWidth="1.4"/><path d="M6.2 8.3h3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>;
 }
 function IconUsers() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><circle cx="6" cy="5" r="2.3" stroke="currentColor" strokeWidth="1.4"/><path d="M1.5 14c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="12" cy="5.5" r="1.8" stroke="currentColor" strokeWidth="1.3"/><path d="M10.5 8.2c1.9.2 3.5 1.5 3.5 3.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
