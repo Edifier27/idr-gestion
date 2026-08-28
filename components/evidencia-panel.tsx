@@ -14,7 +14,7 @@ type Archivo = {
   creadoEn: Date | string;
 };
 
-const CATEGORIAS = [{ value: "", label: "Sin categoría" }, ...CATEGORIAS_EVIDENCIA];
+const CATEGORIAS = [{ value: "", label: "🤖 Que la IA la sugiera" }, ...CATEGORIAS_EVIDENCIA];
 
 function etiquetaCategoria(cat?: string | null): string | null {
   return cat ? etiquetaCategoriaEvidencia(cat) : null;
