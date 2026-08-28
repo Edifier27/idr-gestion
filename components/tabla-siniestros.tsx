@@ -6,6 +6,8 @@ import { formatARS } from "@/lib/facturacion";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
 import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
+import { PuntoUrgente } from "@/components/punto-urgente";
+import { plazoInforme } from "@/lib/etapa-contacto";
 import { tarjetaElevada, colorPorTexto, cinta, cintaTexto } from "@/lib/ui";
 
 const ESTADOS = [
@@ -25,7 +27,7 @@ const ESTADOS_COBRO = [
   { value: "rechazado", label: "Rechazado" },
 ];
 
-type QuickFilter = "todos" | "pendientes" | "sin_informe" | "por_facturar" | "por_cobrar" | "vencidos";
+type QuickFilter = "hoy" | "todos" | "pendientes" | "sin_informe" | "por_facturar" | "por_cobrar" | "vencidos" | "cerrados";
 
 function diasRestantes(fechaLimite: string | null): number | null {
   if (!fechaLimite) return null;
@@ -38,12 +40,38 @@ function esPorFacturar(r: SiniestroRow) { return r.estado === "elevado" && (r.es
 function esPorCobrar(r: SiniestroRow) { return r.estadoCobro === "facturado" || r.estadoCobro === "presentado"; }
 function esVencido(r: SiniestroRow) { const d = diasRestantes(r.fechaLimite); return d !== null && d < 0; }
 function esSinInforme(r: SiniestroRow) { return !r.informe; }
+function esCerrado(r: SiniestroRow) { return r.estado === "cerrado"; }
+
+// "Bandeja de hoy": todo lo que necesita una acción ya — contacto que falló
+// (le cae al admin), informe atrasado/por atrasarse (plazo de 48hs desde la
+// entrevista), o vencimiento general del caso a menos de 2 días.
+function esHoy(r: SiniestroRow) {
+  if (esCerrado(r)) return false;
+  if (r.etapaContacto === "contacto_fallido") return true;
+  const plazo = plazoInforme(r.etapaContacto, r.fechaEntrevista);
+  if (plazo === "vencido" || plazo === "atencion") return true;
+  const d = diasRestantes(r.fechaLimite);
+  return d !== null && d <= 1;
+}
+
+// Ordena lo más urgente primero, así lo que necesita atención ya no se
+// pierde en el medio de la lista aunque no estés en la pestaña "Hoy".
+function prioridad(r: SiniestroRow): number {
+  if (r.etapaContacto === "contacto_fallido") return 5;
+  const plazo = plazoInforme(r.etapaContacto, r.fechaEntrevista);
+  if (plazo === "vencido") return 4;
+  const d = diasRestantes(r.fechaLimite);
+  if (d !== null && d < 0) return 4;
+  if (plazo === "atencion") return 3;
+  if (d !== null && d <= 3) return 2;
+  return 0;
+}
 
 const SIN_ASIGNAR = "__sin_asignar__";
 function claveOperador(r: SiniestroRow) { return r.operador ?? SIN_ASIGNAR; }
 
 export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
-  const [quick, setQuick] = useState<QuickFilter>("todos");
+  const [quick, setQuick] = useState<QuickFilter>("hoy");
   const [operador, setOperador] = useState("");
   const [compania, setCompania] = useState("");
   const [estado, setEstado] = useState("");
@@ -59,14 +87,21 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
     [rows]
   );
 
+  // "Todos" y el resto de las bandejas de trabajo dejan afuera lo cerrado —
+  // un caso cerrado ya no es parte de la gestión activa. Se ve aparte, en
+  // la pestaña "Cerrados".
+  const activos = useMemo(() => rows.filter(r => !esCerrado(r)), [rows]);
+
   const conteos = useMemo(() => ({
-    todos: rows.length,
-    pendientes: rows.filter(esPendiente).length,
-    sin_informe: rows.filter(esSinInforme).length,
-    por_facturar: rows.filter(esPorFacturar).length,
-    por_cobrar: rows.filter(esPorCobrar).length,
-    vencidos: rows.filter(esVencido).length,
-  }), [rows]);
+    hoy: activos.filter(esHoy).length,
+    todos: activos.length,
+    pendientes: activos.filter(esPendiente).length,
+    sin_informe: activos.filter(esSinInforme).length,
+    por_facturar: activos.filter(esPorFacturar).length,
+    por_cobrar: activos.filter(esPorCobrar).length,
+    vencidos: activos.filter(esVencido).length,
+    cerrados: rows.filter(esCerrado).length,
+  }), [rows, activos]);
 
   const porOperador = useMemo(() => {
     const mapa = new Map<string, { pendientes: number; resueltos: number; vencidos: number; total: number }>();
@@ -85,7 +120,12 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
 
   const filtradas = useMemo(() => {
     let out = rows;
-    if (quick === "pendientes") out = out.filter(esPendiente);
+    const quiereCerrados = quick === "cerrados" || estado === "cerrado";
+    if (!quiereCerrados) out = out.filter(r => !esCerrado(r));
+
+    if (quick === "hoy") out = out.filter(esHoy);
+    else if (quick === "cerrados") out = out.filter(esCerrado);
+    else if (quick === "pendientes") out = out.filter(esPendiente);
     else if (quick === "sin_informe") out = out.filter(esSinInforme);
     else if (quick === "por_facturar") out = out.filter(esPorFacturar);
     else if (quick === "por_cobrar") out = out.filter(esPorCobrar);
@@ -105,7 +145,8 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
         (r.numeroGestion ?? "").toLowerCase().includes(q)
       );
     }
-    return out;
+    // Lo más urgente primero, siempre — no solo en la pestaña "Hoy".
+    return [...out].sort((a, b) => prioridad(b) - prioridad(a));
   }, [rows, quick, operador, compania, estado, estadoCobro, busqueda]);
 
   return (
@@ -136,12 +177,14 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
 
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2">
+          <QuickBtn label="🔥 Hoy" activo={quick === "hoy"} n={conteos.hoy} urgente={conteos.hoy > 0} onClick={() => setQuick("hoy")} />
           <QuickBtn label="Todos" activo={quick === "todos"} n={conteos.todos} onClick={() => setQuick("todos")} />
           <QuickBtn label="Pendientes" activo={quick === "pendientes"} n={conteos.pendientes} onClick={() => setQuick("pendientes")} />
           <QuickBtn label="Sin informe" activo={quick === "sin_informe"} n={conteos.sin_informe} onClick={() => setQuick("sin_informe")} />
           {esAdmin && <QuickBtn label="Por facturar" activo={quick === "por_facturar"} n={conteos.por_facturar} onClick={() => setQuick("por_facturar")} />}
           {esAdmin && <QuickBtn label="Por cobrar" activo={quick === "por_cobrar"} n={conteos.por_cobrar} onClick={() => setQuick("por_cobrar")} />}
           <QuickBtn label="Vencidos" activo={quick === "vencidos"} n={conteos.vencidos} onClick={() => setQuick("vencidos")} />
+          <QuickBtn label="Cerrados" activo={quick === "cerrados"} n={conteos.cerrados} onClick={() => setQuick("cerrados")} />
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -161,7 +204,9 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
 
       {filtradas.length === 0 ? (
         <div className="rounded-lg border border-dashed border-line bg-white p-10 text-center">
-          <p className="text-sm text-slate">Ningún siniestro coincide con los filtros.</p>
+          <p className="text-sm text-slate">
+            {quick === "hoy" ? "🎉 Nada urgente por hoy." : "Ningún siniestro coincide con los filtros."}
+          </p>
         </div>
       ) : (
         <Tabla rows={filtradas} esAdmin={esAdmin} />
@@ -170,14 +215,15 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
   );
 }
 
-function QuickBtn({ label, n, activo, onClick }: { label: string; n: number; activo: boolean; onClick: () => void }) {
+function QuickBtn({ label, n, activo, urgente, onClick }: { label: string; n: number; activo: boolean; urgente?: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-medium shadow-sm transition ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-sm transition ${
         activo ? "bg-ink text-paper" : "border border-ink/20 bg-white text-ink hover:bg-ink/5"
       }`}
     >
+      {urgente && <PuntoUrgente />}
       {label} <span className={activo ? "text-paper/70" : "text-slate"}>({n})</span>
     </button>
   );

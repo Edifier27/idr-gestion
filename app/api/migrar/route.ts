@@ -6,6 +6,7 @@ import { asegurarTablasGmail } from "@/lib/db/asegurar-gmail";
 import { asegurarColumnaRelatoDenuncia } from "@/lib/db/asegurar-relato-denuncia";
 import { asegurarColumnaInformeFinal } from "@/lib/db/asegurar-informe-final";
 import { asegurarColumnasEtapaContacto } from "@/lib/db/asegurar-etapa-contacto";
+import { asegurarColumnaGmailMensajeId } from "@/lib/db/asegurar-gmail-mensaje-id";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,5 +24,6 @@ export async function GET() {
   await asegurarColumnaRelatoDenuncia();
   await asegurarColumnaInformeFinal();
   await asegurarColumnasEtapaContacto();
+  await asegurarColumnaGmailMensajeId();
   return NextResponse.json({ ok: true });
 }

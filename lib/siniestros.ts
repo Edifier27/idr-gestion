@@ -5,8 +5,10 @@ import type { CaratulaExtraida } from "@/lib/types";
 
 // Alta de un siniestro a partir de los datos ya extraídos (de un PDF de
 // carátula o de un mail). Compartido entre el alta manual y la importación
-// automática desde la bandeja de Gmail.
-export async function crearSiniestro(datos: CaratulaExtraida, operador: string) {
+// automática desde la bandeja de Gmail. gmailMensajeId (si vino de un mail)
+// queda guardado para poder detectar duplicados y marcar en la bandeja qué
+// mails ya se cargaron como caso.
+export async function crearSiniestro(datos: CaratulaExtraida, operador: string, gmailMensajeId?: string) {
   const kmTotal: number | null = null; // se carga después, con la calculadora de km del caso
   const db = getDb();
   const [row] = await db
@@ -36,6 +38,7 @@ export async function crearSiniestro(datos: CaratulaExtraida, operador: string) 
       operador,
       kmTotal,
       facturar: calcularFacturacion(kmTotal),
+      gmailMensajeId: gmailMensajeId ?? null,
     })
     .returning();
   return row;

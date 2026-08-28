@@ -18,6 +18,7 @@ import { InformeFinalPanel } from "@/components/informe-final-panel";
 import { EstadoResultadoPanel } from "@/components/estado-resultado-panel";
 import { EtapaContactoPanel } from "@/components/etapa-contacto-panel";
 import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
+import { CerrarCasoBoton } from "@/components/cerrar-caso-boton";
 import { boton, tarjetaElevada, RESULTADO_ACENTO, colorPorTexto } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -139,6 +140,9 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               {verFacturacion && <BtnLink href={`/api/factura-pdf?id=${s.id}`} label="📄 Factura PDF" />}
               <BtnLink href={`/api/caratula-pdf?id=${s.id}`} label="📋 Carátula PDF" />
               <BtnLink href={`/api/expediente-pdf?id=${s.id}`} label="🗂️ Expediente PDF" />
+            </div>
+            <div className="mt-2">
+              <CerrarCasoBoton siniestroId={s.id} yaClosed={s.estado === "cerrado"} />
             </div>
           </Bloque>
 

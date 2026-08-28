@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { boton, campo, tarjeta } from "@/lib/ui";
 
-type Mensaje = { id: string; asunto: string; de: string; fecha: string; snippet: string; noLeido: boolean };
+type CasoImportado = { id: string; etiqueta: string } | null;
+type Mensaje = { id: string; asunto: string; de: string; fecha: string; snippet: string; noLeido: boolean; casoImportado?: CasoImportado };
 type Adjunto = { attachmentId: string; nombre: string; tipo: string; tamano: number };
 type MensajeCompleto = Mensaje & { cuerpo: string; adjuntos: Adjunto[] };
 
@@ -90,7 +91,7 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
     }
   }
 
-  async function importar() {
+  async function importar(forzar = false) {
     if (!abierto) return;
     if (!operador.trim()) { setError("Elegí a qué operador se le asigna el caso."); return; }
     setError(null);
@@ -99,12 +100,23 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
       const res = await fetch(`/api/gmail/mensajes/${abierto.id}/importar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ operador: operador.trim() }),
+        body: JSON.stringify({ operador: operador.trim(), forzar }),
       });
       const data = await res.json();
+      if (res.status === 409 && data.duplicado) {
+        const seguir = window.confirm(
+          `${data.mensaje ?? "Este caso ya existe."}\n` +
+          `${data.existente?.etiqueta ?? data.existente?.numeroGestion ?? ""} — ${data.existente?.asegurado ?? ""}\n\n` +
+          `¿Igual querés crear un caso nuevo (duplicado)?`
+        );
+        if (seguir) return importar(true);
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? "No se pudo importar el caso.");
       setImportado({ id: data.siniestro.id, archivos: data.archivosImportados });
       setMostrarImportar(false);
+      // Refleja en la lista que este mail ya quedó importado, sin recargar todo.
+      setMensajes(lista => lista?.map(m => m.id === abierto.id ? { ...m, casoImportado: { id: data.siniestro.id, etiqueta: data.siniestro.numeroGestion ?? data.siniestro.nroSiniestro ?? "sin número" } } : m) ?? lista);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al importar el caso.");
     } finally {
@@ -171,6 +183,15 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
                   Ver el caso →
                 </a>
               </div>
+            ) : mensajes?.find(m => m.id === abierto.id)?.casoImportado ? (
+              <div className="mt-3 rounded-lg border border-line bg-paper p-3 text-sm shadow-sm">
+                <p className="font-medium text-ink">
+                  📋 Este mail ya se usó para crear el caso {mensajes.find(m => m.id === abierto.id)?.casoImportado?.etiqueta}.
+                </p>
+                <a href={`/siniestros/${mensajes.find(m => m.id === abierto.id)?.casoImportado?.id}`} className="mt-1 inline-block text-xs font-medium text-ink underline underline-offset-2">
+                  Ver el caso →
+                </a>
+              </div>
             ) : abierto.adjuntos.some(a => a.tipo === "application/pdf") ? (
               <div className="mt-3 border-t border-line pt-3">
                 {mostrarImportar ? (
@@ -186,7 +207,7 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
                       {operadoresExistentes.map(o => <option key={o} value={o} />)}
                     </datalist>
                     <button
-                      onClick={importar}
+                      onClick={() => importar()}
                       disabled={importando}
                       className={`px-3 py-1.5 text-xs ${boton.primario}`}
                     >
@@ -252,7 +273,14 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
                     <span className="shrink-0 text-xs text-slate">{formatearFechaLista(m.fecha)}</span>
                   </div>
                   <p className={`truncate text-sm ${m.noLeido ? "font-medium text-ink" : "text-slate"}`}>{m.asunto}</p>
-                  <p className="truncate text-xs text-slate/70">{m.snippet}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-xs text-slate/70">{m.snippet}</p>
+                    {m.casoImportado && (
+                      <span className="shrink-0 rounded-full bg-ok/15 px-1.5 py-0.5 text-[10px] font-semibold text-ok" title={`Ya se creó el caso ${m.casoImportado.etiqueta}`}>
+                        ✓ En el CRM
+                      </span>
+                    )}
+                  </div>
                 </div>
               </button>
             );

@@ -46,6 +46,8 @@ export const siniestros = pgTable("siniestros", {
   fechaEntrevista: timestamp("fecha_entrevista", { withTimezone: true }), // dispara la alarma de 48hs para el informe
   motivoContacto: text("motivo_contacto"),                 // por qué falló el contacto (ej. "no coincide el DNI") — le avisa al admin
 
+  gmailMensajeId: text("gmail_mensaje_id"),                // id del mail de Gmail del que se importó (si vino de la bandeja) — evita duplicados y marca en la bandeja qué mails ya se cargaron
+
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
   actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),
 });

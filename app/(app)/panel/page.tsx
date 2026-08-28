@@ -10,6 +10,7 @@ import { TablaSiniestros } from "@/components/tabla-siniestros";
 import { PanelLayout } from "@/components/panel-layout";
 import { tarjetaElevada } from "@/lib/ui";
 import { plazoInforme } from "@/lib/etapa-contacto";
+import { PuntoUrgente } from "@/components/punto-urgente";
 
 export const metadata: Metadata = { title: "Tablero · IDR Gestión" };
 export const dynamic = "force-dynamic";
@@ -59,6 +60,23 @@ export default async function Dashboard() {
   const informeVencido = rows.filter(r => plazoInforme(r.etapaContacto, r.fechaEntrevista) === "vencido");
   const informeAtencion = rows.filter(r => plazoInforme(r.etapaContacto, r.fechaEntrevista) === "atencion");
 
+  // "Semáforos": conteo por cada etapa y por cada resultado de cierre, para
+  // ver de un vistazo cuántos casos hay en cada uno sin tener que entrar a
+  // cada pestaña del tablero.
+  const porEtapa = {
+    contacto_fallido: contactoFallido.length,
+    contactado: rows.filter(r => r.etapaContacto === "contactado").length,
+    entrevista_pactada: rows.filter(r => r.etapaContacto === "entrevista_pactada").length,
+    informe_enviado: rows.filter(r => r.etapaContacto === "informe_enviado").length,
+  };
+  const porResultado = {
+    sin_fraude: rows.filter(r => r.resultado === "sin_fraude").length,
+    posible_fraude: rows.filter(r => r.resultado === "posible_fraude").length,
+    con_fraude: rows.filter(r => r.resultado === "con_fraude").length,
+    desistido: rows.filter(r => r.resultado === "desistido").length,
+    rechazo: rows.filter(r => r.resultado === "rechazo").length,
+  };
+
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-8">
       <header className="mb-7 flex flex-wrap items-center justify-between gap-3">
@@ -80,25 +98,58 @@ export default async function Dashboard() {
         {esAdmin && <Stat label="Cobrado" valor={formatARS(montoCobrado)} icon={<IconCheck />} accent="ok" />}
       </div>
 
+      {/* Semáforos: cuántos casos hay en cada etapa de contacto y en cada
+          resultado de cierre — de un vistazo, sin entrar a cada pestaña. */}
+      <div className="mb-6 space-y-3">
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate">Seguimiento operativo</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <MiniStat label="Contacto fallido" valor={porEtapa.contacto_fallido} accent="fraude" />
+            <MiniStat label="Contactado" valor={porEtapa.contactado} accent="ok" />
+            <MiniStat label="Entrevista pactada" valor={porEtapa.entrevista_pactada} accent="amber" />
+            <MiniStat label="Informe enviado" valor={porEtapa.informe_enviado} accent="ok" />
+          </div>
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate">Resultados</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            <MiniStat label="Sin fraude" valor={porResultado.sin_fraude} accent="ok" />
+            <MiniStat label="Posible fraude" valor={porResultado.posible_fraude} accent="amber" />
+            <MiniStat label="Fraude" valor={porResultado.con_fraude} accent="fraude" />
+            <MiniStat label="Desistido" valor={porResultado.desistido} accent="slate" />
+            <MiniStat label="Rechazo" valor={porResultado.rechazo} accent="fraude" />
+          </div>
+        </div>
+      </div>
+
       {/* Alertas de vencimiento */}
       {(vencidos.length > 0 || vencenProximo.length > 0 || contactoFallido.length > 0 || informeVencido.length > 0 || informeAtencion.length > 0) && (
         <div className="mb-6 space-y-2">
           {vencidos.length > 0 && (
-            <div className="rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3">
-              <span className="font-semibold text-fraude">⚠ {vencidos.length} vencido{vencidos.length > 1 ? "s" : ""}: </span>
-              <span className="text-sm text-fraude/80">{vencidos.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")}</span>
+            <div className="flex items-start gap-2 rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3">
+              <PuntoUrgente className="mt-1" />
+              <p>
+                <span className="font-semibold text-fraude">⚠ {vencidos.length} vencido{vencidos.length > 1 ? "s" : ""}: </span>
+                <span className="text-sm text-fraude/80">{vencidos.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")}</span>
+              </p>
             </div>
           )}
           {contactoFallido.length > 0 && (
-            <div className="rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3">
-              <span className="font-semibold text-fraude">📵 {contactoFallido.length} sin contactar: </span>
-              <span className="text-sm text-fraude/80">{contactoFallido.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")} — necesitan que el admin revise el dato de contacto.</span>
+            <div className="flex items-start gap-2 rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3">
+              <PuntoUrgente className="mt-1" />
+              <p>
+                <span className="font-semibold text-fraude">📵 {contactoFallido.length} sin contactar: </span>
+                <span className="text-sm text-fraude/80">{contactoFallido.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")} — necesitan que el admin revise el dato de contacto.</span>
+              </p>
             </div>
           )}
           {informeVencido.length > 0 && (
-            <div className="rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3">
-              <span className="font-semibold text-fraude">⚠ {informeVencido.length} informe{informeVencido.length > 1 ? "s" : ""} vencido{informeVencido.length > 1 ? "s" : ""} (+48hs de la entrevista): </span>
-              <span className="text-sm text-fraude/80">{informeVencido.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")}</span>
+            <div className="flex items-start gap-2 rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3">
+              <PuntoUrgente className="mt-1" />
+              <p>
+                <span className="font-semibold text-fraude">⚠ {informeVencido.length} informe{informeVencido.length > 1 ? "s" : ""} vencido{informeVencido.length > 1 ? "s" : ""} (+48hs de la entrevista): </span>
+                <span className="text-sm text-fraude/80">{informeVencido.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")}</span>
+              </p>
             </div>
           )}
           {informeAtencion.length > 0 && (
@@ -138,6 +189,21 @@ function Stat({ label, valor, icon, accent }: { label:string; valor:string; icon
         </div>
         <p className={`tnum text-3xl font-bold tracking-tight ${colorTexto}`}>{valor}</p>
       </div>
+    </div>
+  );
+}
+
+const COLOR_TEXTO: Record<string, string> = { ok: "text-ok", amber: "text-amber", fraude: "text-fraude", slate: "text-slate", ink: "text-ink" };
+const COLOR_BARRA: Record<string, string> = { ok: "bg-ok", amber: "bg-amber", fraude: "bg-fraude", slate: "bg-slate", ink: "bg-ink" };
+
+// Caja chica de "semáforo": conteo por etapa/resultado, más compacta que
+// los Stat de arriba porque son muchas para mostrar todas del mismo tamaño.
+function MiniStat({ label, valor, accent }: { label: string; valor: number; accent: keyof typeof COLOR_TEXTO }) {
+  return (
+    <div className={`relative overflow-hidden p-3 pl-4 ${tarjetaElevada}`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${COLOR_BARRA[accent]}`} />
+      <p className="truncate text-[11px] font-medium uppercase tracking-wide text-slate">{label}</p>
+      <p className={`tnum text-xl font-bold ${COLOR_TEXTO[accent]}`}>{valor}</p>
     </div>
   );
 }
