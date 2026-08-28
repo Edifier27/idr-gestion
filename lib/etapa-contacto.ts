@@ -2,14 +2,14 @@
 // informe), separado del "estado" administrativo/facturación. null =
 // todavía sin iniciar (recién ingresado).
 export const ETAPAS_CONTACTO = [
-  { value: "contacto_fallido", label: "Contacto fallido" },
-  { value: "contactado", label: "Contactado" },
+  { value: "contacto_fallido", label: "Contactado (sin respuesta)" },
+  { value: "contactado", label: "Contactado (OK)" },
   { value: "entrevista_pactada", label: "Entrevista pactada" },
   { value: "informe_enviado", label: "Informe enviado" },
 ] as const;
 
 export function etiquetaEtapaContacto(etapa?: string | null): string {
-  if (!etapa) return "Sin iniciar";
+  if (!etapa) return "Recibido";
   return ETAPAS_CONTACTO.find(e => e.value === etapa)?.label ?? etapa;
 }
 

@@ -59,7 +59,7 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
       <label className="flex items-center justify-between gap-3 text-sm">
         <span className="text-slate">Etapa</span>
         <select value={etapa} disabled={guardando} onChange={e => cambiarEtapa(e.target.value)} className={`${campo} disabled:opacity-50`}>
-          <option value="">Sin iniciar</option>
+          <option value="">Recibido</option>
           {ETAPAS_CONTACTO.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </label>
