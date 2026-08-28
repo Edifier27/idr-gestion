@@ -72,6 +72,7 @@ function claveOperador(r: SiniestroRow) { return r.operador ?? SIN_ASIGNAR; }
 
 export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
   const [quick, setQuick] = useState<QuickFilter>("hoy");
+  const [mostrarResumen, setMostrarResumen] = useState(false);
   const [operador, setOperador] = useState("");
   const [compania, setCompania] = useState("");
   const [estado, setEstado] = useState("");
@@ -169,69 +170,89 @@ export function TablaSiniestros({ rows, esAdmin }: { rows: SiniestroRow[]; esAdm
     return [...out].sort((a, b) => prioridad(b) - prioridad(a));
   }, [rows, quick, operador, compania, estado, estadoCobro, etapaContacto, resultado, busqueda]);
 
+  // El resumen (por operador + semáforos) queda un click abajo por default:
+  // si algo ahí adentro está activo como filtro, lo mostramos igual para que
+  // no quede un filtro "invisible" aplicado.
+  const hayFiltroEnResumen = !!operador || !!etapaContacto || !!resultado;
+
   return (
     <div>
-      {esAdmin && porOperador.length > 0 && (
-        <div className={`mb-4 p-4 ${tarjetaElevada}`}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Por operador</h2>
-            {operador && (
-              <button onClick={() => setOperador("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
-                Ver todos
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-            {porOperador.map(o => (
-              <TarjetaOperador
-                key={o.clave}
-                nombre={o.clave === SIN_ASIGNAR ? "Sin asignar" : o.clave}
-                {...o}
-                activo={operador === o.clave}
-                onClick={() => setOperador(a => a === o.clave ? "" : o.clave)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <button
+        onClick={() => setMostrarResumen(v => !v)}
+        className="mb-4 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate transition hover:text-ink"
+      >
+        <svg viewBox="0 0 20 20" fill="none" className={`h-3 w-3 transition-transform ${mostrarResumen ? "rotate-90" : ""}`}>
+          <path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {mostrarResumen ? "Ocultar resumen" : "Ver resumen (por operador y por etapa)"}
+        {hayFiltroEnResumen && !mostrarResumen && <span className="rounded-full bg-ink/10 px-1.5 py-0.5 text-[10px] text-ink">filtro activo</span>}
+      </button>
 
-      {/* Semáforos: conteo por etapa y por resultado — tocá uno para filtrar
-          la tabla por ese valor, igual que las tarjetas "Por operador". */}
-      <div className="mb-4 space-y-3">
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate">Seguimiento operativo</p>
-            {etapaContacto && (
-              <button onClick={() => setEtapaContacto("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
-                Ver todos
-              </button>
-            )}
+      {(mostrarResumen || hayFiltroEnResumen) && (
+        <>
+          {esAdmin && porOperador.length > 0 && (
+            <div className={`mb-4 p-4 ${tarjetaElevada}`}>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Por operador</h2>
+                {operador && (
+                  <button onClick={() => setOperador("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
+                    Ver todos
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+                {porOperador.map(o => (
+                  <TarjetaOperador
+                    key={o.clave}
+                    nombre={o.clave === SIN_ASIGNAR ? "Sin asignar" : o.clave}
+                    {...o}
+                    activo={operador === o.clave}
+                    onClick={() => setOperador(a => a === o.clave ? "" : o.clave)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Semáforos: conteo por etapa y por resultado — tocá uno para filtrar
+              la tabla por ese valor, igual que las tarjetas "Por operador". */}
+          <div className="mb-4 space-y-3">
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate">Seguimiento operativo</p>
+                {etapaContacto && (
+                  <button onClick={() => setEtapaContacto("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
+                    Ver todos
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <MiniStat label="Contacto fallido" valor={porEtapa.contacto_fallido} accent="fraude" activo={etapaContacto === "contacto_fallido"} onClick={() => setEtapaContacto(v => v === "contacto_fallido" ? "" : "contacto_fallido")} />
+                <MiniStat label="Contactado" valor={porEtapa.contactado} accent="ok" activo={etapaContacto === "contactado"} onClick={() => setEtapaContacto(v => v === "contactado" ? "" : "contactado")} />
+                <MiniStat label="Entrevista pactada" valor={porEtapa.entrevista_pactada} accent="amber" activo={etapaContacto === "entrevista_pactada"} onClick={() => setEtapaContacto(v => v === "entrevista_pactada" ? "" : "entrevista_pactada")} />
+                <MiniStat label="Informe enviado" valor={porEtapa.informe_enviado} accent="ok" activo={etapaContacto === "informe_enviado"} onClick={() => setEtapaContacto(v => v === "informe_enviado" ? "" : "informe_enviado")} />
+              </div>
+            </div>
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate">Resultados</p>
+                {resultado && (
+                  <button onClick={() => setResultado("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
+                    Ver todos
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                <MiniStat label="Sin fraude" valor={porResultado.sin_fraude} accent="ok" activo={resultado === "sin_fraude"} onClick={() => setResultado(v => v === "sin_fraude" ? "" : "sin_fraude")} />
+                <MiniStat label="Posible fraude" valor={porResultado.posible_fraude} accent="amber" activo={resultado === "posible_fraude"} onClick={() => setResultado(v => v === "posible_fraude" ? "" : "posible_fraude")} />
+                <MiniStat label="Fraude" valor={porResultado.con_fraude} accent="fraude" activo={resultado === "con_fraude"} onClick={() => setResultado(v => v === "con_fraude" ? "" : "con_fraude")} />
+                <MiniStat label="Desistido" valor={porResultado.desistido} accent="slate" activo={resultado === "desistido"} onClick={() => setResultado(v => v === "desistido" ? "" : "desistido")} />
+                <MiniStat label="Rechazo" valor={porResultado.rechazo} accent="fraude" activo={resultado === "rechazo"} onClick={() => setResultado(v => v === "rechazo" ? "" : "rechazo")} />
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <MiniStat label="Contacto fallido" valor={porEtapa.contacto_fallido} accent="fraude" activo={etapaContacto === "contacto_fallido"} onClick={() => setEtapaContacto(v => v === "contacto_fallido" ? "" : "contacto_fallido")} />
-            <MiniStat label="Contactado" valor={porEtapa.contactado} accent="ok" activo={etapaContacto === "contactado"} onClick={() => setEtapaContacto(v => v === "contactado" ? "" : "contactado")} />
-            <MiniStat label="Entrevista pactada" valor={porEtapa.entrevista_pactada} accent="amber" activo={etapaContacto === "entrevista_pactada"} onClick={() => setEtapaContacto(v => v === "entrevista_pactada" ? "" : "entrevista_pactada")} />
-            <MiniStat label="Informe enviado" valor={porEtapa.informe_enviado} accent="ok" activo={etapaContacto === "informe_enviado"} onClick={() => setEtapaContacto(v => v === "informe_enviado" ? "" : "informe_enviado")} />
-          </div>
-        </div>
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate">Resultados</p>
-            {resultado && (
-              <button onClick={() => setResultado("")} className="text-xs text-slate underline-offset-2 hover:text-ink hover:underline">
-                Ver todos
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            <MiniStat label="Sin fraude" valor={porResultado.sin_fraude} accent="ok" activo={resultado === "sin_fraude"} onClick={() => setResultado(v => v === "sin_fraude" ? "" : "sin_fraude")} />
-            <MiniStat label="Posible fraude" valor={porResultado.posible_fraude} accent="amber" activo={resultado === "posible_fraude"} onClick={() => setResultado(v => v === "posible_fraude" ? "" : "posible_fraude")} />
-            <MiniStat label="Fraude" valor={porResultado.con_fraude} accent="fraude" activo={resultado === "con_fraude"} onClick={() => setResultado(v => v === "con_fraude" ? "" : "con_fraude")} />
-            <MiniStat label="Desistido" valor={porResultado.desistido} accent="slate" activo={resultado === "desistido"} onClick={() => setResultado(v => v === "desistido" ? "" : "desistido")} />
-            <MiniStat label="Rechazo" valor={porResultado.rechazo} accent="fraude" activo={resultado === "rechazo"} onClick={() => setResultado(v => v === "rechazo" ? "" : "rechazo")} />
-          </div>
-        </div>
-      </div>
+        </>
+      )}
 
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2">
