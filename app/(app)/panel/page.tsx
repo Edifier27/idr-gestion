@@ -9,6 +9,7 @@ import { formatARS } from "@/lib/facturacion";
 import { TablaSiniestros } from "@/components/tabla-siniestros";
 import { PanelLayout } from "@/components/panel-layout";
 import { tarjetaElevada } from "@/lib/ui";
+import { plazoInforme } from "@/lib/etapa-contacto";
 
 export const metadata: Metadata = { title: "Tablero · IDR Gestión" };
 export const dynamic = "force-dynamic";
@@ -51,6 +52,13 @@ export default async function Dashboard() {
     return d !== null && d < 0;
   });
 
+  // Seguimiento operativo: casos que no se pudieron contactar (le caen al
+  // admin para resolver el dato de contacto) y casos con entrevista pactada
+  // que se están por pasar / ya se pasaron del plazo de 48hs sin informe.
+  const contactoFallido = rows.filter(r => r.etapaContacto === "contacto_fallido");
+  const informeVencido = rows.filter(r => plazoInforme(r.etapaContacto, r.fechaEntrevista) === "vencido");
+  const informeAtencion = rows.filter(r => plazoInforme(r.etapaContacto, r.fechaEntrevista) === "atencion");
+
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-8">
       <header className="mb-7 flex flex-wrap items-center justify-between gap-3">
@@ -73,12 +81,30 @@ export default async function Dashboard() {
       </div>
 
       {/* Alertas de vencimiento */}
-      {(vencidos.length > 0 || vencenProximo.length > 0) && (
+      {(vencidos.length > 0 || vencenProximo.length > 0 || contactoFallido.length > 0 || informeVencido.length > 0 || informeAtencion.length > 0) && (
         <div className="mb-6 space-y-2">
           {vencidos.length > 0 && (
             <div className="rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3">
               <span className="font-semibold text-fraude">⚠ {vencidos.length} vencido{vencidos.length > 1 ? "s" : ""}: </span>
               <span className="text-sm text-fraude/80">{vencidos.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")}</span>
+            </div>
+          )}
+          {contactoFallido.length > 0 && (
+            <div className="rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3">
+              <span className="font-semibold text-fraude">📵 {contactoFallido.length} sin contactar: </span>
+              <span className="text-sm text-fraude/80">{contactoFallido.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")} — necesitan que el admin revise el dato de contacto.</span>
+            </div>
+          )}
+          {informeVencido.length > 0 && (
+            <div className="rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3">
+              <span className="font-semibold text-fraude">⚠ {informeVencido.length} informe{informeVencido.length > 1 ? "s" : ""} vencido{informeVencido.length > 1 ? "s" : ""} (+48hs de la entrevista): </span>
+              <span className="text-sm text-fraude/80">{informeVencido.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")}</span>
+            </div>
+          )}
+          {informeAtencion.length > 0 && (
+            <div className="rounded-lg border border-amber/30 bg-amber/5 px-4 py-3">
+              <span className="font-semibold text-amber">⏰ {informeAtencion.length} informe{informeAtencion.length > 1 ? "s" : ""} por vencer (24-48hs de la entrevista): </span>
+              <span className="text-sm text-amber/80">{informeAtencion.map(v => v.numeroGestion ?? v.nroSiniestro).join(", ")}</span>
             </div>
           )}
           {vencenProximo.length > 0 && (

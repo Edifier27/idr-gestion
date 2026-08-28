@@ -33,6 +33,7 @@ export const RESULTADO_ACENTO: Record<string, string> = {
   con_fraude: "bg-fraude",
   posible_fraude: "bg-amber",
   desistido: "bg-ink",
+  rechazo: "bg-fraude",
   sin_cobertura: "bg-ink",
 };
 

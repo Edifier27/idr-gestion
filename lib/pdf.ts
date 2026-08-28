@@ -187,6 +187,7 @@ const CIERRE_INFO: Record<string, { label: string; color: ReturnType<typeof rgb>
   con_fraude: { label: "FRAUDE", color: FRAUDE },
   posible_fraude: { label: "POSIBLE FRAUDE", color: AMBER },
   desistido: { label: "DESISTIDO", color: INK },
+  rechazo: { label: "RECHAZO", color: FRAUDE },
   sin_cobertura: { label: "SIN COBERTURA", color: INK },
 };
 

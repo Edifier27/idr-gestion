@@ -7,6 +7,7 @@ const ESTILOS: Record<string, string> = {
   posible_fraude: "bg-amber/15 text-amber",
   desistido: "bg-ink/10 text-ink",
   sin_cobertura: "bg-ink/10 text-ink",
+  rechazo: "bg-fraude/15 text-fraude",
 };
 
 const ETIQUETAS: Record<string, string> = {
@@ -16,6 +17,7 @@ const ETIQUETAS: Record<string, string> = {
   posible_fraude: "Posible fraude",
   desistido: "Desistido",
   sin_cobertura: "Sin cobertura",
+  rechazo: "Rechazo",
 };
 
 export function ResultadoBadge({ resultado }: { resultado: string }) {

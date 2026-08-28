@@ -16,7 +16,8 @@ export type ResultadoInvestigacion =
   | "con_fraude"
   | "posible_fraude"
   | "desistido"
-  | "sin_cobertura";
+  | "sin_cobertura"
+  | "rechazo";
 
 // Lo que el LLM extrae del PDF de carátula (banca los dos formatos).
 export interface CaratulaExtraida {

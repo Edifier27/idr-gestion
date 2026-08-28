@@ -16,6 +16,8 @@ import { KmPanel } from "@/components/km-panel";
 import { InformePanel } from "@/components/informe-panel";
 import { InformeFinalPanel } from "@/components/informe-final-panel";
 import { EstadoResultadoPanel } from "@/components/estado-resultado-panel";
+import { EtapaContactoPanel } from "@/components/etapa-contacto-panel";
+import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
 import { boton, tarjetaElevada, RESULTADO_ACENTO, colorPorTexto } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -80,6 +82,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           <div className="flex flex-col items-end gap-2">
             <EstadoBadge estado={s.estado} />
             <ResultadoBadge resultado={s.resultado} />
+            <EtapaContactoBadge etapaContacto={s.etapaContacto} fechaEntrevista={s.fechaEntrevista} />
             {verFacturacion && <CobroBadge estado={s.estadoCobro} />}
           </div>
         </div>
@@ -104,6 +107,15 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               resultado={s.resultado}
               estadoCobro={s.estadoCobro}
               verFacturacion={verFacturacion}
+            />
+          </Bloque>
+
+          <Bloque titulo="Etapa de contacto" accento="slate">
+            <EtapaContactoPanel
+              siniestroId={s.id}
+              etapaContacto={s.etapaContacto}
+              fechaEntrevista={s.fechaEntrevista}
+              motivoContacto={s.motivoContacto}
             />
           </Bloque>
 

@@ -19,6 +19,7 @@ const RESULTADOS = [
   { value: "con_fraude", label: "Fraude" },
   { value: "posible_fraude", label: "Posible fraude" },
   { value: "desistido", label: "Desistido" },
+  { value: "rechazo", label: "Rechazo" },
   { value: "sin_cobertura", label: "Sin cobertura" },
 ];
 

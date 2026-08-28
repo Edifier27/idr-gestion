@@ -5,6 +5,7 @@ import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
+import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
 import { tarjetaElevada, colorPorTexto, cinta, cintaTexto } from "@/lib/ui";
 
 const ESTADOS = [
@@ -264,6 +265,7 @@ function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                   <EstadoBadge estado={s.estado} />
+                  <EtapaContactoBadge etapaContacto={s.etapaContacto} fechaEntrevista={s.fechaEntrevista} />
                   {esAdmin && <CobroBadge estado={s.estadoCobro} />}
                 </div>
               </div>

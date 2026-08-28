@@ -40,6 +40,12 @@ export const siniestros = pgTable("siniestros", {
   informeFinal: text("informe_final"),                     // resolución final que arma el admin — solo la ve el admin
   descargo: text("descargo"),                              // relato de lo sucedido, a cargo del operador
 
+  // Seguimiento operativo día a día (contacto → entrevista → informe), aparte
+  // del "estado" administrativo/facturación de arriba. null = sin iniciar.
+  etapaContacto: text("etapa_contacto"),                   // contacto_fallido|contactado|entrevista_pactada|informe_enviado
+  fechaEntrevista: timestamp("fecha_entrevista", { withTimezone: true }), // dispara la alarma de 48hs para el informe
+  motivoContacto: text("motivo_contacto"),                 // por qué falló el contacto (ej. "no coincide el DNI") — le avisa al admin
+
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
   actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),
 });
