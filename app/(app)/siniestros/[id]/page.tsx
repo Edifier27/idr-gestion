@@ -16,7 +16,7 @@ import { KmPanel } from "@/components/km-panel";
 import { InformePanel } from "@/components/informe-panel";
 import { InformeFinalPanel } from "@/components/informe-final-panel";
 import { EstadoResultadoPanel } from "@/components/estado-resultado-panel";
-import { boton, tarjetaElevada, RESULTADO_ACENTO } from "@/lib/ui";
+import { boton, tarjetaElevada, RESULTADO_ACENTO, colorPorTexto } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +59,8 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   const lugar = (s.lugarSiniestro ?? {}) as Record<string,string>;
   const lugarTxt = [lugar.calle1, lugar.altura1, lugar.localidad, lugar.provincia].filter(Boolean).join(" ");
   const desg = desgloseFacturacion(s.kmTotal);
+  const nombreOperador = s.operador || "Sin operador";
+  const colorOperador = colorPorTexto(nombreOperador);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">
@@ -168,9 +170,16 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               />
             </Bloque>
             <Bloque
-              titulo="② Descargo / Ampliación"
-              accento="amber"
-              extra={<span className="rounded-full bg-amber/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber">Según el operador</span>}
+              titulo={`② Descargo de ${nombreOperador}`}
+              colorOperador={colorOperador}
+              extra={
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
+                  style={{ background: colorOperador }}
+                >
+                  {nombreOperador}
+                </span>
+              }
             >
               <TextoPanel
                 siniestroId={s.id}
@@ -183,8 +192,15 @@ export default async function Detalle({ params }: { params: { id: string } }) {
             </Bloque>
             <Bloque
               titulo="③ Informe técnico-legal"
-              accento="ink"
-              extra={<span className="inline-flex items-center gap-1 rounded-full bg-line px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate">✨ Borrador (herramienta IA)</span>}
+              colorOperador={colorOperador}
+              extra={
+                <span
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
+                  style={{ background: colorOperador }}
+                >
+                  ✨ Borrador de {nombreOperador}
+                </span>
+              }
             >
               <InformePanel siniestroId={s.id} informeInicial={s.informe} />
             </Bloque>
@@ -207,7 +223,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
         {/* Bitácora */}
         <div className="md:col-span-2">
-          <Bloque titulo={`Bitácora (${notas.length} entradas)`} accento="slate">
+          <Bloque titulo={`Bitácora de ${nombreOperador} (${notas.length} entradas)`} colorOperador={colorOperador}>
             {notas.length === 0
               ? <p className="text-sm text-slate">Sin entradas todavía.</p>
               : notas.map(n => (
@@ -231,12 +247,18 @@ const ACENTO_BARRA: Record<string, string> = {
   ink: "bg-ink", slate: "bg-slate", amber: "bg-amber", ok: "bg-ok", fraude: "bg-fraude",
 };
 
-function Bloque({ titulo, children, accento = "ink", extra }: {
-  titulo: string; children: React.ReactNode; accento?: keyof typeof ACENTO_BARRA; extra?: React.ReactNode;
+// colorOperador (si viene) pisa el accento fijo — así el bloque queda con
+// el mismo color determinístico que ese operador tiene en todo el resto del
+// CRM (tablero, tarjetas "Por operador", usuarios — todos usan colorPorTexto).
+function Bloque({ titulo, children, accento = "ink", colorOperador, extra }: {
+  titulo: string; children: React.ReactNode; accento?: keyof typeof ACENTO_BARRA; colorOperador?: string; extra?: React.ReactNode;
 }) {
   return (
     <section className={`relative overflow-hidden p-5 pl-6 ${tarjetaElevada}`}>
-      <span className={`absolute inset-y-0 left-0 w-1 ${ACENTO_BARRA[accento]}`} />
+      <span
+        className={`absolute inset-y-0 left-0 w-1 ${colorOperador ? "" : ACENTO_BARRA[accento]}`}
+        style={colorOperador ? { background: colorOperador } : undefined}
+      />
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">{titulo}</h2>
         {extra}
