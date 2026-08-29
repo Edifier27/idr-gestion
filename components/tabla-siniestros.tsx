@@ -19,7 +19,7 @@ const ESTADOS_COBRO = [
   { value: "rechazado", label: "Rechazado" },
 ];
 
-type QuickFilter = "hoy" | "todos" | "pendientes" | "sin_informe" | "por_facturar" | "por_cobrar" | "vencidos" | "cerrados";
+type QuickFilter = "hoy" | "todos" | "pendientes" | "sin_informe" | "por_facturar" | "por_cobrar" | "vencidos" | "derivados" | "cerrados";
 
 function diasRestantes(fechaLimite: string | null): number | null {
   if (!fechaLimite) return null;
@@ -69,7 +69,7 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
   // ese parámetro, la tabla arranca ya parada en esa bandeja.
   const searchParams = useSearchParams();
   const quickUrl = searchParams.get("quick");
-  const quickInicial: QuickFilter = quickUrl === "cerrados" ? "cerrados" : "hoy";
+  const quickInicial: QuickFilter = quickUrl === "cerrados" ? "cerrados" : quickUrl === "derivados" ? "derivados" : "hoy";
   const [quick, setQuick] = useState<QuickFilter>(quickInicial);
   const [mostrarResumen, setMostrarResumen] = useState(false);
   const [operador, setOperador] = useState("");
@@ -101,6 +101,7 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
     por_facturar: activos.filter(esPorFacturar).length,
     por_cobrar: activos.filter(esPorCobrar).length,
     vencidos: activos.filter(esVencido).length,
+    derivados: activos.filter(r => r.derivadoAdmin).length,
     cerrados: rows.filter(esCerrado).length,
   }), [rows, activos]);
 
@@ -150,6 +151,7 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
     else if (quick === "por_facturar") out = out.filter(esPorFacturar);
     else if (quick === "por_cobrar") out = out.filter(esPorCobrar);
     else if (quick === "vencidos") out = out.filter(esVencido);
+    else if (quick === "derivados") out = out.filter(r => r.derivadoAdmin);
 
     if (operador) out = out.filter(r => claveOperador(r) === operador);
     if (compania) out = out.filter(r => r.compania === compania);
@@ -284,6 +286,9 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
 
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2">
+          {esAdmin && conteos.derivados > 0 && (
+            <QuickBtn label="🚩 Derivados" activo={quick === "derivados"} n={conteos.derivados} urgente onClick={() => setQuick("derivados")} />
+          )}
           <QuickBtn label="🔥 Hoy" activo={quick === "hoy"} n={conteos.hoy} urgente={conteos.hoy > 0} onClick={() => setQuick("hoy")} />
           <QuickBtn label="Todos" activo={quick === "todos"} n={conteos.todos} onClick={() => setQuick("todos")} />
           <QuickBtn label="Pendientes" activo={quick === "pendientes"} n={conteos.pendientes} onClick={() => setQuick("pendientes")} />

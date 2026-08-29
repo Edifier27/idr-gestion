@@ -90,6 +90,11 @@ export default async function Detalle({ params }: { params: { id: string } }) {
             <EstadoBadge estado={s.estado} />
             <ResultadoBadge resultado={s.resultado} />
             <EtapaContactoBadge etapaContacto={s.etapaContacto} fechaEntrevista={s.fechaEntrevista} />
+            {s.derivadoAdmin && (
+              <span className="rounded-full border border-fraude/30 bg-fraude/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-fraude">
+                🚩 Derivado
+              </span>
+            )}
             {verFacturacion && <CobroBadge estado={s.estadoCobro} />}
           </div>
         </div>
@@ -116,6 +121,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           etapaContacto={s.etapaContacto}
           fechaEntrevista={s.fechaEntrevista}
           motivoContacto={s.motivoContacto}
+          derivadoAdmin={s.derivadoAdmin}
           descargoInicial={s.descargo}
           informeInicial={s.informe}
           archivosIniciales={archivos}
@@ -189,6 +195,8 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               etapaContacto={s.etapaContacto}
               fechaEntrevista={s.fechaEntrevista}
               motivoContacto={s.motivoContacto}
+              derivadoAdmin={s.derivadoAdmin}
+              derivadoEn={s.derivadoEn}
             />
           </Bloque>
 

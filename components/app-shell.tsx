@@ -6,7 +6,7 @@ import { NotificacionesHost } from "@/components/notificaciones";
 
 const CLAVE = "crm_sidebar_colapsado";
 
-export function AppShell({ nombre, rol, children }: { nombre: string; rol: string; children: React.ReactNode }) {
+export function AppShell({ nombre, rol, derivados = 0, children }: { nombre: string; rol: string; derivados?: number; children: React.ReactNode }) {
   const [colapsado, setColapsado] = useState(false);
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function AppShell({ nombre, rol, children }: { nombre: string; rol: strin
         <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-ink/[0.04] blur-3xl" />
         <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amber/[0.06] blur-3xl" />
       </div>
-      <Sidebar nombre={nombre} rol={rol} colapsado={colapsado} onToggleColapsado={toggle} />
+      <Sidebar nombre={nombre} rol={rol} derivados={derivados} colapsado={colapsado} onToggleColapsado={toggle} />
       {children}
       <NotificacionesHost />
     </div>

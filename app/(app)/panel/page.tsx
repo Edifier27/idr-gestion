@@ -32,6 +32,7 @@ export default async function Dashboard() {
     .reduce((a,r) => a + (r.facturar ?? 0), 0);
   const montoCobrado = rows.filter(r => r.estadoCobro === "cobrado")
     .reduce((a,r) => a + (r.facturar ?? 0), 0);
+  const derivados = esAdmin ? rows.filter(r => r.derivadoAdmin && r.estado !== "cerrado").length : 0;
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-8">
@@ -48,6 +49,22 @@ export default async function Dashboard() {
           Exportar Excel
         </a>
       </header>
+
+      {derivados > 0 && (
+        <a
+          href="/panel?quick=derivados"
+          className="mb-5 flex items-center justify-between gap-3 rounded-lg border border-fraude/30 bg-fraude/5 px-4 py-3 text-sm font-medium text-fraude shadow-sm transition hover:bg-fraude/10"
+        >
+          <span className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-fraude opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-fraude" />
+            </span>
+            🚩 {derivados} caso{derivados === 1 ? "" : "s"} derivado{derivados === 1 ? "" : "s"} por el operador — no se pudo contactar al denunciante y necesita tu intervención
+          </span>
+          <span aria-hidden>→</span>
+        </a>
+      )}
 
       <PanelLayout esAdmin={esAdmin} operadoresExistentes={operadoresExistentes}>
         {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : (

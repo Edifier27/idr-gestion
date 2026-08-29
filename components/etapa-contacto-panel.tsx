@@ -15,11 +15,13 @@ function aInputLocal(fecha: string | Date | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista, motivoContacto }: {
+export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista, motivoContacto, derivadoAdmin, derivadoEn }: {
   siniestroId: string;
   etapaContacto: string | null;
   fechaEntrevista: string | Date | null;
   motivoContacto: string | null;
+  derivadoAdmin?: boolean;
+  derivadoEn?: string | Date | null;
 }) {
   const router = useRouter();
   const [etapa, setEtapa] = useState(etapaContacto ?? "");
@@ -56,6 +58,22 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
 
   return (
     <div className="space-y-3">
+      {derivadoAdmin && (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-fraude/30 bg-fraude/5 px-3 py-2">
+          <p className="text-sm font-medium text-fraude">
+            🚩 Derivado por el operador{derivadoEn ? ` · ${new Date(derivadoEn).toLocaleString("es-AR")}` : ""} — no logró contactarlo.
+          </p>
+          <button
+            type="button"
+            disabled={guardando}
+            onClick={() => guardar({ derivado_admin: false })}
+            className="shrink-0 rounded-md border border-fraude/30 bg-white px-2.5 py-1 text-xs font-semibold text-fraude shadow-sm transition hover:bg-fraude/10 disabled:opacity-50"
+          >
+            ✓ Marcar atendido
+          </button>
+        </div>
+      )}
+
       <label className="flex items-center justify-between gap-3 text-sm">
         <span className="text-slate">Etapa</span>
         <select value={etapa} disabled={guardando} onChange={e => cambiarEtapa(e.target.value)} className={`${campo} disabled:opacity-50`}>

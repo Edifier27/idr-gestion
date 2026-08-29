@@ -7,7 +7,6 @@ import { plazoInforme } from "@/lib/etapa-contacto";
 import { TextoPanel } from "@/components/texto-panel";
 import { InformePanel } from "@/components/informe-panel";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
-import { MailPanel } from "@/components/mail-panel";
 import { CerrarCasoBoton } from "@/components/cerrar-caso-boton";
 import { notificar } from "@/components/notificaciones";
 
@@ -45,7 +44,7 @@ function aInputLocal(fecha: string | Date | null): string {
 export function CasoWizard({
   siniestroId, dni, poliza, denunciante, domicilio, fechaOcurrencia, lugarTxt,
   telContacto, celContacto, emailContacto, fechaLimite, relatoDenuncia,
-  etapaContacto, fechaEntrevista, motivoContacto, descargoInicial, informeInicial,
+  etapaContacto, fechaEntrevista, motivoContacto, derivadoAdmin, descargoInicial, informeInicial,
   archivosIniciales, notas, nombreOperador, yaClosed,
 }: {
   siniestroId: string;
@@ -53,6 +52,7 @@ export function CasoWizard({
   fechaOcurrencia: string | null; lugarTxt: string; telContacto: string | null; celContacto: string | null;
   emailContacto: string | null; fechaLimite: string | null; relatoDenuncia: string | null;
   etapaContacto: string | null; fechaEntrevista: string | Date | null; motivoContacto: string | null;
+  derivadoAdmin: boolean;
   descargoInicial: string | null; informeInicial: string | null;
   archivosIniciales: Archivo[]; notas: Nota[]; nombreOperador: string; yaClosed: boolean;
 }) {
@@ -186,12 +186,27 @@ export function CasoWizard({
             </div>
           ) : etapaContacto === "contacto_fallido" ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-fraude">📵 Marcado como "sin contactar" — el admin ya lo ve arriba de todo.</p>
+              <p className="text-sm font-medium text-fraude">📵 Marcado como "sin contactar".</p>
               <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Motivo (le avisa al admin)</span>
               <div className="flex gap-2">
                 <input value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Ej: no coincide el DNI, celular incorrecto…" className={`w-full ${campo}`} />
                 <button type="button" disabled={guardando} onClick={() => guardar({ motivo_contacto: motivo })} className={boton.secundario}>Guardar</button>
               </div>
+
+              {derivadoAdmin ? (
+                <p className="rounded-md border border-fraude/30 bg-fraude/5 px-3 py-2 text-sm font-medium text-fraude">
+                  🚩 Derivado al administrador — lo va a contactar directamente.
+                </p>
+              ) : (
+                <button
+                  disabled={guardando}
+                  onClick={() => guardar({ derivado_admin: true, motivo_contacto: motivo })}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-fraude/30 bg-fraude/5 px-3.5 py-2 text-sm font-semibold text-fraude shadow-sm transition hover:bg-fraude/10 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  🚩 Derivar al administrador
+                </button>
+              )}
+
               <button disabled={guardando} onClick={() => guardar({ etapa_contacto: "contactado" })} className={boton.primario}>
                 ✅ Ahora sí lo contacté
               </button>
@@ -293,22 +308,17 @@ export function CasoWizard({
         </div>
       )}
 
-      {/* Siempre a mano, sin importar en qué paso está: mandar mail, ver la
-          bitácora, y las acciones de PDF/cerrar caso. */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className={`p-5 ${tarjetaElevada}`}>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Enviar mail</h2>
-          <MailPanel siniestroId={siniestroId} destinatarioSugerido={emailContacto} archivos={archivosIniciales.map(a => ({ id: a.id, nombre: a.nombre, tipo: a.tipo }))} />
+      {/* Siempre a mano, sin importar en qué paso está: ver la bitácora, y
+          las acciones de PDF/cerrar caso. El operador no manda mail — eso
+          queda solo para el admin, que es quien tiene la casilla. */}
+      <div className={`p-5 ${tarjetaElevada}`}>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Acciones</h2>
+        <div className="grid grid-cols-2 gap-2 sm:max-w-sm">
+          <a href={`/api/caratula-pdf?id=${siniestroId}`} className={`${boton.secundario} w-full`}>📋 Carátula PDF</a>
+          <a href={`/api/expediente-pdf?id=${siniestroId}`} className={`${boton.secundario} w-full`}>🗂️ Expediente PDF</a>
         </div>
-        <div className={`p-5 ${tarjetaElevada}`}>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Acciones</h2>
-          <div className="grid grid-cols-2 gap-2">
-            <a href={`/api/caratula-pdf?id=${siniestroId}`} className={`${boton.secundario} w-full`}>📋 Carátula PDF</a>
-            <a href={`/api/expediente-pdf?id=${siniestroId}`} className={`${boton.secundario} w-full`}>🗂️ Expediente PDF</a>
-          </div>
-          <div className="mt-2">
-            <CerrarCasoBoton siniestroId={siniestroId} yaClosed={yaClosed} />
-          </div>
+        <div className="mt-2">
+          <CerrarCasoBoton siniestroId={siniestroId} yaClosed={yaClosed} />
         </div>
       </div>
 

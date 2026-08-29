@@ -7,20 +7,19 @@ import { InboxPanel } from "@/components/inbox-panel";
 
 export const dynamic = "force-dynamic";
 
+// Solo el admin: es quien recibe los casos de las aseguradoras por mail. El
+// operador trabaja todo desde el CRM (no tiene casilla propia).
 export default async function AdminMail({ searchParams }: { searchParams: { error?: string; conectado?: string } }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  const esAdmin = session.user.rol === "admin";
+  if (session.user.rol !== "admin") redirect("/panel");
 
   const conexiones = await listarConexiones();
-  // La casilla con la que este usuario ve/manda mail: la que tiene asignada,
-  // o (solo si es admin sin una asignada) la conectada más recientemente —
-  // mismo criterio que ya aplica el backend en conexionGmailDeSesion.
   const miConexion = session.user.gmailConexionId
     ? conexiones.find(c => c.id === session.user.gmailConexionId) ?? null
-    : (esAdmin ? conexiones[0] ?? null : null);
+    : conexiones[0] ?? null;
 
-  const operadoresExistentes = esAdmin && dbConfigurada()
+  const operadoresExistentes = dbConfigurada()
     ? Array.from(new Set((await getDb().select({ operador: siniestros.operador }).from(siniestros))
         .map(r => r.operador).filter((v): v is string => !!v))).sort()
     : [];
@@ -29,11 +28,7 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
     <main className="mx-auto max-w-2xl px-4 py-6 md:px-8 md:py-8">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Casilla de mail</h1>
-        <p className="text-sm text-slate">
-          {esAdmin
-            ? "Conectá una o más casillas y asignale una a cada operador en Usuarios."
-            : "Tu bandeja de entrada — la casilla que te asignó el admin."}
-        </p>
+        <p className="text-sm text-slate">Donde entran los casos que mandan las aseguradoras.</p>
       </header>
 
       {searchParams.conectado && (
@@ -47,47 +42,31 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
         </div>
       )}
 
-      {esAdmin ? (
-        <section className="space-y-2">
-          {conexiones.map(c => (
-            <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-line bg-white p-4">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-ink">{c.email}</p>
-                <p className="text-xs text-slate">
-                  Conectada por {c.conectadoPor ?? "—"} el {new Date(c.conectadoEn).toLocaleString("es-AR")}
-                </p>
-              </div>
-              {c.id === miConexion?.id && (
-                <span className="shrink-0 rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">Tu bandeja</span>
-              )}
+      <section className="space-y-2">
+        {conexiones.map(c => (
+          <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-line bg-white p-4">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-ink">{c.email}</p>
+              <p className="text-xs text-slate">
+                Conectada por {c.conectadoPor ?? "—"} el {new Date(c.conectadoEn).toLocaleString("es-AR")}
+              </p>
             </div>
-          ))}
-          {conexiones.length === 0 && (
-            <p className="rounded-lg border border-dashed border-line bg-white p-4 text-sm text-slate">Todavía no hay ninguna casilla conectada.</p>
-          )}
-          <a href="/api/gmail/connect" className="inline-block rounded border border-ink/20 bg-white px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-ink hover:text-paper">
-            {conexiones.length === 0 ? "Conectar Gmail" : "+ Conectar otra casilla"}
-          </a>
-          <p className="text-xs text-slate">
-            Después de conectarla, asignásela a cada operador desde <a href="/admin/usuarios" className="underline underline-offset-2">Usuarios</a>.
-          </p>
-        </section>
-      ) : (
-        <section className="rounded-lg border border-line bg-white p-5">
-          {miConexion ? (
-            <>
-              <p className="text-sm text-slate">Tu casilla asignada</p>
-              <p className="text-lg font-semibold text-ink">{miConexion.email}</p>
-            </>
-          ) : (
-            <p className="text-sm text-slate">Todavía no tenés una casilla de mail asignada — pedile al admin que te asigne una en Usuarios.</p>
-          )}
-        </section>
-      )}
+            {c.id === miConexion?.id && (
+              <span className="shrink-0 rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">Activa</span>
+            )}
+          </div>
+        ))}
+        {conexiones.length === 0 && (
+          <p className="rounded-lg border border-dashed border-line bg-white p-4 text-sm text-slate">Todavía no hay ninguna casilla conectada.</p>
+        )}
+        <a href="/api/gmail/connect" className="inline-block rounded border border-ink/20 bg-white px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-ink hover:text-paper">
+          {conexiones.length === 0 ? "Conectar Gmail" : "+ Conectar otra casilla"}
+        </a>
+      </section>
 
       {miConexion && (
         <div className="mt-6">
-          <InboxPanel operadoresExistentes={operadoresExistentes} operadorFijo={esAdmin ? undefined : (session.user.operador ?? undefined)} />
+          <InboxPanel operadoresExistentes={operadoresExistentes} />
         </div>
       )}
     </main>

@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const verFacturacion = puedeVerFacturacion(session);
 
   const patch: Record<string, unknown> = { actualizadoEn: new Date() };
-  const camposComunes = ["estado","resultado","operador","fecha_limite","informe","descargo","relato_denuncia","etapa_contacto","fecha_entrevista","motivo_contacto"];
+  const camposComunes = ["estado","resultado","operador","fecha_limite","informe","descargo","relato_denuncia","etapa_contacto","fecha_entrevista","motivo_contacto","derivado_admin"];
   const campos = verFacturacion
     ? [...camposComunes, "numero_fc","gasto_fijo","km_total","estado_cobro","informe_final"]
     : camposComunes;
@@ -41,7 +41,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     gasto_fijo:"gastoFijo", operador:"operador", km_total:"kmTotal",
     fecha_limite:"fechaLimite", estado_cobro:"estadoCobro", informe:"informe",
     informe_final:"informeFinal", descargo:"descargo", relato_denuncia:"relatoDenuncia",
-    etapa_contacto:"etapaContacto", fecha_entrevista:"fechaEntrevista", motivo_contacto:"motivoContacto"
+    etapa_contacto:"etapaContacto", fecha_entrevista:"fechaEntrevista", motivo_contacto:"motivoContacto",
+    derivado_admin:"derivadoAdmin"
   };
   for (const k of campos) {
     if (!(k in body)) continue;
@@ -49,6 +50,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     else patch[colMap[k]] = body[k];
   }
   if (verFacturacion && "km_total" in body) patch.facturar = calcularFacturacion(body.km_total);
+
+  // El operador deriva el caso al admin cuando no lo puede contactar: marca
+  // la hora de la derivación. Y si el contacto se termina logrando (etapa
+  // pasa a "contactado" o más adelante, ya sea por el operador o por el
+  // admin) se limpia sola, sin que nadie tenga que acordarse de "atenderla".
+  if (patch.derivadoAdmin === true) patch.derivadoEn = new Date();
+  if (!("derivado_admin" in body) && typeof patch.etapaContacto === "string" && patch.etapaContacto !== "contacto_fallido") {
+    patch.derivadoAdmin = false;
+    patch.derivadoEn = null;
+  }
   const [row] = await db.update(siniestros).set(patch).where(eq(siniestros.id, params.id)).returning();
   if (!row) return NextResponse.json({ error: "No existe." }, { status: 404 });
   const siniestro = verFacturacion ? row : ocultarFacturacion(row);

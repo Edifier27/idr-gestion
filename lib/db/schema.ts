@@ -46,6 +46,13 @@ export const siniestros = pgTable("siniestros", {
   fechaEntrevista: timestamp("fecha_entrevista", { withTimezone: true }), // dispara la alarma de 48hs para el informe
   motivoContacto: text("motivo_contacto"),                 // por qué falló el contacto (ej. "no coincide el DNI") — le avisa al admin
 
+  // El operador deriva el caso al admin cuando no logra contactar al
+  // denunciante — le devuelve el trámite para que lo tome directamente.
+  // Se limpia solo cuando el contacto se logra (etapa_contacto pasa a
+  // "contactado" o más adelante).
+  derivadoAdmin: boolean("derivado_admin").notNull().default(false),
+  derivadoEn: timestamp("derivado_en", { withTimezone: true }),
+
   gmailMensajeId: text("gmail_mensaje_id"),                // id del mail de Gmail del que se importó (si vino de la bandeja) — evita duplicados y marca en la bandeja qué mails ya se cargaron
 
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),

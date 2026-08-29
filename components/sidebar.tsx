@@ -14,14 +14,14 @@ const NAV = [
   { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false, quick: undefined as string | undefined },
   { href: "/panel?quick=cerrados", label: "Cerrados", icon: IconArchive, soloAdmin: false, quick: "cerrados" },
   { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined },
-  // No es solo-admin: cada operador con una casilla asignada también entra acá a ver su propia bandeja.
-  { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: false, quick: undefined as string | undefined },
+  { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true, quick: undefined as string | undefined },
   { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined },
 ];
 
-export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
+export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggleColapsado }: {
   nombre: string;
   rol: string;
+  derivados?: number;
   colapsado?: boolean;
   onToggleColapsado?: () => void;
 }) {
@@ -70,7 +70,15 @@ export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
             >
               {activo && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-amber transition-all duration-200" />}
               <Icon />
-              <span className={ocultarEnDesktop}>{item.label}</span>
+              <span className={`flex-1 ${ocultarEnDesktop}`}>{item.label}</span>
+              {item.href === "/panel" && derivados > 0 && (
+                <span
+                  title={`${derivados} caso${derivados === 1 ? "" : "s"} derivado${derivados === 1 ? "" : "s"} sin contactar`}
+                  className={`flex h-4 min-w-[1rem] shrink-0 items-center justify-center rounded-full bg-fraude px-1 text-[9px] font-bold text-white ${colapsado ? "md:absolute md:-right-0.5 md:-top-0.5" : ""}`}
+                >
+                  {derivados}
+                </span>
+              )}
             </a>
           );
         })}
