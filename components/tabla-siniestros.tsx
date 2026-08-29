@@ -206,20 +206,24 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
             </button>
           )}
         </div>
-        <div className="flex flex-wrap items-stretch gap-2 p-3.5">
+        {/* Grid en vez de flex: así las 5 tarjetas quedan siempre del mismo
+            tamaño exacto (ancho por columna + alto por fila), más allá de que
+            una etiqueta sea más larga y ocupe dos líneas. Las flechitas y el
+            "o" viven en columnas angostas aparte, ocultas en mobile (ahí las
+            tarjetas se acomodan solas en una grilla más chica, sin
+            conectores). */}
+        <div className="grid grid-cols-2 gap-2 p-3.5 sm:grid-cols-3 lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] lg:items-stretch lg:gap-x-1.5 lg:gap-y-0">
           <EtapaCard label="Recibido" valor={porEtapa.recibido} pct={pct(porEtapa.recibido)} accent="ink" activo={etapaContacto === "recibido"} onClick={() => setEtapaContacto(v => v === "recibido" ? "" : "recibido")} />
-          <FlechaFlujo />
+          <FlechaFlujo className="hidden lg:flex" />
           {/* Las dos variantes de "Contactado" son ramas del mismo paso (no una
-              sigue a la otra), por eso van agrupadas con un "o" en vez de una
-              flecha entre ellas. */}
-          <div className="flex items-stretch gap-1.5">
-            <EtapaCard label="Contactado (sin respuesta)" valor={porEtapa.contacto_fallido} pct={pct(porEtapa.contacto_fallido)} accent="fraude" urgente={porEtapa.contacto_fallido > 0} activo={etapaContacto === "contacto_fallido"} onClick={() => setEtapaContacto(v => v === "contacto_fallido" ? "" : "contacto_fallido")} />
-            <span className="self-center text-[10px] font-medium uppercase text-slate/50">o</span>
-            <EtapaCard label="Contactado (OK)" valor={porEtapa.contactado} pct={pct(porEtapa.contactado)} accent="ok" activo={etapaContacto === "contactado"} onClick={() => setEtapaContacto(v => v === "contactado" ? "" : "contactado")} />
-          </div>
-          <FlechaFlujo />
+              sigue a la otra), por eso van con un "o" en vez de una flecha
+              entre ellas. */}
+          <EtapaCard label="Contactado (sin respuesta)" valor={porEtapa.contacto_fallido} pct={pct(porEtapa.contacto_fallido)} accent="fraude" urgente={porEtapa.contacto_fallido > 0} activo={etapaContacto === "contacto_fallido"} onClick={() => setEtapaContacto(v => v === "contacto_fallido" ? "" : "contacto_fallido")} />
+          <span className="hidden items-center justify-center text-[10px] font-medium uppercase text-slate/50 lg:flex">o</span>
+          <EtapaCard label="Contactado (OK)" valor={porEtapa.contactado} pct={pct(porEtapa.contactado)} accent="ok" activo={etapaContacto === "contactado"} onClick={() => setEtapaContacto(v => v === "contactado" ? "" : "contactado")} />
+          <FlechaFlujo className="hidden lg:flex" />
           <EtapaCard label="Entrevista pactada" valor={porEtapa.entrevista_pactada} pct={pct(porEtapa.entrevista_pactada)} accent="amber" activo={etapaContacto === "entrevista_pactada"} onClick={() => setEtapaContacto(v => v === "entrevista_pactada" ? "" : "entrevista_pactada")} />
-          <FlechaFlujo />
+          <FlechaFlujo className="hidden lg:flex" />
           <EtapaCard label="Informe enviado" valor={porEtapa.informe_enviado} pct={pct(porEtapa.informe_enviado)} accent="ok" activo={etapaContacto === "informe_enviado"} onClick={() => setEtapaContacto(v => v === "informe_enviado" ? "" : "informe_enviado")} />
         </div>
       </div>
@@ -332,9 +336,9 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
 
 // Separador visual entre pasos de la caja "Seguimiento" — marca el orden del
 // flujo (recibido -> contactado -> entrevista -> informe) sin agregar texto.
-function FlechaFlujo() {
+function FlechaFlujo({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-3 w-3 shrink-0 text-line" aria-hidden="true">
+    <svg viewBox="0 0 20 20" fill="none" className={`h-3 w-3 shrink-0 self-center text-line ${className}`} aria-hidden="true">
       <path d="M6.5 4L12.5 10L6.5 16" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -367,22 +371,27 @@ function EtapaCard({ label, valor, pct, accent, activo, urgente, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`flex min-w-[8.5rem] flex-1 flex-col overflow-hidden text-left shadow-sm transition hover:shadow-md ${
+      className={`flex h-full w-full flex-col overflow-hidden text-left shadow-sm transition hover:shadow-md ${
         activo ? "rounded-lg border border-ink" : "rounded-lg border border-line hover:border-ink/30"
       }`}
     >
-      <span className={`h-1.5 w-full ${COLOR_BARRA_MINI[accent]}`} />
-      <span className={`flex-1 px-3 py-3 ${activo ? "bg-ink/5" : "bg-white"}`}>
+      <span className={`h-1.5 w-full shrink-0 ${COLOR_BARRA_MINI[accent]}`} />
+      {/* justify-between: la etiqueta queda arriba y el número+barra abajo,
+          así todas las tarjetas alinean el número a la misma altura aunque
+          alguna etiqueta ocupe dos líneas y la fila del grid sea más alta. */}
+      <span className={`flex flex-1 flex-col justify-between gap-2 px-3 py-3 ${activo ? "bg-ink/5" : "bg-white"}`}>
         <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate">
           {urgente && <PuntoUrgente />}
           {label}
         </span>
-        <span className="mt-1.5 flex items-end justify-between gap-2">
-          <span className={`tnum text-[1.75rem] font-bold leading-none ${COLOR_TEXTO_MINI[accent]}`}>{valor}</span>
-          <span className={`tnum shrink-0 rounded-full bg-current/10 px-1.5 py-0.5 text-[10px] font-bold ${COLOR_TEXTO_MINI[accent]}`}>{pct}%</span>
-        </span>
-        <span className="mt-2 block h-1 overflow-hidden rounded-full bg-line">
-          <span className={`block h-full transition-[width] ${COLOR_BARRA_MINI[accent]}`} style={{ width: `${pct}%` }} />
+        <span>
+          <span className="flex items-end justify-between gap-2">
+            <span className={`tnum text-[1.75rem] font-bold leading-none ${COLOR_TEXTO_MINI[accent]}`}>{valor}</span>
+            <span className={`tnum shrink-0 rounded-full bg-current/10 px-1.5 py-0.5 text-[10px] font-bold ${COLOR_TEXTO_MINI[accent]}`}>{pct}%</span>
+          </span>
+          <span className="mt-2 block h-1 overflow-hidden rounded-full bg-line">
+            <span className={`block h-full transition-[width] ${COLOR_BARRA_MINI[accent]}`} style={{ width: `${pct}%` }} />
+          </span>
         </span>
       </span>
     </button>
