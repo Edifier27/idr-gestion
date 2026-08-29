@@ -32,6 +32,18 @@ export function puedeVerInformeFinal(session: Sesion) {
   return esAdmin(session);
 }
 
+// Resuelve qué casilla de Gmail usa este usuario para su bandeja/envío: la
+// que tenga asignada. Si es admin y no tiene una asignada, undefined deja que
+// lib/gmail.ts caiga en la conectada más recientemente (comportamiento de
+// antes de que existieran varias casillas). Si es operador sin casilla
+// asignada, devuelve el motivo del error en vez de una casilla — así el caller
+// puede avisarle en vez de mostrarle la bandeja de otro por accidente.
+export function conexionGmailDeSesion(session: Sesion): { conexionId?: string } | { error: string } {
+  if (session.user.gmailConexionId) return { conexionId: session.user.gmailConexionId };
+  if (esAdmin(session)) return { conexionId: undefined };
+  return { error: "Tu cuenta no tiene una casilla de mail asignada. Pedile al admin que te asigne una en Usuarios." };
+}
+
 // Facturación (admin-only) + informe_final (admin-only, ver puedeVerInformeFinal).
 const CAMPOS_FACTURACION = ["kmTotal", "facturar", "numeroFc", "gastoFijo", "estadoCobro", "informeFinal"] as const;
 

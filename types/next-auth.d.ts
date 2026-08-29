@@ -6,6 +6,7 @@ declare module "next-auth" {
       rol: string;
       operador: string | null;
       username: string;
+      gmailConexionId: string | null;
     } & DefaultSession["user"];
   }
 }
@@ -15,5 +16,6 @@ declare module "next-auth/jwt" {
     rol?: string;
     operador?: string | null;
     username?: string;
+    gmailConexionId?: string | null;
   }
 }

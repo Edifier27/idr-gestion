@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, or } from "drizzle-orm";
 import { put } from "@vercel/blob";
-import { sesionRequerida } from "@/lib/acceso";
+import { sesionRequerida, conexionGmailDeSesion } from "@/lib/acceso";
 import { obtenerMensaje, obtenerAdjunto } from "@/lib/gmail";
 import { extraerCaratula } from "@/lib/extraction";
 import { crearSiniestro } from "@/lib/siniestros";
@@ -14,17 +14,22 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 // POST /api/gmail/mensajes/:id/importar — arma el legajo entero a partir de
-// un mail de la bandeja: busca el PDF de carátula entre los adjuntos, lo lee
-// con IA para crear el caso, y apila TODOS los adjuntos del mail como
-// evidencia del caso recién creado. Admin-only.
+// un mail de la bandeja (la casilla asignada al que pide): busca el PDF de
+// carátula entre los adjuntos, lo lee con IA para crear el caso, y apila
+// TODOS los adjuntos del mail como evidencia del caso recién creado. Un
+// operador solo puede crear casos para sí mismo (se ignora el operador que
+// venga en el body); el admin puede asignarle el caso a cualquiera.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await sesionRequerida();
-  if (!session || session.user.rol !== "admin") {
-    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
-  }
+  if (!session) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  const conexion = conexionGmailDeSesion(session);
+  if ("error" in conexion) return NextResponse.json({ error: conexion.error }, { status: 400 });
 
   const body = await req.json().catch(() => null);
-  const operador = typeof body?.operador === "string" ? body.operador.trim().toUpperCase() : "";
+  const esAdminSesion = session.user.rol === "admin";
+  const operador = esAdminSesion
+    ? (typeof body?.operador === "string" ? body.operador.trim().toUpperCase() : "")
+    : (session.user.operador ?? "");
   const forzar = body?.forzar === true;
   if (!operador) return NextResponse.json({ error: "Elegí a qué operador se le asigna el caso." }, { status: 400 });
 
@@ -43,13 +48,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }, { status: 409 });
     }
 
-    const mensaje = await obtenerMensaje(params.id);
+    const mensaje = await obtenerMensaje(params.id, conexion.conexionId);
     const pdfAdjunto = mensaje.adjuntos.find(a => a.tipo === "application/pdf");
     if (!pdfAdjunto) {
       return NextResponse.json({ error: "Este mail no tiene ningún PDF adjunto para leer los datos del caso." }, { status: 400 });
     }
 
-    const pdfBytes = await obtenerAdjunto(params.id, pdfAdjunto.attachmentId);
+    const pdfBytes = await obtenerAdjunto(params.id, pdfAdjunto.attachmentId, conexion.conexionId);
     const datos = await extraerCaratula(pdfBytes.toString("base64"));
 
     // Además, si el número de siniestro/gestión ya existe en otro caso (se
@@ -75,7 +80,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     let archivosImportados = 0;
     for (const adjunto of mensaje.adjuntos) {
       try {
-        const bytes = adjunto.attachmentId === pdfAdjunto.attachmentId ? pdfBytes : await obtenerAdjunto(params.id, adjunto.attachmentId);
+        const bytes = adjunto.attachmentId === pdfAdjunto.attachmentId ? pdfBytes : await obtenerAdjunto(params.id, adjunto.attachmentId, conexion.conexionId);
         const blob = await put(adjunto.nombre, bytes, { access: "public", addRandomSuffix: true, contentType: adjunto.tipo });
         await db.insert(evidencia).values({
           siniestroId: siniestro.id,

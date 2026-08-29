@@ -1,5 +1,5 @@
 import MailComposer from "nodemailer/lib/mail-composer";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { gmailConexion } from "@/lib/db/schema";
 import { asegurarTablasGmail } from "@/lib/db/asegurar-gmail";
@@ -68,15 +68,30 @@ async function accessTokenDesdeRefresh(refreshToken: string): Promise<string> {
   return data.access_token as string;
 }
 
-export async function conexionActiva() {
+// conexionId puntual (la casilla asignada a ese usuario) o, si no se pasa,
+// la conectada más recientemente — así el código viejo (cron de backup, admin
+// sin casilla propia asignada) sigue funcionando sin cambios.
+export async function conexionActiva(conexionId?: string) {
   await asegurarTablasGmail();
   const db = getDb();
+  if (conexionId) {
+    const [row] = await db.select().from(gmailConexion).where(eq(gmailConexion.id, conexionId)).limit(1);
+    return row ?? null;
+  }
   const [row] = await db.select().from(gmailConexion).orderBy(desc(gmailConexion.conectadoEn)).limit(1);
   return row ?? null;
 }
 
-async function accessTokenActivo(): Promise<string> {
-  const conexion = await conexionActiva();
+// Todas las casillas conectadas (para la pantalla de administración y el
+// selector de "casilla asignada" en Usuarios), más nueva primero.
+export async function listarConexiones() {
+  await asegurarTablasGmail();
+  const db = getDb();
+  return db.select().from(gmailConexion).orderBy(desc(gmailConexion.conectadoEn));
+}
+
+async function accessTokenActivo(conexionId?: string): Promise<string> {
+  const conexion = await conexionActiva(conexionId);
   if (!conexion) throw new Error("No hay una casilla de Gmail conectada.");
   return accessTokenDesdeRefresh(conexion.refreshToken);
 }
@@ -89,11 +104,12 @@ export async function enviarMail(opts: {
   asunto: string;
   cuerpo: string;
   adjuntos: AdjuntoMail[];
+  conexionId?: string;
 }) {
-  const conexion = await conexionActiva();
+  const conexion = await conexionActiva(opts.conexionId);
   if (!conexion) throw new Error("No hay una casilla de Gmail conectada.");
 
-  const accessToken = await accessTokenActivo();
+  const accessToken = await accessTokenActivo(opts.conexionId);
 
   const composer = new MailComposer({
     from: conexion.email,
@@ -188,8 +204,8 @@ export type MensajeResumen = {
 export type MensajeCompleto = MensajeResumen & { cuerpo: string; adjuntos: AdjuntoInfo[] };
 
 /** Lista los últimos mensajes de la bandeja de entrada (más nuevos primero). */
-export async function listarMensajes(maxResults = 25): Promise<MensajeResumen[]> {
-  const accessToken = await accessTokenActivo();
+export async function listarMensajes(maxResults = 25, conexionId?: string): Promise<MensajeResumen[]> {
+  const accessToken = await accessTokenActivo(conexionId);
   const listRes = await fetch(
     `https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}&labelIds=INBOX`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -217,8 +233,8 @@ export async function listarMensajes(maxResults = 25): Promise<MensajeResumen[]>
 }
 
 /** Trae un mensaje completo, con el cuerpo de texto ya decodificado. */
-export async function obtenerMensaje(id: string): Promise<MensajeCompleto> {
-  const accessToken = await accessTokenActivo();
+export async function obtenerMensaje(id: string, conexionId?: string): Promise<MensajeCompleto> {
+  const accessToken = await accessTokenActivo(conexionId);
   const res = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -238,8 +254,8 @@ export async function obtenerMensaje(id: string): Promise<MensajeCompleto> {
 }
 
 /** Descarga los bytes de un adjunto puntual de un mensaje. */
-export async function obtenerAdjunto(mensajeId: string, attachmentId: string): Promise<Buffer> {
-  const accessToken = await accessTokenActivo();
+export async function obtenerAdjunto(mensajeId: string, attachmentId: string, conexionId?: string): Promise<Buffer> {
+  const accessToken = await accessTokenActivo(conexionId);
   const res = await fetch(
     `https://www.googleapis.com/gmail/v1/users/me/messages/${mensajeId}/attachments/${attachmentId}`,
     { headers: { Authorization: `Bearer ${accessToken}` } }

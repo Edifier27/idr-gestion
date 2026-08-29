@@ -13,7 +13,8 @@ const NAV = [
   { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false, quick: undefined as string | undefined },
   { href: "/panel?quick=cerrados", label: "Cerrados", icon: IconArchive, soloAdmin: false, quick: "cerrados" },
   { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined },
-  { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true, quick: undefined as string | undefined },
+  // No es solo-admin: cada operador con una casilla asignada también entra acá a ver su propia bandeja.
+  { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: false, quick: undefined as string | undefined },
   { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined },
 ];
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { siniestros, evidencia, mailEnviado, bitacora } from "@/lib/db/schema";
-import { sesionRequerida, puedeVerCaso } from "@/lib/acceso";
+import { sesionRequerida, puedeVerCaso, conexionGmailDeSesion } from "@/lib/acceso";
 import { enviarMail, type AdjuntoMail } from "@/lib/gmail";
 import { construirExpedientePDF } from "@/lib/expediente";
 
@@ -31,6 +31,9 @@ export async function POST(req: NextRequest) {
   if (!caso) return NextResponse.json({ error: "No existe el caso." }, { status: 404 });
   if (!puedeVerCaso(session, caso.operador)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
+  const conexion = conexionGmailDeSesion(session);
+  if ("error" in conexion) return NextResponse.json({ error: conexion.error }, { status: 400 });
+
   try {
     let adjuntos: AdjuntoMail[] = [];
     if (evidenciaIds.length > 0) {
@@ -55,7 +58,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await enviarMail({ para, asunto, cuerpo, adjuntos });
+    await enviarMail({ para, asunto, cuerpo, adjuntos, conexionId: conexion.conexionId });
 
     await db.insert(mailEnviado).values({ siniestroId, para, asunto, enviadoPor: session.user.username });
     await db.insert(bitacora).values({

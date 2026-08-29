@@ -70,6 +70,7 @@ export const usuarios = pgTable("usuarios", {
   rol: text("rol").notNull().default("vendedor"), // admin|vendedor
   operador: text("operador"), // vincula al campo "operador" de siniestros; null para admin
   activo: boolean("activo").notNull().default(true),
+  gmailConexionId: uuid("gmail_conexion_id"), // qué casilla de gmail_conexion usa este usuario para ver su bandeja/importar/mandar mail; null = ninguna asignada
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -45,14 +45,17 @@ function formatearFechaCompleta(fecha: string): string {
   return d.toLocaleString("es-AR", { dateStyle: "medium", timeStyle: "short" });
 }
 
-export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes?: string[] }) {
+// operadorFijo: cuando un operador (no admin) usa su propia bandeja, el caso
+// se le asigna siempre a sí mismo — no tiene sentido (ni se le permite en el
+// backend) que elija a otro operador, así que ni se le muestra el campo.
+export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operadoresExistentes?: string[]; operadorFijo?: string }) {
   const [mensajes, setMensajes] = useState<Mensaje[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [abierto, setAbierto] = useState<MensajeCompleto | null>(null);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [importando, setImportando] = useState(false);
-  const [operador, setOperador] = useState("");
+  const [operador, setOperador] = useState(operadorFijo ?? "");
   const [mostrarImportar, setMostrarImportar] = useState(false);
   const [importado, setImportado] = useState<{ id: string; archivos: number } | null>(null);
 
@@ -78,7 +81,7 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
     setAbierto(null);
     setMostrarImportar(false);
     setImportado(null);
-    setOperador("");
+    setOperador(operadorFijo ?? "");
     try {
       const res = await fetch(`/api/gmail/mensajes/${id}`);
       const data = await res.json();
@@ -196,16 +199,20 @@ export function InboxPanel({ operadoresExistentes = [] }: { operadoresExistentes
               <div className="mt-3 border-t border-line pt-3">
                 {mostrarImportar ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      value={operador}
-                      onChange={e => setOperador(e.target.value)}
-                      list="operadores-existentes-inbox"
-                      placeholder="Operador, ej: NACHO"
-                      className={`border-amber/50 bg-amber/5 px-2.5 py-1.5 text-xs uppercase ${campo}`}
-                    />
-                    <datalist id="operadores-existentes-inbox">
-                      {operadoresExistentes.map(o => <option key={o} value={o} />)}
-                    </datalist>
+                    {!operadorFijo && (
+                      <>
+                        <input
+                          value={operador}
+                          onChange={e => setOperador(e.target.value)}
+                          list="operadores-existentes-inbox"
+                          placeholder="Operador, ej: NACHO"
+                          className={`border-amber/50 bg-amber/5 px-2.5 py-1.5 text-xs uppercase ${campo}`}
+                        />
+                        <datalist id="operadores-existentes-inbox">
+                          {operadoresExistentes.map(o => <option key={o} value={o} />)}
+                        </datalist>
+                      </>
+                    )}
                     <button
                       onClick={() => importar()}
                       disabled={importando}
