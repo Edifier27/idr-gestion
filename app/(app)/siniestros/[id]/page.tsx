@@ -50,6 +50,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   const [s] = await db.select().from(siniestros).where(eq(siniestros.id, params.id));
   if (!s) notFound();
   if (!puedeVerCaso(session, s.operador)) notFound();
+  const esAdmin = session.user.rol === "admin";
   const verFacturacion = puedeVerFacturacion(session);
   const verInformeFinal = puedeVerInformeFinal(session);
   const notas = await db.select().from(bitacora)
@@ -117,17 +118,21 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           )}
         </Bloque>
 
-        {/* Estado, resultado y cobro del caso */}
+        {/* Estado, resultado y cobro del caso — solo el admin lo ve y lo
+            toca. Para el operador, lo único que hace falta gestionar día a
+            día es la etapa de contacto de abajo. */}
         <div className="space-y-4">
-          <Bloque titulo="Estado del caso" accento="ink">
-            <EstadoResultadoPanel
-              siniestroId={s.id}
-              estado={s.estado}
-              resultado={s.resultado}
-              estadoCobro={s.estadoCobro}
-              verFacturacion={verFacturacion}
-            />
-          </Bloque>
+          {esAdmin && (
+            <Bloque titulo="Estado del caso" accento="ink">
+              <EstadoResultadoPanel
+                siniestroId={s.id}
+                estado={s.estado}
+                resultado={s.resultado}
+                estadoCobro={s.estadoCobro}
+                verFacturacion={verFacturacion}
+              />
+            </Bloque>
+          )}
 
           <Bloque titulo="Etapa de contacto" accento="slate">
             <EtapaContactoPanel
