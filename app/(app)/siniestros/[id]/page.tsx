@@ -94,12 +94,26 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         </div>
       </div>
 
+      {/* Mini-navegación pegajosa: la página es larga, esto deja saltar
+          directo a cualquier sección en vez de scrollear todo a mano. */}
+      <nav className="sticky top-0 z-20 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur-sm md:-mx-8 md:px-8">
+        <NavChip href="#datos" label="Datos" />
+        <NavChip href="#etapa" label="Etapa" />
+        {verFacturacion && <NavChip href="#facturacion" label="Facturación" />}
+        <NavChip href="#acciones" label="Acciones" />
+        <NavChip href="#mail" label="Mail" />
+        <NavChip href="#evidencia" label="Evidencia" />
+        <NavChip href="#cotejo" label="Cotejo" />
+        {verInformeFinal && <NavChip href="#resolucion" label="Resolución" />}
+        <NavChip href="#bitacora" label="Bitácora" />
+      </nav>
+
       <div className="grid gap-5 md:grid-cols-2">
         {/* Datos del siniestro — con look de formulario/comprobante de
             denuncia (recuadros con título en la solapa, filas con puntitos),
             a pedido de Dario, comparando con el comprobante real de ATM
             Seguros. Abajo del todo, la descripción de la denuncia. */}
-        <Bloque titulo="Datos del siniestro">
+        <Bloque id="datos" titulo="Datos del siniestro">
           <fieldset className="rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
             <legend className="px-1.5 text-[10px] font-bold uppercase tracking-wide text-ink">Siniestro</legend>
             <DatoForm k="DNI" v={s.dni} />
@@ -138,7 +152,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
             </Bloque>
           )}
 
-          <Bloque titulo="Etapa de contacto" accento="slate">
+          <Bloque id="etapa" titulo="Etapa de contacto" accento="slate">
             <EtapaContactoPanel
               siniestroId={s.id}
               etapaContacto={s.etapaContacto}
@@ -148,7 +162,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           </Bloque>
 
           {verFacturacion && (
-            <Bloque titulo="Facturación" accento="amber">
+            <Bloque id="facturacion" titulo="Facturación" accento="amber">
               <KmPanel siniestroId={s.id} kmTotal={s.kmTotal} domicilio={s.domicilio} lugarHecho={lugarTxt} />
               <Dato k="Km bonificados" v={`${desg.kmBonificados} km`} />
               <Dato k="Km facturables" v={`${desg.kmFacturables} km × $650`} />
@@ -162,7 +176,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           )}
 
           {/* Botones de acción */}
-          <Bloque titulo="Acciones" accento="slate">
+          <Bloque id="acciones" titulo="Acciones" accento="slate">
             <div className="grid grid-cols-2 gap-2">
               {verFacturacion && <BtnLink href={`/api/factura-pdf?id=${s.id}`} label="📄 Factura PDF" />}
               <BtnLink href={`/api/caratula-pdf?id=${s.id}`} label="📋 Carátula PDF" />
@@ -174,7 +188,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           </Bloque>
 
           {/* Nuevo mensaje */}
-          <Bloque titulo="Enviar mail" accento="slate">
+          <Bloque id="mail" titulo="Enviar mail" accento="slate">
             <MailPanel
               siniestroId={s.id}
               destinatarioSugerido={s.emailContacto}
@@ -185,7 +199,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
         {/* Evidencia */}
         <div className="md:col-span-2">
-          <Bloque titulo="Evidencia" accento="ok">
+          <Bloque id="evidencia" titulo="Evidencia" accento="ok">
             <EvidenciaPanel siniestroId={s.id} archivosIniciales={archivos} />
           </Bloque>
         </div>
@@ -193,7 +207,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         {/* Las 3 ventanas para cotejar el caso: lo que dice la denuncia, lo
             que dice el operador, y el borrador con IA que arma comparando
             las dos (herramienta compartida, visible para operador y admin). */}
-        <div className="md:col-span-2">
+        <div id="cotejo" className="scroll-mt-16 md:col-span-2">
           <p className="mb-3 text-sm text-slate">
             <span className="font-semibold text-ink">Cotejo:</span> comparás lo que dice la denuncia contra lo que relevó el operador.
             {verInformeFinal && " La resolución final que se manda por mail (paso 4, más abajo) la armás vos aparte — el operador no la ve."}
@@ -258,6 +272,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         {verInformeFinal && (
           <div className="md:col-span-2">
             <Bloque
+              id="resolucion"
               titulo="Resolución final"
               numero={4}
               accento="ink"
@@ -270,7 +285,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
         {/* Bitácora */}
         <div className="md:col-span-2">
-          <Bloque titulo={`Bitácora de ${nombreOperador} (${notas.length} entradas)`} colorOperador={colorOperador}>
+          <Bloque id="bitacora" titulo={`Bitácora de ${nombreOperador} (${notas.length} entradas)`} colorOperador={colorOperador}>
             {notas.length === 0
               ? <p className="text-sm text-slate">Sin entradas todavía.</p>
               : notas.map(n => (
@@ -299,11 +314,13 @@ const ACENTO_BARRA: Record<string, string> = {
 // CRM (tablero, tarjetas "Por operador", usuarios — todos usan colorPorTexto).
 // numero (si viene) dibuja una bandita redonda con el paso del cotejo, en vez
 // del caracter unicode "①②③④" suelto que traía el título antes.
-function Bloque({ titulo, children, accento = "ink", colorOperador, extra, numero }: {
-  titulo: string; children: React.ReactNode; accento?: keyof typeof ACENTO_BARRA; colorOperador?: string; extra?: React.ReactNode; numero?: number;
+function Bloque({ titulo, children, accento = "ink", colorOperador, extra, numero, id }: {
+  titulo: string; children: React.ReactNode; accento?: keyof typeof ACENTO_BARRA; colorOperador?: string; extra?: React.ReactNode; numero?: number; id?: string;
 }) {
   return (
-    <section className={`relative overflow-hidden p-5 pl-6 ${tarjetaElevada}`}>
+    // scroll-mt-16: para que el ancla no quede tapada detrás de la
+    // mini-navegación pegajosa de arriba al hacer scroll hasta acá.
+    <section id={id} className={`relative scroll-mt-16 overflow-hidden p-5 pl-6 ${tarjetaElevada}`}>
       <span
         className={`absolute inset-y-0 left-0 w-1 ${colorOperador ? "" : ACENTO_BARRA[accento]}`}
         style={colorOperador ? { background: colorOperador } : undefined}
@@ -344,6 +361,16 @@ function DatoForm({ k, v }: { k: string; v: string | null }) {
       <span className="min-w-[0.5rem] flex-1 border-b border-dotted border-ink/25" />
       <span className="shrink-0 max-w-[60%] truncate text-right text-ink" title={v ?? undefined}>{v ?? "—"}</span>
     </div>
+  );
+}
+function NavChip({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      className="shrink-0 rounded-full border border-ink/15 bg-white px-3 py-1 text-xs font-medium text-ink shadow-sm transition hover:border-ink/30 hover:bg-paper"
+    >
+      {label}
+    </a>
   );
 }
 function BtnLink({ href, label }: { href:string; label:string }) {
