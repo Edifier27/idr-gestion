@@ -19,6 +19,7 @@ import { EstadoResultadoPanel } from "@/components/estado-resultado-panel";
 import { EtapaContactoPanel } from "@/components/etapa-contacto-panel";
 import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
 import { CerrarCasoBoton } from "@/components/cerrar-caso-boton";
+import { CasoWizard } from "@/components/caso-wizard";
 import { boton, tarjetaElevada, RESULTADO_ACENTO, colorPorTexto } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -94,6 +95,36 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         </div>
       </div>
 
+      {/* El operador ve el carrusel guiado (recibido → contacto → entrevista
+          → informe): un paso a la vez, con lo justo y necesario en cada uno,
+          en vez de la página larga de abajo — esa queda solo para el admin,
+          que necesita ver/tocar todo junto (cotejo, resolución final, etc). */}
+      {!esAdmin ? (
+        <CasoWizard
+          siniestroId={s.id}
+          dni={s.dni}
+          poliza={s.poliza}
+          denunciante={s.denunciante}
+          domicilio={s.domicilio}
+          fechaOcurrencia={s.fechaOcurrencia}
+          lugarTxt={lugarTxt}
+          telContacto={s.telContacto}
+          celContacto={s.celContacto}
+          emailContacto={s.emailContacto}
+          fechaLimite={s.fechaLimite}
+          relatoDenuncia={s.relatoDenuncia}
+          etapaContacto={s.etapaContacto}
+          fechaEntrevista={s.fechaEntrevista}
+          motivoContacto={s.motivoContacto}
+          descargoInicial={s.descargo}
+          informeInicial={s.informe}
+          archivosIniciales={archivos}
+          notas={notas}
+          nombreOperador={nombreOperador}
+          yaClosed={s.estado === "cerrado"}
+        />
+      ) : (
+        <>
       {/* Mini-navegación pegajosa: la página es larga, esto deja saltar
           directo a cualquier sección en vez de scrollear todo a mano. */}
       <nav className="sticky top-0 z-20 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur-sm md:-mx-8 md:px-8">
@@ -301,6 +332,8 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           </Bloque>
         </div>
       </div>
+      </>
+      )}
     </main>
   );
 }

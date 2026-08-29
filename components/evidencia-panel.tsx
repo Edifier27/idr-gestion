@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia } from "@/lib/categorias-evidencia";
 import { confirmar, notificar } from "@/components/notificaciones";
@@ -21,15 +21,21 @@ function etiquetaCategoria(cat?: string | null): string | null {
   return cat ? etiquetaCategoriaEvidencia(cat) : null;
 }
 
-export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
+// onArchivosChange (opcional): avisa hacia afuera cada vez que cambia la
+// lista (subida o borrado) — lo usa el carrusel del operador para saber si
+// ya hay al menos una prueba cargada antes de dejar avanzar a "Informe".
+export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChange }: {
   siniestroId: string;
   archivosIniciales: Archivo[];
+  onArchivosChange?: (archivos: Archivo[]) => void;
 }) {
   const [archivos, setArchivos] = useState(archivosIniciales);
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categoria, setCategoria] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { onArchivosChange?.(archivos); }, [archivos]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function onFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
