@@ -64,12 +64,12 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
               key={item.href}
               href={item.href}
               title={item.label}
-              className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
+              className={`group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition duration-150 ${
                 colapsado ? "md:justify-center md:px-0" : ""
               } ${activo ? "bg-white/10 text-paper" : "text-paper/60 hover:bg-white/5 hover:text-paper"}`}
             >
               {activo && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-amber transition-all duration-200" />}
-              <Icon />
+              <span className="flex shrink-0 transition-transform duration-150 group-hover:translate-x-0.5"><Icon /></span>
               <span className={`flex-1 ${ocultarEnDesktop}`}>{item.label}</span>
               {item.href === "/panel" && derivados > 0 && (
                 <span

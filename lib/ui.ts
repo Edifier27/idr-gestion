@@ -1,13 +1,18 @@
 // Clases compartidas para look & feel consistente en todo el CRM: botones,
 // inputs y tarjetas con la misma tipografía, radios y sombras. Evita que cada
 // componente reinvente su propio padding/rounded a mano.
+// active:scale-[0.97] en los tres: un "aplastado" breve al click para que se
+// sienta táctil, no solo un cambio de color — mismo lenguaje que apps nativas
+// pro (Linear, Vercel). focus-visible con anillo propio (no depende del
+// outline del navegador) para que la navegación por teclado también se vea
+// prolija.
 export const boton = {
   primario:
-    "inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3.5 py-2 text-sm font-medium text-paper shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3.5 py-2 text-sm font-medium text-paper shadow-sm transition duration-150 hover:opacity-90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
   secundario:
-    "inline-flex items-center justify-center gap-1.5 rounded-md border border-ink/15 bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-ink/30 hover:bg-paper disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex items-center justify-center gap-1.5 rounded-md border border-ink/15 bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-sm transition duration-150 hover:border-ink/30 hover:bg-paper active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
   ghost:
-    "inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate transition hover:bg-line/60 hover:text-ink",
+    "inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate transition duration-150 hover:bg-line/60 hover:text-ink active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
 };
 
 export const campo =
@@ -19,6 +24,15 @@ export const tarjeta = "rounded-lg border border-line bg-white shadow-sm";
 // destacar bloques clave (stats del tablero, cabecera de un caso).
 export const tarjetaElevada =
   "rounded-xl border border-line bg-white shadow-sm transition hover:shadow-md";
+
+// Variante de tarjetaElevada para lo que es genuinamente clickeable de punta
+// a punta (abrir un caso, aplicar un filtro tocando la tarjeta entera): suma
+// un levantamiento sutil al pasar el mouse y un "aplastado" breve al click,
+// para que se sienta una acción táctil y no solo una caja con sombra. No usar
+// en bloques de contenido estático (ahí, tarjetaElevada solo) — el
+// levantamiento implica "esto se puede tocar".
+export const tarjetaClickeable =
+  "rounded-xl border border-line bg-white shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm";
 
 // Pill de estado con puntito de color (bg-current toma el color del texto),
 // mismo patrón que Linear/Vercel para "status".

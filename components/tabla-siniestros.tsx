@@ -9,7 +9,7 @@ import { CobroBadge } from "@/components/cobro-badge";
 import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
 import { PuntoUrgente } from "@/components/punto-urgente";
 import { plazoInforme } from "@/lib/etapa-contacto";
-import { tarjetaElevada, colorPorTexto, cinta, cintaTexto } from "@/lib/ui";
+import { tarjetaElevada, tarjetaClickeable, colorPorTexto, cinta, cintaTexto } from "@/lib/ui";
 
 const ESTADOS_COBRO = [
   { value: "no_facturado", label: "Sin facturar" },
@@ -220,17 +220,19 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
 
       <button
         onClick={() => setMostrarResumen(v => !v)}
-        className="mb-4 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate transition hover:text-ink"
+        className="mb-4 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate transition duration-150 hover:text-ink active:scale-95"
       >
-        <svg viewBox="0 0 20 20" fill="none" className={`h-3 w-3 transition-transform ${mostrarResumen ? "rotate-90" : ""}`}>
+        <svg viewBox="0 0 20 20" fill="none" className={`h-3 w-3 transition-transform duration-200 ${mostrarResumen ? "rotate-90" : ""}`}>
           <path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         {mostrarResumen ? "Ocultar resumen" : "Ver resumen (por operador y por resultado)"}
         {hayFiltroEnResumen && !mostrarResumen && <span className="rounded-full bg-ink/10 px-1.5 py-0.5 text-[10px] text-ink">filtro activo</span>}
       </button>
 
-      {(mostrarResumen || hayFiltroEnResumen) && (
-        <>
+      {/* Grid de una fila que anima entre 0fr y 1fr: acordeón suave sin medir
+          alturas a mano en JS — truco moderno de CSS puro. */}
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${(mostrarResumen || hayFiltroEnResumen) ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden">
           {esAdmin && (montoFacturado !== undefined || montoCobrado !== undefined) && (
             <div className="mb-4 grid grid-cols-2 gap-2.5 sm:max-w-xs">
               <MiniStatMoney label="Por cobrar" valor={formatARS(montoFacturado ?? 0)} accent="amber" />
@@ -281,8 +283,8 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
               <MiniStat label="Rechazo" valor={porResultado.rechazo} accent="fraude" activo={resultado === "rechazo"} onClick={() => setResultado(v => v === "rechazo" ? "" : "rechazo")} />
             </div>
           </div>
-        </>
-      )}
+        </div>
+      </div>
 
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2">
@@ -340,7 +342,7 @@ function QuickBtn({ label, n, activo, urgente, onClick }: { label: string; n: nu
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-sm transition ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-sm transition duration-150 active:scale-95 ${
         activo ? "bg-ink text-paper" : "border border-ink/20 bg-white text-ink hover:bg-ink/5"
       }`}
     >
@@ -363,7 +365,7 @@ function EtapaCard({ label, valor, pct, accent, activo, urgente, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`flex h-full w-full flex-col overflow-hidden text-left shadow-sm transition hover:shadow-md ${
+      className={`flex h-full w-full flex-col overflow-hidden text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm ${
         activo ? "rounded-lg border border-ink" : "rounded-lg border border-line hover:border-ink/30"
       }`}
     >
@@ -413,7 +415,7 @@ function MiniStat({ label, valor, accent, activo, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`relative overflow-hidden p-3 pl-4 text-left shadow-sm transition hover:shadow-md ${
+      className={`relative overflow-hidden p-3 pl-4 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm ${
         activo ? "rounded-lg border border-ink bg-ink/5" : `rounded-lg border border-line bg-white hover:border-ink/30`
       }`}
     >
@@ -431,7 +433,7 @@ function TarjetaOperador({ nombre, total, pendientes, resueltos, vencidos, activ
   return (
     <button
       onClick={onClick}
-      className={`group flex overflow-hidden rounded-lg border text-left shadow-sm transition hover:shadow-md ${
+      className={`group flex overflow-hidden rounded-lg border text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm ${
         activo ? "border-ink" : "border-line hover:border-ink/30"
       }`}
     >
@@ -489,7 +491,7 @@ function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
           <a
             key={s.id}
             href={`/siniestros/${s.id}`}
-            className={`group flex overflow-hidden ${tarjetaElevada}`}
+            className={`group flex overflow-hidden ${tarjetaClickeable}`}
           >
             <span className={`w-7 py-3 text-[10px] ${cinta}`} style={{ background: colorPorTexto(compania) }} title={compania}>
               <span className={cintaTexto}>{compania}</span>

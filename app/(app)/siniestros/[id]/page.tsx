@@ -20,6 +20,7 @@ import { EtapaContactoPanel } from "@/components/etapa-contacto-panel";
 import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
 import { CerrarCasoBoton } from "@/components/cerrar-caso-boton";
 import { CasoWizard } from "@/components/caso-wizard";
+import { MiniNavScrollSpy } from "@/components/mini-nav-scroll-spy";
 import { boton, tarjetaElevada, RESULTADO_ACENTO, colorPorTexto } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -131,19 +132,22 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         />
       ) : (
         <>
-      {/* Mini-navegación pegajosa: la página es larga, esto deja saltar
-          directo a cualquier sección en vez de scrollear todo a mano. */}
-      <nav className="sticky top-0 z-20 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur-sm md:-mx-8 md:px-8">
-        <NavChip href="#datos" label="Datos" />
-        <NavChip href="#etapa" label="Etapa" />
-        {verFacturacion && <NavChip href="#facturacion" label="Facturación" />}
-        <NavChip href="#acciones" label="Acciones" />
-        <NavChip href="#mail" label="Mail" />
-        <NavChip href="#evidencia" label="Evidencia" />
-        <NavChip href="#cotejo" label="Cotejo" />
-        {verInformeFinal && <NavChip href="#resolucion" label="Resolución" />}
-        <NavChip href="#bitacora" label="Bitácora" />
-      </nav>
+      {/* Mini-navegación pegajosa con scroll-spy: la página es larga, esto
+          deja saltar directo a cualquier sección, y la pestaña activa va
+          cambiando sola a medida que scrolleás. */}
+      <MiniNavScrollSpy
+        items={[
+          { href: "#datos", label: "Datos" },
+          { href: "#etapa", label: "Etapa" },
+          ...(verFacturacion ? [{ href: "#facturacion", label: "Facturación" }] : []),
+          { href: "#acciones", label: "Acciones" },
+          { href: "#mail", label: "Mail" },
+          { href: "#evidencia", label: "Evidencia" },
+          { href: "#cotejo", label: "Cotejo" },
+          ...(verInformeFinal ? [{ href: "#resolucion", label: "Resolución" }] : []),
+          { href: "#bitacora", label: "Bitácora" },
+        ]}
+      />
 
       <div className="grid gap-5 md:grid-cols-2">
         {/* Datos del siniestro — con look de formulario/comprobante de
@@ -402,16 +406,6 @@ function DatoForm({ k, v }: { k: string; v: string | null }) {
       <span className="min-w-[0.5rem] flex-1 border-b border-dotted border-ink/25" />
       <span className="shrink-0 max-w-[60%] truncate text-right text-ink" title={v ?? undefined}>{v ?? "—"}</span>
     </div>
-  );
-}
-function NavChip({ href, label }: { href: string; label: string }) {
-  return (
-    <a
-      href={href}
-      className="shrink-0 rounded-full border border-ink/15 bg-white px-3 py-1 text-xs font-medium text-ink shadow-sm transition hover:border-ink/30 hover:bg-paper"
-    >
-      {label}
-    </a>
   );
 }
 function BtnLink({ href, label }: { href:string; label:string }) {
