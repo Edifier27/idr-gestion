@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia } from "@/lib/categorias-evidencia";
+import { confirmar, notificar } from "@/components/notificaciones";
 
 type Archivo = {
   id: string;
@@ -63,10 +64,11 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales }: {
   }
 
   async function borrar(id: string) {
-    if (!window.confirm("¿Borrar este archivo?")) return;
+    const ok = await confirmar("¿Borrar este archivo?", { textoConfirmar: "Borrar", peligroso: true });
+    if (!ok) return;
     const res = await fetch(`/api/evidencia/${id}`, { method: "DELETE" });
     if (res.ok) setArchivos(a => a.filter(f => f.id !== id));
-    else window.alert("No se pudo borrar el archivo.");
+    else notificar.error("No se pudo borrar el archivo.");
   }
 
   return (

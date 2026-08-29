@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { etiquetaRol } from "@/lib/roles";
 import { boton, campo, tarjeta, tarjetaElevada, colorPorTexto, cinta, cintaTexto, badge, badgeDot } from "@/lib/ui";
+import { pedirTexto, notificar } from "@/components/notificaciones";
 
 type Usuario = {
   id: string;
@@ -74,7 +75,7 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes, casilla
   }
 
   async function resetPassword(u: Usuario) {
-    const nueva = window.prompt(`Nueva contraseña para ${u.username} (mín. 6 caracteres):`);
+    const nueva = await pedirTexto(`Nueva contraseña para ${u.username} (mín. 6 caracteres)`, { tipo: "password", placeholder: "••••••" });
     if (!nueva) return;
     const res = await fetch(`/api/usuarios/${u.id}`, {
       method: "PATCH",
@@ -82,8 +83,8 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes, casilla
       body: JSON.stringify({ password: nueva }),
     });
     const data = await res.json();
-    if (!res.ok) window.alert(data.error ?? "No se pudo cambiar la contraseña.");
-    else window.alert("Contraseña actualizada.");
+    if (!res.ok) notificar.error(data.error ?? "No se pudo cambiar la contraseña.");
+    else notificar.ok("Contraseña actualizada.");
   }
 
   return (

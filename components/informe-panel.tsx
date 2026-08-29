@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { boton } from "@/lib/ui";
+import { confirmar } from "@/components/notificaciones";
 
 export function InformePanel({ siniestroId, informeInicial }: { siniestroId: string; informeInicial: string | null }) {
   const router = useRouter();
@@ -30,7 +31,8 @@ export function InformePanel({ siniestroId, informeInicial }: { siniestroId: str
   }
 
   async function borrarTodo() {
-    if (!window.confirm("¿Borrar el informe generado? Esta acción no se puede deshacer.")) return;
+    const ok = await confirmar("¿Borrar el informe generado? Esta acción no se puede deshacer.", { textoConfirmar: "Borrar", peligroso: true });
+    if (!ok) return;
     setError(null);
     setBorrando(true);
     try {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/sidebar";
+import { NotificacionesHost } from "@/components/notificaciones";
 
 const CLAVE = "crm_sidebar_colapsado";
 
@@ -31,6 +32,7 @@ export function AppShell({ nombre, rol, children }: { nombre: string; rol: strin
       </div>
       <Sidebar nombre={nombre} rol={rol} colapsado={colapsado} onToggleColapsado={toggle} />
       {children}
+      <NotificacionesHost />
     </div>
   );
 }

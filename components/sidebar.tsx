@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
 import { etiquetaRol } from "@/lib/roles";
+import { colorPorTexto } from "@/lib/ui";
 
 // "quick" distingue entre los dos accesos directos a /panel: Tablero abre en
 // la bandeja de hoy, Cerrados manda directo a la pestaña de casos cerrados
@@ -67,7 +68,7 @@ export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
                 colapsado ? "md:justify-center md:px-0" : ""
               } ${activo ? "bg-white/10 text-paper" : "text-paper/60 hover:bg-white/5 hover:text-paper"}`}
             >
-              {activo && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-amber" />}
+              {activo && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-amber transition-all duration-200" />}
               <Icon />
               <span className={ocultarEnDesktop}>{item.label}</span>
             </a>
@@ -76,9 +77,18 @@ export function Sidebar({ nombre, rol, colapsado = false, onToggleColapsado }: {
       </nav>
 
       <div className="border-t border-white/10 px-3 py-4">
-        <div className={`mb-3 px-2 ${ocultarEnDesktop}`}>
-          <p className="truncate text-sm font-medium text-paper">{nombre}</p>
-          <p className="text-xs uppercase tracking-wide text-paper/50">{etiquetaRol(rol)}</p>
+        <div className={`mb-3 flex items-center gap-2.5 px-2 ${colapsado ? "md:justify-center md:px-0" : ""}`}>
+          <span
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+            style={{ background: colorPorTexto(nombre) }}
+            title={nombre}
+          >
+            {(nombre.trim()[0] ?? "?").toUpperCase()}
+          </span>
+          <div className={`min-w-0 ${ocultarEnDesktop}`}>
+            <p className="truncate text-sm font-medium text-paper">{nombre}</p>
+            <p className="text-xs uppercase tracking-wide text-paper/50">{etiquetaRol(rol)}</p>
+          </div>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}

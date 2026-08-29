@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { confirmar, notificar } from "@/components/notificaciones";
 
 // Marca el caso como cerrado (estado = "cerrado") y lo saca de las bandejas
 // de trabajo activas — pasa a verse solo en la pestaña "Cerrados" del
@@ -12,7 +13,8 @@ export function CerrarCasoBoton({ siniestroId, yaClosed }: { siniestroId: string
   const [enviando, setEnviando] = useState(false);
 
   async function cerrar() {
-    if (!window.confirm("¿Cerrar este caso? Va a salir de las bandejas de trabajo activas (Hoy, Todos, etc.) y va a quedar solo en \"Cerrados\".")) return;
+    const ok = await confirmar("¿Cerrar este caso? Va a salir de las bandejas de trabajo activas (Hoy, Todos, etc.) y va a quedar solo en \"Cerrados\".", { textoConfirmar: "Cerrar caso" });
+    if (!ok) return;
     setEnviando(true);
     try {
       const res = await fetch(`/api/siniestros/${siniestroId}`, {
@@ -24,9 +26,10 @@ export function CerrarCasoBoton({ siniestroId, yaClosed }: { siniestroId: string
         const data = await res.json().catch(() => null);
         throw new Error(data?.error ?? "No se pudo cerrar el caso.");
       }
+      notificar.ok("Caso cerrado.");
       router.refresh();
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Error al cerrar el caso.");
+      notificar.error(e instanceof Error ? e.message : "Error al cerrar el caso.");
     } finally {
       setEnviando(false);
     }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { boton, campo, tarjeta } from "@/lib/ui";
+import { confirmar } from "@/components/notificaciones";
 
 type CasoImportado = { id: string; etiqueta: string } | null;
 type Mensaje = { id: string; asunto: string; de: string; fecha: string; snippet: string; noLeido: boolean; casoImportado?: CasoImportado };
@@ -107,10 +108,9 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
       });
       const data = await res.json();
       if (res.status === 409 && data.duplicado) {
-        const seguir = window.confirm(
-          `${data.mensaje ?? "Este caso ya existe."}\n` +
-          `${data.existente?.etiqueta ?? data.existente?.numeroGestion ?? ""} — ${data.existente?.asegurado ?? ""}\n\n` +
-          `¿Igual querés crear un caso nuevo (duplicado)?`
+        const seguir = await confirmar(
+          `${data.mensaje ?? "Este caso ya existe."} ${data.existente?.etiqueta ?? data.existente?.numeroGestion ?? ""} — ${data.existente?.asegurado ?? ""}. ¿Igual querés crear un caso nuevo (duplicado)?`,
+          { textoConfirmar: "Crear igual", peligroso: true }
         );
         if (seguir) return importar(true);
         return;

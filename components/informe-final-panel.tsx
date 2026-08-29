@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { boton } from "@/lib/ui";
+import { confirmar } from "@/components/notificaciones";
 
 // Igual que InformePanel, pero apunta a /api/informe-final y al campo
 // informe_final: la resolución privada del admin, que el operador no ve
@@ -33,7 +34,8 @@ export function InformeFinalPanel({ siniestroId, informeInicial }: { siniestroId
   }
 
   async function borrarTodo() {
-    if (!window.confirm("¿Borrar la resolución final? Esta acción no se puede deshacer.")) return;
+    const ok = await confirmar("¿Borrar la resolución final? Esta acción no se puede deshacer.", { textoConfirmar: "Borrar", peligroso: true });
+    if (!ok) return;
     setError(null);
     setBorrando(true);
     try {
