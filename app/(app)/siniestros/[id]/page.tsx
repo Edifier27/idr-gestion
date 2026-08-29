@@ -187,11 +187,12 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         <div className="md:col-span-2">
           <p className="mb-3 text-sm text-slate">
             <span className="font-semibold text-ink">Cotejo:</span> comparás lo que dice la denuncia contra lo que relevó el operador.
-            {verInformeFinal && " La resolución final que se manda por mail (④, más abajo) la armás vos aparte — el operador no la ve."}
+            {verInformeFinal && " La resolución final que se manda por mail (paso 4, más abajo) la armás vos aparte — el operador no la ve."}
           </p>
           <div className="grid gap-5 lg:grid-cols-3">
             <Bloque
-              titulo="① Relato de la denuncia"
+              titulo="Relato de la denuncia"
+              numero={1}
               accento="slate"
               extra={<span className="rounded-full bg-slate/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate">Según la aseguradora</span>}
             >
@@ -204,7 +205,8 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               />
             </Bloque>
             <Bloque
-              titulo={`② Descargo de ${nombreOperador}`}
+              titulo={`Descargo de ${nombreOperador}`}
+              numero={2}
               colorOperador={colorOperador}
               extra={
                 <span
@@ -225,7 +227,8 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               />
             </Bloque>
             <Bloque
-              titulo="③ Informe técnico-legal"
+              titulo="Informe técnico-legal"
+              numero={3}
               colorOperador={colorOperador}
               extra={
                 <span
@@ -246,7 +249,8 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         {verInformeFinal && (
           <div className="md:col-span-2">
             <Bloque
-              titulo="④ Resolución final"
+              titulo="Resolución final"
+              numero={4}
               accento="ink"
               extra={<span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber to-amber/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">🔒 Solo vos — para el mail</span>}
             >
@@ -284,8 +288,10 @@ const ACENTO_BARRA: Record<string, string> = {
 // colorOperador (si viene) pisa el accento fijo — así el bloque queda con
 // el mismo color determinístico que ese operador tiene en todo el resto del
 // CRM (tablero, tarjetas "Por operador", usuarios — todos usan colorPorTexto).
-function Bloque({ titulo, children, accento = "ink", colorOperador, extra }: {
-  titulo: string; children: React.ReactNode; accento?: keyof typeof ACENTO_BARRA; colorOperador?: string; extra?: React.ReactNode;
+// numero (si viene) dibuja una bandita redonda con el paso del cotejo, en vez
+// del caracter unicode "①②③④" suelto que traía el título antes.
+function Bloque({ titulo, children, accento = "ink", colorOperador, extra, numero }: {
+  titulo: string; children: React.ReactNode; accento?: keyof typeof ACENTO_BARRA; colorOperador?: string; extra?: React.ReactNode; numero?: number;
 }) {
   return (
     <section className={`relative overflow-hidden p-5 pl-6 ${tarjetaElevada}`}>
@@ -294,7 +300,17 @@ function Bloque({ titulo, children, accento = "ink", colorOperador, extra }: {
         style={colorOperador ? { background: colorOperador } : undefined}
       />
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">{titulo}</h2>
+        <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate">
+          {numero !== undefined && (
+            <span
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${colorOperador ? "" : ACENTO_BARRA[accento]}`}
+              style={colorOperador ? { background: colorOperador } : undefined}
+            >
+              {numero}
+            </span>
+          )}
+          {titulo}
+        </h2>
         {extra}
       </div>
       <div className="space-y-2">{children}</div>

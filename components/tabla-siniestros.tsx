@@ -372,14 +372,17 @@ function EtapaCard({ label, valor, pct, accent, activo, urgente, onClick }: {
       }`}
     >
       <span className={`h-1.5 w-full ${COLOR_BARRA_MINI[accent]}`} />
-      <span className={`flex-1 px-3 py-2.5 ${activo ? "bg-ink/5" : "bg-white"}`}>
+      <span className={`flex-1 px-3 py-3 ${activo ? "bg-ink/5" : "bg-white"}`}>
         <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate">
           {urgente && <PuntoUrgente />}
           {label}
         </span>
-        <span className="mt-0.5 flex items-baseline gap-1.5">
-          <span className={`tnum text-xl font-bold ${COLOR_TEXTO_MINI[accent]}`}>{valor}</span>
-          <span className="text-[11px] font-medium text-slate/60">{pct}%</span>
+        <span className="mt-1.5 flex items-end justify-between gap-2">
+          <span className={`tnum text-[1.75rem] font-bold leading-none ${COLOR_TEXTO_MINI[accent]}`}>{valor}</span>
+          <span className={`tnum shrink-0 rounded-full bg-current/10 px-1.5 py-0.5 text-[10px] font-bold ${COLOR_TEXTO_MINI[accent]}`}>{pct}%</span>
+        </span>
+        <span className="mt-2 block h-1 overflow-hidden rounded-full bg-line">
+          <span className={`block h-full transition-[width] ${COLOR_BARRA_MINI[accent]}`} style={{ width: `${pct}%` }} />
         </span>
       </span>
     </button>

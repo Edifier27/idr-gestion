@@ -51,5 +51,7 @@ export function colorPorTexto(texto: string): string {
 // izquierda de una tarjeta de lista (fila de caso, operador, usuario…). No
 // incluye ancho/padding/tamaño de texto (varían según la tarjeta) para no
 // pisar esas utilidades con las del propio uso — cada lugar las suma aparte.
+// Sin el rotate-180 extra: así el texto se lee de arriba hacia abajo (Dario
+// reportó que con la vuelta de más las letras se veían "dadas vuelta").
 export const cinta = "flex shrink-0 items-center justify-center overflow-hidden font-bold uppercase tracking-wide text-white";
-export const cintaTexto = "[writing-mode:vertical-rl] whitespace-nowrap rotate-180";
+export const cintaTexto = "[writing-mode:vertical-rl] whitespace-nowrap";
