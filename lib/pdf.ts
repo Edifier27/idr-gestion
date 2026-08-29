@@ -1,7 +1,7 @@
 import { PDFDocument, PDFPage, StandardFonts, rgb } from "pdf-lib";
 import type { SiniestroRow, EvidenciaRow, BitacoraRow } from "./db/schema";
 import { desgloseFacturacion } from "./facturacion";
-import { etiquetaCategoriaEvidencia } from "./categorias-evidencia";
+import { etiquetaCategoriaEvidencia, ORDEN_PRUEBAS, ORDEN_DOCUMENTACION } from "./categorias-evidencia";
 
 const INK = rgb(0.08, 0.11, 0.18);
 const GREY = rgb(0.35, 0.38, 0.42);
@@ -233,12 +233,6 @@ async function incrustarPDF(c: Cursor, row: EvidenciaRow, bytes: Uint8Array) {
   (await c.pdf.copyPages(doc, doc.getPageIndices())).forEach(p => c.pdf.addPage(p));
   nuevaPagina(c);
 }
-
-// Orden en el que se listan las categorías dentro de cada bloque, calcado del
-// informe final real (Sección III "Pruebas digitales" primero, después
-// "Documentación de los intervinientes").
-const ORDEN_PRUEBAS = ["geolocalizacion", "llamadas", "mensajes", "fotos"] as const;
-const ORDEN_DOCUMENTACION = ["registro_conducir", "dni", "cedula_vehiculo", "denuncia", "ampliacion", "desiste", "otro"] as const;
 
 async function volcarGrupo(c: Cursor, categoria: string, archivos: ArchivoConBytes[]) {
   const delGrupo = archivos.filter(a => (a.row.categoria ?? "otro") === categoria);

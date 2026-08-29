@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
-import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia } from "@/lib/categorias-evidencia";
+import { CATEGORIAS_EVIDENCIA, ORDEN_CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia } from "@/lib/categorias-evidencia";
 import { confirmar, notificar } from "@/components/notificaciones";
 
 type Archivo = {
@@ -109,38 +109,62 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
       {archivos.length === 0 ? (
         <p className="text-sm text-slate">Sin evidencia cargada todavía.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {archivos.map(f => (
-            <div key={f.id} className="group relative overflow-hidden rounded-lg border border-line bg-paper shadow-sm transition hover:shadow-md">
-              <a href={f.url} target="_blank" rel="noopener noreferrer" className="block">
-                {f.tipo.startsWith("image/") ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={f.url} alt={f.nombre} className="h-24 w-full object-cover" />
-                ) : (
-                  <div className="flex h-24 w-full flex-col items-center justify-center gap-1 text-slate">
-                    <span className="text-2xl">📄</span>
-                    <span className="px-1 text-center text-[10px] leading-tight">{f.nombre}</span>
-                  </div>
-                )}
-              </a>
-              <button
-                onClick={() => borrar(f.id)}
-                className="absolute right-1 top-1 hidden rounded bg-fraude/90 px-1.5 py-0.5 text-[10px] font-medium text-white group-hover:block"
-              >
-                Borrar
-              </button>
-              {etiquetaCategoria(f.categoria) && (
-                <span className="absolute left-1 top-1 rounded bg-ink/80 px-1.5 py-0.5 text-[9px] font-medium text-paper">
-                  {etiquetaCategoria(f.categoria)}
-                </span>
-              )}
-              <div className="truncate px-1.5 py-1 text-[10px] text-slate">
-                {f.subidoPor ?? "—"} · {new Date(f.creadoEn).toLocaleDateString("es-AR")}
+        <div className="space-y-4">
+          {agruparPorCategoria(archivos).map(grupo => (
+            <div key={grupo.categoria}>
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate">
+                {etiquetaCategoria(grupo.categoria) ?? "Sin categoría"} <span className="text-slate/50">({grupo.archivos.length})</span>
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {grupo.archivos.map(f => <TarjetaArchivo key={f.id} f={f} onBorrar={borrar} />)}
               </div>
             </div>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Agrupa los archivos en el mismo orden en el que después se arman en el
+// expediente PDF (lib/pdf.ts) — así lo que el operador ve mientras carga
+// evidencia es exactamente el orden en el que le va a llegar al admin. Lo
+// sin categorizar (todavía sin clasificar por IA, o clasificación fallida)
+// queda al final, aparte.
+function agruparPorCategoria(archivos: Archivo[]): { categoria: string | null; archivos: Archivo[] }[] {
+  const grupos: { categoria: string | null; archivos: Archivo[] }[] = [];
+  for (const cat of ORDEN_CATEGORIAS_EVIDENCIA) {
+    const delGrupo = archivos.filter(a => a.categoria === cat);
+    if (delGrupo.length > 0) grupos.push({ categoria: cat, archivos: delGrupo });
+  }
+  const sinCategoria = archivos.filter(a => !a.categoria || !(ORDEN_CATEGORIAS_EVIDENCIA as readonly string[]).includes(a.categoria));
+  if (sinCategoria.length > 0) grupos.push({ categoria: null, archivos: sinCategoria });
+  return grupos;
+}
+
+function TarjetaArchivo({ f, onBorrar }: { f: Archivo; onBorrar: (id: string) => void }) {
+  return (
+    <div className="group relative overflow-hidden rounded-lg border border-line bg-paper shadow-sm transition hover:shadow-md">
+      <a href={f.url} target="_blank" rel="noopener noreferrer" className="block">
+        {f.tipo.startsWith("image/") ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={f.url} alt={f.nombre} className="h-24 w-full object-cover" />
+        ) : (
+          <div className="flex h-24 w-full flex-col items-center justify-center gap-1 text-slate">
+            <span className="text-2xl">📄</span>
+            <span className="px-1 text-center text-[10px] leading-tight">{f.nombre}</span>
+          </div>
+        )}
+      </a>
+      <button
+        onClick={() => onBorrar(f.id)}
+        className="absolute right-1 top-1 hidden rounded bg-fraude/90 px-1.5 py-0.5 text-[10px] font-medium text-white group-hover:block"
+      >
+        Borrar
+      </button>
+      <div className="truncate px-1.5 py-1 text-[10px] text-slate">
+        {f.subidoPor ?? "—"} · {new Date(f.creadoEn).toLocaleDateString("es-AR")}
+      </div>
     </div>
   );
 }

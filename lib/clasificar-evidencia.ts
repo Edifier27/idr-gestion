@@ -16,7 +16,9 @@ minúsculas, sin explicación ni puntuación):
 - geolocalizacion: captura de mapa o ubicación GPS
 - llamadas: captura de registro/historial de llamadas telefónicas
 - mensajes: captura de chats o conversaciones (WhatsApp u otra app de mensajería)
-- fotos: fotos del vehículo, del lugar del hecho, o de daños
+- foto_siniestro: foto del vehículo o bien siniestrado (el objeto asegurado en sí: la moto, el auto, sus daños, su patente)
+- foto_lugar: foto del lugar del hecho (la escena, la calle, el domicilio, el punto de encuentro — no el vehículo)
+- fotos: cualquier otra foto que no sea del vehículo ni del lugar (capturas de pantalla sueltas, etc.)
 - otro: si no encaja claramente en ninguna de las anteriores
 
 Respondé solo con uno de estos valores: ${VALORES.join(", ")}`;
