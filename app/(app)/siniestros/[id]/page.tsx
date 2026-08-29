@@ -23,6 +23,10 @@ import { boton, tarjetaElevada, RESULTADO_ACENTO, colorPorTexto } from "@/lib/ui
 
 export const dynamic = "force-dynamic";
 
+// Dario pidió ocultar "Estado del caso" (Estado/Resultado/Cobro) para todos
+// por ahora, mientras repiensa ese flujo — capaz vuelve más adelante.
+const MOSTRAR_ESTADO_CASO = false;
+
 // Guía para que el operador no se olvide de ningún paso al escribir la
 // ampliación: antes/durante/después del hecho + qué se verificó. Se precarga
 // en el textarea cuando el caso todavía no tiene descargo cargado.
@@ -118,11 +122,11 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           )}
         </Bloque>
 
-        {/* Estado, resultado y cobro del caso — solo el admin lo ve y lo
-            toca. Para el operador, lo único que hace falta gestionar día a
-            día es la etapa de contacto de abajo. */}
+        {/* Estado, resultado y cobro del caso — oculto por ahora a pedido de
+            Dario (para todos, admin incluido), mientras repiensa ese flujo.
+            Fácil de reactivar: MOSTRAR_ESTADO_CASO = true. */}
         <div className="space-y-4">
-          {esAdmin && (
+          {MOSTRAR_ESTADO_CASO && esAdmin && (
             <Bloque titulo="Estado del caso" accento="ink">
               <EstadoResultadoPanel
                 siniestroId={s.id}

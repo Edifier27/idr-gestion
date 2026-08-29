@@ -11,15 +11,6 @@ import { PuntoUrgente } from "@/components/punto-urgente";
 import { plazoInforme } from "@/lib/etapa-contacto";
 import { tarjetaElevada, colorPorTexto, cinta, cintaTexto } from "@/lib/ui";
 
-const ESTADOS = [
-  { value: "ingresado", label: "Ingresado" },
-  { value: "en_gestion", label: "En gestión" },
-  { value: "inspeccionado", label: "Inspeccionado" },
-  { value: "elevado", label: "Elevado" },
-  { value: "facturado", label: "Facturado" },
-  { value: "cerrado", label: "Cerrado" },
-];
-
 const ESTADOS_COBRO = [
   { value: "no_facturado", label: "Sin facturar" },
   { value: "facturado", label: "Facturado" },
@@ -83,7 +74,6 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
   const [mostrarResumen, setMostrarResumen] = useState(false);
   const [operador, setOperador] = useState("");
   const [compania, setCompania] = useState("");
-  const [estado, setEstado] = useState("");
   const [estadoCobro, setEstadoCobro] = useState("");
   const [etapaContacto, setEtapaContacto] = useState("");
   const [resultado, setResultado] = useState("");
@@ -151,8 +141,7 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
 
   const filtradas = useMemo(() => {
     let out = rows;
-    const quiereCerrados = quick === "cerrados" || estado === "cerrado";
-    if (!quiereCerrados) out = out.filter(r => !esCerrado(r));
+    if (quick !== "cerrados") out = out.filter(r => !esCerrado(r));
 
     if (quick === "hoy") out = out.filter(esHoy);
     else if (quick === "cerrados") out = out.filter(esCerrado);
@@ -164,7 +153,6 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
 
     if (operador) out = out.filter(r => claveOperador(r) === operador);
     if (compania) out = out.filter(r => r.compania === compania);
-    if (estado) out = out.filter(r => r.estado === estado);
     if (estadoCobro) out = out.filter(r => (r.estadoCobro ?? "no_facturado") === estadoCobro);
     if (etapaContacto === "recibido") out = out.filter(r => !r.etapaContacto);
     else if (etapaContacto) out = out.filter(r => r.etapaContacto === etapaContacto);
@@ -181,7 +169,7 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
     }
     // Lo más urgente primero, siempre — no solo en la pestaña "Hoy".
     return [...out].sort((a, b) => prioridad(b) - prioridad(a));
-  }, [rows, quick, operador, compania, estado, estadoCobro, etapaContacto, resultado, busqueda]);
+  }, [rows, quick, operador, compania, estadoCobro, etapaContacto, resultado, busqueda]);
 
   // El resumen (por operador + resultados) queda un click abajo por default:
   // si algo ahí adentro está activo como filtro, lo mostramos igual para que
@@ -316,7 +304,6 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
           />
           <Select value={operador} onChange={setOperador} placeholder="Operador" opciones={operadores.map(o => ({ value: o, label: o }))} />
           <Select value={compania} onChange={setCompania} placeholder="Compañía" opciones={companias.map(c => ({ value: c, label: c }))} />
-          <Select value={estado} onChange={setEstado} placeholder="Estado" opciones={ESTADOS} />
           {esAdmin && <Select value={estadoCobro} onChange={setEstadoCobro} placeholder="Cobro" opciones={ESTADOS_COBRO} />}
         </div>
       </div>
