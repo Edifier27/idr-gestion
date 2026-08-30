@@ -14,6 +14,26 @@ type Item = { href: string; label: string };
 export function MiniNavScrollSpy({ items }: { items: Item[] }) {
   const [activo, setActivo] = useState(items[0]?.href ?? "");
   const refs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const navRef = useRef<HTMLElement>(null);
+
+  // Desliza la pestaña activa a la vista DENTRO de la tira horizontal nada
+  // más — a mano, con scrollLeft del propio <nav>, en vez de
+  // element.scrollIntoView(). scrollIntoView mueve cualquier ancestro
+  // scrolleable para traer el elemento a la vista, incluida la página
+  // entera verticalmente — eso era lo que hacía "saltar" el scroll en
+  // mobile cada vez que el observer cambiaba de pestaña mientras
+  // scrolleabas (Dario lo reportó: "quiero scrolear y me salta para
+  // arriba").
+  function deslizarChip(href: string) {
+    const el = refs.current[href];
+    const nav = navRef.current;
+    if (!el || !nav) return;
+    const navRect = nav.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    if (elRect.left >= navRect.left && elRect.right <= navRect.right) return; // ya está a la vista
+    const centrado = elRect.left - navRect.left - (navRect.width - elRect.width) / 2;
+    nav.scrollBy({ left: centrado, behavior: "smooth" });
+  }
 
   useEffect(() => {
     const secciones = items
@@ -31,16 +51,17 @@ export function MiniNavScrollSpy({ items }: { items: Item[] }) {
         const masArriba = visibles.reduce((a, b) => (a.boundingClientRect.top < b.boundingClientRect.top ? a : b));
         const href = `#${masArriba.target.id}`;
         setActivo(href);
-        refs.current[href]?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+        deslizarChip(href);
       },
       { rootMargin: "-88px 0px -70% 0px", threshold: 0 }
     );
     secciones.forEach(el => observer.observe(el));
     return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
   return (
-    <nav className="sticky top-0 z-20 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur-sm md:-mx-8 md:px-8">
+    <nav ref={navRef} className="sticky top-0 z-20 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-line bg-paper/95 px-4 py-2 backdrop-blur-sm md:-mx-8 md:px-8">
       {items.map(item => (
         <a
           key={item.href}
