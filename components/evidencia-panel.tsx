@@ -35,7 +35,12 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categoria, setCategoria] = useState("");
+  const [arrastrando, setArrastrando] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Cuenta enter/leave en vez de un booleano simple: al arrastrar sobre un
+  // hijo del cuadro, el navegador dispara dragleave del padre + dragenter del
+  // hijo — con un booleano solo, eso "parpadea" el resaltado del dropzone.
+  const dragCounter = useRef(0);
 
   useEffect(() => { onArchivosChange?.(archivos); }, [archivos]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -71,6 +76,27 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
     }
   }
 
+  function onDragEnter(e: React.DragEvent) {
+    e.preventDefault();
+    if (!e.dataTransfer.types.includes("Files")) return;
+    dragCounter.current++;
+    setArrastrando(true);
+  }
+  function onDragOver(e: React.DragEvent) {
+    e.preventDefault(); // obligatorio para que el navegador permita soltar acá
+  }
+  function onDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current = Math.max(0, dragCounter.current - 1);
+    if (dragCounter.current === 0) setArrastrando(false);
+  }
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setArrastrando(false);
+    if (!subiendo) onFiles(e.dataTransfer.files);
+  }
+
   async function borrar(id: string) {
     const ok = await confirmar("¿Borrar este archivo?", { textoConfirmar: "Borrar", peligroso: true });
     if (!ok) return;
@@ -80,7 +106,19 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
   }
 
   return (
-    <div className="space-y-3">
+    <div
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      className={`relative space-y-3 rounded-lg transition ${arrastrando ? "ring-2 ring-ink/30 ring-offset-2" : ""}`}
+    >
+      {arrastrando && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-ink/40 bg-paper/95 backdrop-blur-sm">
+          <p className="text-sm font-semibold text-ink">📥 Soltá los archivos acá para subirlos</p>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <SelectShell className="w-56">
@@ -107,6 +145,8 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
         </div>
         <span className="text-xs text-slate">{archivos.length} archivo{archivos.length === 1 ? "" : "s"}</span>
       </div>
+
+      <p className="text-[11px] text-slate">O arrastrá y soltá los archivos en cualquier parte de este cuadro.</p>
 
       {error && <p className="text-xs text-fraude">{error}</p>}
 
