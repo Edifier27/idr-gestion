@@ -11,6 +11,7 @@ import { asegurarColumnaGmailConexionUsuario } from "@/lib/db/asegurar-usuario-g
 import { asegurarColumnasDerivadoAdmin } from "@/lib/db/asegurar-derivado-admin";
 import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
 import { asegurarColumnaFechaDesistido } from "@/lib/db/asegurar-fecha-desistido";
+import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,5 +34,6 @@ export async function GET() {
   await asegurarColumnasDerivadoAdmin();
   await asegurarTablaDatoExtra();
   await asegurarColumnaFechaDesistido();
+  await asegurarColumnasComunicacion();
   return NextResponse.json({ ok: true });
 }

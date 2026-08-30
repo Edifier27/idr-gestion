@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
@@ -7,7 +7,9 @@ import { desgloseFacturacion, formatARS } from "@/lib/facturacion";
 import { puedeVerCaso, puedeVerFacturacion, puedeVerInformeFinal } from "@/lib/acceso";
 import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
+import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 import { DatosCasoPanel } from "@/components/datos-caso-panel";
+import { BitacoraPanel } from "@/components/bitacora-panel";
 import { EstadoBadge } from "@/components/estado-badge";
 import { ResultadoBadge } from "@/components/resultado-badge";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
@@ -60,9 +62,16 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   const esAdmin = session.user.rol === "admin";
   const verFacturacion = puedeVerFacturacion(session);
   const verInformeFinal = puedeVerInformeFinal(session);
+  await asegurarColumnasComunicacion();
   const notas = await db.select().from(bitacora)
     .where(eq(bitacora.siniestroId, params.id))
     .orderBy(desc(bitacora.fecha));
+  // Marca como leídas (para la próxima vez) las entradas del OTRO rol que
+  // todavía no se habían visto — recién acá, DESPUÉS de leer `notas`, para
+  // que en esta misma carga se vea resaltado lo que era nuevo de verdad.
+  await db.update(bitacora)
+    .set({ leida: true })
+    .where(and(eq(bitacora.siniestroId, params.id), eq(bitacora.leida, false), eq(bitacora.autorEsAdmin, !esAdmin)));
   await asegurarTablaEvidencia();
   const archivos = await db.select().from(evidencia)
     .where(eq(evidencia.siniestroId, params.id))
@@ -333,18 +342,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         {/* Bitácora */}
         <div className="md:col-span-2">
           <Bloque id="bitacora" titulo={`Bitácora de ${nombreOperador} (${notas.length} entradas)`} colorOperador={colorOperador}>
-            {notas.length === 0
-              ? <p className="text-sm text-slate">Sin entradas todavía.</p>
-              : notas.map(n => (
-                  <div key={n.id} className="border-b border-line pb-2 last:border-0">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded bg-paper px-1.5 py-0.5 text-xs font-medium text-slate capitalize">{n.tipo}</span>
-                      <span className="text-xs text-slate">{new Date(n.fecha).toLocaleString("es-AR")}</span>
-                    </div>
-                    <p className="mt-1 text-sm text-ink">{n.nota}</p>
-                  </div>
-                ))
-            }
+            <BitacoraPanel siniestroId={s.id} entradasIniciales={notas} esAdmin={esAdmin} nombreOperador={nombreOperador} />
           </Bloque>
         </div>
       </div>

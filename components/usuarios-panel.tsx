@@ -12,6 +12,7 @@ type Usuario = {
   nombre: string;
   rol: string;
   operador: string | null;
+  email: string | null;
   activo: boolean;
   creadoEn: Date | string;
 };
@@ -26,6 +27,7 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
   const [password, setPassword] = useState("");
   const [rol, setRol] = useState<"vendedor" | "admin">("vendedor");
   const [operador, setOperador] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -37,12 +39,12 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
       const res = await fetch("/api/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, nombre, password, rol, operador }),
+        body: JSON.stringify({ username, nombre, password, rol, operador, email }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "No se pudo crear el usuario."); return; }
       setLista(l => [...l, data.usuario]);
-      setUsername(""); setNombre(""); setPassword(""); setOperador(""); setRol("vendedor");
+      setUsername(""); setNombre(""); setPassword(""); setOperador(""); setEmail(""); setRol("vendedor");
     } catch {
       setError("Error de red. Probá de nuevo.");
     } finally {
@@ -58,6 +60,20 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
     });
     const data = await res.json();
     if (res.ok) setLista(l => l.map(x => x.id === u.id ? { ...x, activo: data.usuario.activo } : x));
+  }
+
+  async function cambiarEmail(u: Usuario) {
+    const nuevo = await pedirTexto(`Mail para avisos de ${u.nombre || u.username}`, { placeholder: u.email ?? "operador@mail.com" });
+    if (nuevo === null) return;
+    const res = await fetch(`/api/usuarios/${u.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: nuevo.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) { notificar.error(data.error ?? "No se pudo guardar el mail."); return; }
+    setLista(l => l.map(x => x.id === u.id ? { ...x, email: data.usuario.email } : x));
+    notificar.ok("Mail actualizado.");
   }
 
   async function resetPassword(u: Usuario) {
@@ -109,6 +125,13 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
               <span className="mt-1 block text-xs text-slate">Tiene que coincidir con el campo "Operador" de sus casos.</span>
             </Campo>
           )}
+          {rol === "vendedor" && (
+            <Campo label="Mail personal (avisos automáticos)">
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="operador@mail.com"
+                className={`w-full ${campo}`} />
+              <span className="mt-1 block text-xs text-slate">Ahí le llega el aviso cuando se le asigna un caso nuevo. Opcional.</span>
+            </Campo>
+          )}
           {error && <p className="text-sm font-medium text-fraude md:col-span-2">{error}</p>}
           <div className="md:col-span-2">
             <button type="submit" disabled={enviando} className={boton.primario}>
@@ -137,6 +160,11 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
                     <p className="truncate text-sm text-slate">
                       {u.nombre} · {etiquetaRol(u.rol)}{u.operador ? ` · Operador ${u.operador}` : ""}
                     </p>
+                    {u.rol === "vendedor" && (
+                      <p className="truncate text-xs text-slate">
+                        {u.email ? `✉️ ${u.email}` : "Sin mail cargado — no le llegan avisos"}
+                      </p>
+                    )}
                   </div>
                   <span className={`${badge} ${u.activo ? "bg-ok/15 text-ok" : "bg-fraude/15 text-fraude"}`}>
                     <span className={badgeDot} />
@@ -150,6 +178,11 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
                   <button onClick={() => resetPassword(u)} className={boton.ghost}>
                     Cambiar contraseña
                   </button>
+                  {u.rol === "vendedor" && (
+                    <button onClick={() => cambiarEmail(u)} className={boton.ghost}>
+                      {u.email ? "Cambiar mail" : "Cargar mail"}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

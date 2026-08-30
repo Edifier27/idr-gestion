@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { usuarios } from "@/lib/db/schema";
+import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 import { UsuariosPanel } from "@/components/usuarios-panel";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +12,10 @@ export default async function AdminUsuarios() {
   if (!session?.user) redirect("/login");
   if (session.user.rol !== "admin") redirect("/panel");
 
+  if (dbConfigurada()) await asegurarColumnasComunicacion();
   const lista = dbConfigurada() ? await getDb().select({
     id: usuarios.id, username: usuarios.username, nombre: usuarios.nombre,
-    rol: usuarios.rol, operador: usuarios.operador, activo: usuarios.activo, creadoEn: usuarios.creadoEn,
+    rol: usuarios.rol, operador: usuarios.operador, email: usuarios.email, activo: usuarios.activo, creadoEn: usuarios.creadoEn,
   }).from(usuarios).orderBy(usuarios.creadoEn) : [];
 
   // Se deriva de la propia lista de usuarios ya cargada arriba (no de los

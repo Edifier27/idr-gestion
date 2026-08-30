@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
-import { siniestros } from "@/lib/db/schema";
+import { siniestros, usuarios, bitacora } from "@/lib/db/schema";
 import { calcularFacturacion } from "@/lib/facturacion";
-import { sesionRequerida, puedeVerCaso, puedeVerFacturacion, ocultarFacturacion } from "@/lib/acceso";
+import { sesionRequerida, puedeVerCaso, puedeVerFacturacion, ocultarFacturacion, conexionGmailDeSesion } from "@/lib/acceso";
+import { enviarMail } from "@/lib/gmail";
+import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -84,6 +86,47 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const [row] = await db.update(siniestros).set(patch).where(eq(siniestros.id, params.id)).returning();
   if (!row) return NextResponse.json({ error: "No existe." }, { status: 404 });
+
+  // Aviso automático por mail al operador cuando se le asigna (o reasigna)
+  // el caso — antes esto se enteraba solo si entraba al tablero. No
+  // bloquea la respuesta si falla (mail no conectado, operador sin mail
+  // cargado, etc.): la asignación en sí ya se guardó arriba.
+  if (verFacturacion && typeof patch.operador === "string" && patch.operador && patch.operador !== actual.operador) {
+    try {
+      await asegurarColumnasComunicacion();
+      const [op] = await db.select({ nombre: usuarios.nombre, email: usuarios.email })
+        .from(usuarios)
+        .where(and(eq(usuarios.operador, patch.operador), eq(usuarios.rol, "vendedor"), eq(usuarios.activo, true)));
+      if (op?.email) {
+        const conexion = conexionGmailDeSesion(session);
+        if (!("error" in conexion)) {
+          const asunto = `Nuevo caso asignado — ${row.asegurado ?? "sin nombre"}`;
+          const cuerpo = [
+            `Hola ${op.nombre},`,
+            "",
+            "Te asignaron un caso nuevo en IDR Gestión:",
+            "",
+            `Asegurado: ${row.asegurado ?? "—"}`,
+            `DNI: ${row.dni ?? "—"}`,
+            `N° Siniestro: ${row.nroSiniestro ?? "—"}`,
+            `Compañía: ${row.compania ?? "—"}`,
+            "",
+            `Entrá a verlo: https://idrgestion.com.ar/siniestros/${row.id}`,
+            "",
+            "— IDR Gestión",
+          ].join("\n");
+          await enviarMail({ para: op.email, asunto, cuerpo, adjuntos: [], conexionId: conexion.conexionId });
+          await db.insert(bitacora).values({
+            siniestroId: row.id, tipo: "mail",
+            nota: `Aviso automático de asignación enviado a ${op.email}.`,
+          });
+        }
+      }
+    } catch {
+      // no bloquea la asignación si el mail falla
+    }
+  }
+
   const siniestro = verFacturacion ? row : ocultarFacturacion(row);
   return NextResponse.json({ siniestro });
 }

@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { getDb } from "@/lib/db";
 import { usuarios } from "@/lib/db/schema";
 import { asegurarColumnaGmailConexionUsuario } from "@/lib/db/asegurar-usuario-gmail-conexion";
+import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (typeof body?.activo === "boolean") patch.activo = body.activo;
   if (typeof body?.nombre === "string" && body.nombre.trim()) patch.nombre = body.nombre.trim();
   if (typeof body?.operador === "string") patch.operador = body.operador.trim().toUpperCase() || null;
+  if (typeof body?.email === "string") patch.email = body.email.trim() || null;
   if ("gmailConexionId" in (body ?? {})) patch.gmailConexionId = typeof body.gmailConexionId === "string" && body.gmailConexionId ? body.gmailConexionId : null;
   if (typeof body?.password === "string" && body.password) {
     if (body.password.length < 6) return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres." }, { status: 400 });
@@ -39,9 +41,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   await asegurarColumnaGmailConexionUsuario();
+  await asegurarColumnasComunicacion();
   const db = getDb();
   const [row] = await db.update(usuarios).set(patch).where(eq(usuarios.id, params.id))
-    .returning({ id: usuarios.id, username: usuarios.username, nombre: usuarios.nombre, rol: usuarios.rol, operador: usuarios.operador, activo: usuarios.activo, gmailConexionId: usuarios.gmailConexionId });
+    .returning({ id: usuarios.id, username: usuarios.username, nombre: usuarios.nombre, rol: usuarios.rol, operador: usuarios.operador, email: usuarios.email, activo: usuarios.activo, gmailConexionId: usuarios.gmailConexionId });
   if (!row) return NextResponse.json({ error: "No existe." }, { status: 404 });
   return NextResponse.json({ usuario: row });
 }

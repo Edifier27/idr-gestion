@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { usuarios } from "@/lib/db/schema";
 import { asegurarColumnaGmailConexionUsuario } from "@/lib/db/asegurar-usuario-gmail-conexion";
+import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,10 +19,11 @@ export async function GET() {
   if (!(await requireAdmin())) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   if (!dbConfigurada()) return NextResponse.json({ usuarios: [] });
   await asegurarColumnaGmailConexionUsuario();
+  await asegurarColumnasComunicacion();
   const db = getDb();
   const rows = await db.select({
     id: usuarios.id, username: usuarios.username, nombre: usuarios.nombre,
-    rol: usuarios.rol, operador: usuarios.operador, activo: usuarios.activo, creadoEn: usuarios.creadoEn,
+    rol: usuarios.rol, operador: usuarios.operador, email: usuarios.email, activo: usuarios.activo, creadoEn: usuarios.creadoEn,
     gmailConexionId: usuarios.gmailConexionId,
   }).from(usuarios).orderBy(usuarios.creadoEn);
   return NextResponse.json({ usuarios: rows });
@@ -37,6 +39,7 @@ export async function POST(req: NextRequest) {
   const nombre = typeof body?.nombre === "string" && body.nombre.trim() ? body.nombre.trim() : username;
   const rol = body?.rol === "admin" ? "admin" : "vendedor";
   const operador = typeof body?.operador === "string" && body.operador.trim() ? body.operador.trim().toUpperCase() : null;
+  const email = typeof body?.email === "string" && body.email.trim() ? body.email.trim() : null;
   const gmailConexionId = typeof body?.gmailConexionId === "string" && body.gmailConexionId ? body.gmailConexionId : null;
 
   if (!username || password.length < 6) {
@@ -47,12 +50,13 @@ export async function POST(req: NextRequest) {
   }
 
   await asegurarColumnaGmailConexionUsuario();
+  await asegurarColumnasComunicacion();
   const db = getDb();
   const passwordHash = await bcrypt.hash(password, 10);
   try {
     const [row] = await db.insert(usuarios)
-      .values({ username, passwordHash, nombre, rol, operador: rol === "admin" ? null : operador, activo: true, gmailConexionId })
-      .returning({ id: usuarios.id, username: usuarios.username, nombre: usuarios.nombre, rol: usuarios.rol, operador: usuarios.operador, activo: usuarios.activo, gmailConexionId: usuarios.gmailConexionId });
+      .values({ username, passwordHash, nombre, rol, operador: rol === "admin" ? null : operador, email: rol === "admin" ? null : email, activo: true, gmailConexionId })
+      .returning({ id: usuarios.id, username: usuarios.username, nombre: usuarios.nombre, rol: usuarios.rol, operador: usuarios.operador, email: usuarios.email, activo: usuarios.activo, gmailConexionId: usuarios.gmailConexionId });
     return NextResponse.json({ usuario: row });
   } catch {
     return NextResponse.json({ error: "Ese usuario ya existe." }, { status: 409 });

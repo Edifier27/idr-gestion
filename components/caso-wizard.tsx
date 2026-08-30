@@ -8,6 +8,7 @@ import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
 import { googleCalendarUrl } from "@/lib/calendario";
 import { MapaEmbed } from "@/components/mapa-embed";
 import { IconWhatsApp } from "@/components/icon-whatsapp";
+import { BitacoraPanel, type EntradaBitacora } from "@/components/bitacora-panel";
 import { TextoPanel } from "@/components/texto-panel";
 import { InformePanel } from "@/components/informe-panel";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
@@ -15,7 +16,7 @@ import { CerrarCasoBoton } from "@/components/cerrar-caso-boton";
 import { notificar } from "@/components/notificaciones";
 
 type Archivo = { id: string; nombre: string; url: string; tipo: string; categoria?: string | null; subidoPor: string | null; creadoEn: Date | string };
-type Nota = { id: string; fecha: Date | string; tipo: string; nota: string };
+type Nota = EntradaBitacora;
 
 type PasoId = "recibido" | "contacto" | "entrevista" | "informe";
 const ORDEN: PasoId[] = ["recibido", "contacto", "entrevista", "informe"];
@@ -392,20 +393,7 @@ export function CasoWizard({
 
       <div className={`p-5 ${tarjetaElevada}`}>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Bitácora de {nombreOperador} ({notas.length} entradas)</h2>
-        <div className="space-y-2">
-          {notas.length === 0
-            ? <p className="text-sm text-slate">Sin entradas todavía.</p>
-            : notas.map(n => (
-                <div key={n.id} className="border-b border-line pb-2 last:border-0">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded bg-paper px-1.5 py-0.5 text-xs font-medium text-slate capitalize">{n.tipo}</span>
-                    <span className="text-xs text-slate">{new Date(n.fecha).toLocaleString("es-AR")}</span>
-                  </div>
-                  <p className="mt-1 text-sm text-ink">{n.nota}</p>
-                </div>
-              ))
-          }
-        </div>
+        <BitacoraPanel siniestroId={siniestroId} entradasIniciales={notas} esAdmin={false} nombreOperador={nombreOperador} />
       </div>
     </div>
   );

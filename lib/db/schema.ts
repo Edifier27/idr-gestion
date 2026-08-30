@@ -63,13 +63,19 @@ export const siniestros = pgTable("siniestros", {
   actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Bitácora: registro de gestiones (llamados, visitas, notas) por siniestro.
+// Bitácora: registro de gestiones (llamados, visitas, notas) por siniestro —
+// y también el canal de comunicación entre admin y operador dentro de cada
+// caso (autor/autorEsAdmin/leida), para no depender de WhatsApp/mail
+// personal para el ida y vuelta puntual de un caso.
 export const bitacora = pgTable("bitacora", {
   id: uuid("id").primaryKey().defaultRandom(),
   siniestroId: uuid("siniestro_id").notNull(),
   fecha: timestamp("fecha", { withTimezone: true }).notNull().defaultNow(),
-  tipo: text("tipo").notNull().default("nota"),  // nota|llamado|visita|mail
+  tipo: text("tipo").notNull().default("nota"),  // nota|llamado|visita|mail|devolucion|pedido_ayuda
   nota: text("nota").notNull(),
+  autor: text("autor"),                          // nombre de quien la escribió (null = entradas viejas o automáticas del sistema)
+  autorEsAdmin: boolean("autor_es_admin"),        // para saber a quién le toca "leerla" (el otro rol)
+  leida: boolean("leida").notNull().default(false), // se pone en true sola cuando el otro rol abre el caso
 });
 
 // Usuarios del CRM (login). Los crea el admin a mano; no hay alta pública.
@@ -80,6 +86,7 @@ export const usuarios = pgTable("usuarios", {
   nombre: text("nombre").notNull(),
   rol: text("rol").notNull().default("vendedor"), // admin|vendedor
   operador: text("operador"), // vincula al campo "operador" de siniestros; null para admin
+  email: text("email"), // mail personal del operador — a este le llega el aviso automático cuando le asignan un caso
   activo: boolean("activo").notNull().default(true),
   gmailConexionId: uuid("gmail_conexion_id"), // qué casilla de gmail_conexion usa este usuario para ver su bandeja/importar/mandar mail; null = ninguna asignada
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),

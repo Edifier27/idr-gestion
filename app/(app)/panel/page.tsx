@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { desc } from "drizzle-orm";
+import { desc, and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
-import { siniestros } from "@/lib/db/schema";
+import { siniestros, bitacora } from "@/lib/db/schema";
 import type { SiniestroRow } from "@/lib/db/schema";
 import { listarOperadoresActivos } from "@/lib/operadores";
+import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 import { TablaSiniestros } from "@/components/tabla-siniestros";
 import { PanelLayout } from "@/components/panel-layout";
 
@@ -35,6 +36,23 @@ export default async function Dashboard() {
 
   const total = rows.length;
   const derivados = esAdmin ? rows.filter(r => r.derivadoAdmin && r.estado !== "cerrado").length : 0;
+
+  // Pedidos de ayuda del operador sin leer todavía — mismo trato que los
+  // casos derivados: un aviso que no depende de que el admin se acuerde de
+  // entrar a mirar la bitácora de cada caso.
+  let pedidosAyuda: { siniestroId: string; nota: string; autor: string | null; caso: SiniestroRow }[] = [];
+  if (esAdmin && dbConfigurada()) {
+    await asegurarColumnasComunicacion();
+    const db = getDb();
+    const filas = await db.select({ siniestroId: bitacora.siniestroId, nota: bitacora.nota, autor: bitacora.autor })
+      .from(bitacora)
+      .where(and(eq(bitacora.tipo, "pedido_ayuda"), eq(bitacora.leida, false)))
+      .orderBy(desc(bitacora.fecha));
+    const mapaCasos = new Map(todas.map(r => [r.id, r]));
+    pedidosAyuda = filas
+      .map(f => ({ ...f, caso: mapaCasos.get(f.siniestroId) }))
+      .filter((f): f is typeof f & { caso: SiniestroRow } => !!f.caso);
+  }
 
   return (
     <main className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-8">
@@ -67,6 +85,25 @@ export default async function Dashboard() {
           <span aria-hidden>→</span>
         </a>
       )}
+
+      {pedidosAyuda.map(p => (
+        <a
+          key={p.siniestroId}
+          href={`/siniestros/${p.siniestroId}`}
+          className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber/30 bg-amber/5 px-4 py-3 text-sm font-medium text-amber shadow-sm transition hover:bg-amber/10"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber" />
+            </span>
+            <span className="truncate">
+              🆘 {p.autor ?? "El operador"} pide ayuda con {p.caso.asegurado ?? "un caso"}: "{p.nota}"
+            </span>
+          </span>
+          <span aria-hidden className="shrink-0">→</span>
+        </a>
+      ))}
 
       <PanelLayout esAdmin={esAdmin} operadoresExistentes={operadoresExistentes}>
         {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : (
