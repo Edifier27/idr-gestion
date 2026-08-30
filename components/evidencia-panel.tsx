@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { CATEGORIAS_EVIDENCIA, ORDEN_CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia } from "@/lib/categorias-evidencia";
 import { confirmar, notificar } from "@/components/notificaciones";
+import { SelectShell } from "@/components/select-shell";
+import { selectCampo } from "@/lib/ui";
 
 type Archivo = {
   id: string;
@@ -81,13 +83,15 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={categoria}
-            onChange={e => setCategoria(e.target.value)}
-            className="rounded-md border border-line bg-white px-2 py-1.5 text-xs text-ink shadow-sm transition focus:border-ink/40 focus:outline-none"
-          >
-            {CATEGORIAS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
+          <SelectShell className="w-56">
+            <select
+              value={categoria}
+              onChange={e => setCategoria(e.target.value)}
+              className={`w-full ${selectCampo} py-1.5 text-xs`}
+            >
+              {CATEGORIAS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </SelectShell>
           <label className="cursor-pointer rounded-md border border-ink/20 bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-sm transition hover:bg-ink hover:text-paper">
             {subiendo ? "Subiendo…" : "+ Subir archivos"}
             <input

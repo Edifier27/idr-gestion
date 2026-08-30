@@ -13,10 +13,26 @@ export const boton = {
     "inline-flex items-center justify-center gap-1.5 rounded-md border border-ink/15 bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-sm transition duration-150 hover:border-ink/30 hover:bg-paper active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
   ghost:
     "inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate transition duration-150 hover:bg-line/60 hover:text-ink active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+  // Verde: para la acción que cierra/confirma algo de punta a punta (ej.
+  // "Enviar informe" en el carrusel del operador) — se distingue a propósito
+  // del primario (negro, para acciones normales) para que quede claro de un
+  // vistazo que esta es LA acción final, no una más.
+  exito:
+    "inline-flex items-center justify-center gap-1.5 rounded-md bg-ok px-3.5 py-2 text-sm font-semibold text-paper shadow-sm transition duration-150 hover:opacity-90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ok/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
 };
 
 export const campo =
   "rounded-md border border-line bg-white px-3 py-1.5 text-sm text-ink shadow-sm transition focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-ink/10";
+
+// Select nativo con el mismo lenguaje visual que campo, pero sin la flechita
+// de fábrica del navegador/SO (appearance-none) — se usa siempre envuelto en
+// <SelectShell> (components/select-shell.tsx), que dibuja una flechita
+// propia encima, consistente en todos lados.
+// Sin ancho fijo a propósito (cada uso decide si es w-full o de ancho
+// automático) — así no queda un w-full peleando por especificidad con un
+// ancho puntual pasado aparte.
+export const selectCampo =
+  "cursor-pointer appearance-none rounded-md border border-line bg-white py-1.5 pl-3 pr-8 text-sm text-ink shadow-sm transition hover:border-ink/30 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-ink/10 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const tarjeta = "rounded-lg border border-line bg-white shadow-sm";
 

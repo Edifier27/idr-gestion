@@ -294,14 +294,21 @@ export function CasoWizard({
             <InformePanel siniestroId={siniestroId} informeInicial={informeInicial} />
           </div>
           {etapaContacto !== "informe_enviado" ? (
-            <button
-              disabled={guardando || cantArchivos === 0}
-              onClick={() => guardar({ etapa_contacto: "informe_enviado" })}
-              className={boton.primario}
-              title={cantArchivos === 0 ? "Subí al menos una prueba para poder confirmar" : undefined}
-            >
-              ✅ Marcar informe enviado
-            </button>
+            <div className="space-y-1.5 border-t border-line pt-4">
+              <button
+                disabled={guardando || cantArchivos === 0}
+                onClick={() => guardar({ etapa_contacto: "informe_enviado" })}
+                className={`w-full py-3 text-base ${boton.exito}`}
+                title={cantArchivos === 0 ? "Subí al menos una prueba para poder enviarlo" : undefined}
+              >
+                📤 {guardando ? "Enviando…" : "Enviar informe"}
+              </button>
+              <p className="text-center text-xs text-slate">
+                {cantArchivos === 0
+                  ? "Subí al menos una prueba para poder enviarlo."
+                  : "Esto termina el caso de tu lado y se lo manda al admin."}
+              </p>
+            </div>
           ) : (
             <p className="rounded-md border border-ok/30 bg-ok/5 px-3 py-2 text-sm font-medium text-ok">✅ Informe enviado — caso al día.</p>
           )}

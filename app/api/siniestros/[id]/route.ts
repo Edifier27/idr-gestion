@@ -32,7 +32,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const verFacturacion = puedeVerFacturacion(session);
 
   const patch: Record<string, unknown> = { actualizadoEn: new Date() };
-  const camposComunes = ["estado","resultado","operador","fecha_limite","informe","descargo","relato_denuncia","etapa_contacto","fecha_entrevista","motivo_contacto","derivado_admin"];
+  const camposComunes = [
+    "estado","resultado","operador","fecha_limite","informe","descargo","relato_denuncia",
+    "etapa_contacto","fecha_entrevista","motivo_contacto","derivado_admin",
+    // Datos del siniestro extraídos por la IA del PDF: el admin los puede
+    // corregir a mano desde "Datos del siniestro" si la extracción se
+    // equivocó o vino incompleta.
+    "dni","poliza","denunciante","domicilio","fecha_ocurrencia","tel_contacto","cel_contacto",
+    "email_contacto","lugar_siniestro",
+  ];
   const campos = verFacturacion
     ? [...camposComunes, "numero_fc","gasto_fijo","km_total","estado_cobro","informe_final"]
     : camposComunes;
@@ -42,7 +50,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     fecha_limite:"fechaLimite", estado_cobro:"estadoCobro", informe:"informe",
     informe_final:"informeFinal", descargo:"descargo", relato_denuncia:"relatoDenuncia",
     etapa_contacto:"etapaContacto", fecha_entrevista:"fechaEntrevista", motivo_contacto:"motivoContacto",
-    derivado_admin:"derivadoAdmin"
+    derivado_admin:"derivadoAdmin",
+    dni:"dni", poliza:"poliza", denunciante:"denunciante", domicilio:"domicilio",
+    fecha_ocurrencia:"fechaOcurrencia", tel_contacto:"telContacto", cel_contacto:"celContacto",
+    email_contacto:"emailContacto", lugar_siniestro:"lugarSiniestro",
   };
   for (const k of campos) {
     if (!(k in body)) continue;

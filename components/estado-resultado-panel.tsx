@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { campo } from "@/lib/ui";
+import { selectCampo } from "@/lib/ui";
+import { SelectShell } from "@/components/select-shell";
 
 const ESTADOS = [
   { value: "ingresado", label: "Ingresado" },
@@ -101,14 +102,16 @@ function CampoSelect({ label, valor, opciones, disabled, onChange }: {
   return (
     <label className="flex items-center justify-between gap-3 text-sm">
       <span className="text-slate">{label}</span>
-      <select
-        value={valor}
-        disabled={disabled}
-        onChange={e => onChange(e.target.value)}
-        className={`${campo} disabled:opacity-50`}
-      >
-        {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+      <SelectShell className="w-44">
+        <select
+          value={valor}
+          disabled={disabled}
+          onChange={e => onChange(e.target.value)}
+          className={`w-full ${selectCampo}`}
+        >
+          {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </SelectShell>
     </label>
   );
 }

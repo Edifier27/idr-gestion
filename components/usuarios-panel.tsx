@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { etiquetaRol } from "@/lib/roles";
-import { boton, campo, tarjeta, tarjetaElevada, colorPorTexto, cinta, cintaTexto, badge, badgeDot } from "@/lib/ui";
+import { boton, campo, selectCampo, tarjeta, tarjetaElevada, colorPorTexto, cinta, cintaTexto, badge, badgeDot } from "@/lib/ui";
+import { SelectShell } from "@/components/select-shell";
 import { pedirTexto, notificar } from "@/components/notificaciones";
 
 type Usuario = {
@@ -90,11 +91,12 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
               className={`w-full ${campo}`} />
           </Campo>
           <Campo label="Rol">
-            <select value={rol} onChange={e => setRol(e.target.value as "vendedor" | "admin")}
-              className={`w-full ${campo}`}>
-              <option value="vendedor">Operador</option>
-              <option value="admin">Admin</option>
-            </select>
+            <SelectShell className="w-full">
+              <select value={rol} onChange={e => setRol(e.target.value as "vendedor" | "admin")} className={`w-full ${selectCampo}`}>
+                <option value="vendedor">Operador</option>
+                <option value="admin">Admin</option>
+              </select>
+            </SelectShell>
           </Campo>
           {rol === "vendedor" && (
             <Campo label="Operador vinculado (qué casos ve)">

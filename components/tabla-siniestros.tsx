@@ -9,7 +9,8 @@ import { CobroBadge } from "@/components/cobro-badge";
 import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
 import { PuntoUrgente } from "@/components/punto-urgente";
 import { plazoInforme } from "@/lib/etapa-contacto";
-import { tarjetaElevada, tarjetaClickeable, colorPorTexto, cinta, cintaTexto } from "@/lib/ui";
+import { tarjetaElevada, tarjetaClickeable, selectCampo, colorPorTexto, cinta, cintaTexto } from "@/lib/ui";
+import { SelectShell } from "@/components/select-shell";
 
 const ESTADOS_COBRO = [
   { value: "no_facturado", label: "Sin facturar" },
@@ -465,17 +466,17 @@ function Select({ value, onChange, placeholder, opciones }: {
   value: string; onChange: (v: string) => void; placeholder: string; opciones: { value: string; label: string }[];
 }) {
   return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      title={placeholder}
-      className={`rounded-md border px-2.5 py-1.5 text-sm shadow-sm transition focus:border-ink/40 focus:outline-none ${
-        value ? "border-ink/30 bg-ink/5 font-medium text-ink" : "border-line bg-white text-ink"
-      }`}
-    >
-      <option value="">Todos — {placeholder}</option>
-      {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
+    <SelectShell>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        title={placeholder}
+        className={`${selectCampo} ${value ? "border-ink/30 bg-ink/5 font-medium text-ink" : ""}`}
+      >
+        <option value="">Todos — {placeholder}</option>
+        {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </SelectShell>
   );
 }
 

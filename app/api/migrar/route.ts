@@ -9,6 +9,7 @@ import { asegurarColumnasEtapaContacto } from "@/lib/db/asegurar-etapa-contacto"
 import { asegurarColumnaGmailMensajeId } from "@/lib/db/asegurar-gmail-mensaje-id";
 import { asegurarColumnaGmailConexionUsuario } from "@/lib/db/asegurar-usuario-gmail-conexion";
 import { asegurarColumnasDerivadoAdmin } from "@/lib/db/asegurar-derivado-admin";
+import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,5 +30,6 @@ export async function GET() {
   await asegurarColumnaGmailMensajeId();
   await asegurarColumnaGmailConexionUsuario();
   await asegurarColumnasDerivadoAdmin();
+  await asegurarTablaDatoExtra();
   return NextResponse.json({ ok: true });
 }

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { boton, campo } from "@/lib/ui";
+import { boton, campo, selectCampo } from "@/lib/ui";
+import { SelectShell } from "@/components/select-shell";
 import { ETAPAS_CONTACTO, plazoInforme } from "@/lib/etapa-contacto";
 
 // Convierte un ISO string (o Date) a formato "YYYY-MM-DDTHH:mm" para el input
@@ -76,10 +77,12 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
 
       <label className="flex items-center justify-between gap-3 text-sm">
         <span className="text-slate">Etapa</span>
-        <select value={etapa} disabled={guardando} onChange={e => cambiarEtapa(e.target.value)} className={`${campo} disabled:opacity-50`}>
-          <option value="">Recibido</option>
-          {ETAPAS_CONTACTO.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <SelectShell className="w-48">
+          <select value={etapa} disabled={guardando} onChange={e => cambiarEtapa(e.target.value)} className={`w-full ${selectCampo}`}>
+            <option value="">Recibido</option>
+            {ETAPAS_CONTACTO.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </SelectShell>
       </label>
 
       {etapa === "contacto_fallido" && (

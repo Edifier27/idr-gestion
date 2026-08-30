@@ -2,10 +2,12 @@ import { eq, desc } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
-import { siniestros, bitacora, evidencia } from "@/lib/db/schema";
+import { siniestros, bitacora, evidencia, datoExtra } from "@/lib/db/schema";
 import { desgloseFacturacion, formatARS } from "@/lib/facturacion";
 import { puedeVerCaso, puedeVerFacturacion, puedeVerInformeFinal } from "@/lib/acceso";
 import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
+import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
+import { DatosCasoPanel } from "@/components/datos-caso-panel";
 import { EstadoBadge } from "@/components/estado-badge";
 import { CobroBadge } from "@/components/cobro-badge";
 import { ResultadoBadge } from "@/components/resultado-badge";
@@ -66,6 +68,10 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   const archivos = await db.select().from(evidencia)
     .where(eq(evidencia.siniestroId, params.id))
     .orderBy(desc(evidencia.creadoEn));
+  await asegurarTablaDatoExtra();
+  const datosExtra = await db.select().from(datoExtra)
+    .where(eq(datoExtra.siniestroId, params.id))
+    .orderBy(datoExtra.creadoEn);
   const lugar = (s.lugarSiniestro ?? {}) as Record<string,string>;
   const lugarTxt = [lugar.calle1, lugar.altura1, lugar.localidad, lugar.provincia].filter(Boolean).join(" ");
   const desg = desgloseFacturacion(s.kmTotal);
@@ -155,19 +161,21 @@ export default async function Detalle({ params }: { params: { id: string } }) {
             a pedido de Dario, comparando con el comprobante real de ATM
             Seguros. Abajo del todo, la descripción de la denuncia. */}
         <Bloque id="datos" titulo="Datos del siniestro">
-          <fieldset className="rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
-            <legend className="px-1.5 text-[10px] font-bold uppercase tracking-wide text-ink">Siniestro</legend>
-            <DatoForm k="DNI" v={s.dni} />
-            <DatoForm k="Póliza" v={s.poliza} />
-            <DatoForm k="Denunciante" v={s.denunciante} />
-            <DatoForm k="Domicilio" v={s.domicilio} />
-            <DatoForm k="Fecha ocurrencia" v={s.fechaOcurrencia} />
-            <DatoForm k="Lugar del hecho" v={lugarTxt || null} />
-            <DatoForm k="Contacto" v={s.telContacto ?? s.celContacto} />
-            <DatoForm k="Email" v={s.emailContacto} />
-            <DatoForm k="Vencimiento gestión" v={s.fechaLimite} />
-            <DatoForm k="Operador" v={s.operador} />
-          </fieldset>
+          <DatosCasoPanel
+            siniestroId={s.id}
+            dni={s.dni}
+            poliza={s.poliza}
+            denunciante={s.denunciante}
+            domicilio={s.domicilio}
+            fechaOcurrencia={s.fechaOcurrencia}
+            lugarInicial={lugarTxt}
+            telContacto={s.telContacto}
+            celContacto={s.celContacto}
+            emailContacto={s.emailContacto}
+            fechaLimite={s.fechaLimite}
+            operador={s.operador}
+            datosExtraIniciales={datosExtra}
+          />
 
           {s.relatoDenuncia && (
             <fieldset className="mt-3 rounded-md border border-ink/20 px-3 pb-2.5 pt-0.5">
@@ -393,18 +401,6 @@ function Dato({ k, v }: { k:string; v:string|null }) {
     <div className="flex justify-between gap-4 text-sm">
       <span className="text-slate">{k}</span>
       <span className="text-right text-ink">{v ?? "—"}</span>
-    </div>
-  );
-}
-// Fila "Etiqueta ......... Valor" con línea de puntos rellenando el medio,
-// como en el comprobante de denuncia en papel — más compacta y monoespaciada
-// que Dato, para las secciones con look de formulario.
-function DatoForm({ k, v }: { k: string; v: string | null }) {
-  return (
-    <div className="flex items-baseline gap-2 border-b border-dotted border-ink/15 py-1 font-mono text-[11px] last:border-0">
-      <span className="shrink-0 uppercase tracking-wide text-slate">{k}</span>
-      <span className="min-w-[0.5rem] flex-1 border-b border-dotted border-ink/25" />
-      <span className="shrink-0 max-w-[60%] truncate text-right text-ink" title={v ?? undefined}>{v ?? "—"}</span>
     </div>
   );
 }

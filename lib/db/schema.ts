@@ -119,6 +119,18 @@ export const mailEnviado = pgTable("mail_enviado", {
   creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Datos adicionales libres por caso: cuando al admin le falta un dato puntual
+// que la IA no extrajo del PDF y no tiene un campo fijo en "siniestros"
+// (ej. "Chasis", "Compañía de grúa"), lo agrega acá como etiqueta/valor —
+// sin límite, sin tocar el schema cada vez que aparece un dato nuevo.
+export const datoExtra = pgTable("dato_extra", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  siniestroId: uuid("siniestro_id").notNull(),
+  etiqueta: text("etiqueta").notNull(),
+  valor: text("valor").notNull(),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type SiniestroRow = typeof siniestros.$inferSelect;
 export type NuevoSiniestro = typeof siniestros.$inferInsert;
 export type BitacoraRow = typeof bitacora.$inferSelect;
@@ -127,3 +139,4 @@ export type NuevoUsuario = typeof usuarios.$inferInsert;
 export type EvidenciaRow = typeof evidencia.$inferSelect;
 export type GmailConexionRow = typeof gmailConexion.$inferSelect;
 export type MailEnviadoRow = typeof mailEnviado.$inferSelect;
+export type DatoExtraRow = typeof datoExtra.$inferSelect;
