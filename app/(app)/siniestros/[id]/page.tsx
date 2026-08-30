@@ -205,6 +205,8 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               motivoContacto={s.motivoContacto}
               derivadoAdmin={s.derivadoAdmin}
               derivadoEn={s.derivadoEn}
+              denunciante={s.denunciante}
+              domicilio={s.domicilio || lugarTxt}
             />
           </Bloque>
 

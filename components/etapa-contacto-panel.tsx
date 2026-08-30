@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { boton, campo, selectCampo } from "@/lib/ui";
 import { SelectShell } from "@/components/select-shell";
 import { ETAPAS_CONTACTO, plazoInforme } from "@/lib/etapa-contacto";
+import { googleCalendarUrl } from "@/lib/calendario";
 
 // Convierte un ISO string (o Date) a formato "YYYY-MM-DDTHH:mm" para el input
 // datetime-local, en hora local del navegador.
@@ -16,13 +17,15 @@ function aInputLocal(fecha: string | Date | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista, motivoContacto, derivadoAdmin, derivadoEn }: {
+export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista, motivoContacto, derivadoAdmin, derivadoEn, denunciante, domicilio }: {
   siniestroId: string;
   etapaContacto: string | null;
   fechaEntrevista: string | Date | null;
   motivoContacto: string | null;
   derivadoAdmin?: boolean;
   derivadoEn?: string | Date | null;
+  denunciante?: string | null;
+  domicilio?: string | null;
 }) {
   const router = useRouter();
   const [etapa, setEtapa] = useState(etapaContacto ?? "");
@@ -56,6 +59,11 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
   }
 
   const plazo = plazoInforme(etapaContacto, fechaEntrevista);
+  const linkCalendario = fecha ? googleCalendarUrl({
+    titulo: `Entrevista — ${denunciante ?? "denunciante"}`,
+    inicioLocal: fecha,
+    ubicacion: domicilio || undefined,
+  }) : null;
 
   return (
     <div className="space-y-3">
@@ -121,6 +129,11 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
               Guardar
             </button>
           </div>
+          {linkCalendario && (
+            <a href={linkCalendario} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate hover:text-ink hover:underline">
+              🗓️ Agregar a Google Calendar
+            </a>
+          )}
           {plazo && (
             <p className={`mt-1.5 text-xs font-medium ${plazo === "vencido" ? "text-fraude" : plazo === "atencion" ? "text-amber" : "text-slate"}`}>
               {plazo === "vencido" && "⚠ Vencido — pasaron más de 48hs de la entrevista sin informe."}

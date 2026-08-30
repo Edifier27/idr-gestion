@@ -6,6 +6,7 @@ import { boton, campo } from "@/lib/ui";
 import { notificar, confirmar } from "@/components/notificaciones";
 import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
 import { MapaEmbed } from "@/components/mapa-embed";
+import { IconWhatsApp } from "@/components/icon-whatsapp";
 
 type DatoExtra = { id: string; etiqueta: string; valor: string };
 
@@ -203,8 +204,8 @@ function BotonesContacto({ numero }: { numero: string }) {
   return (
     <span className="flex shrink-0 items-center gap-1.5">
       {wa && (
-        <a href={wa} target="_blank" rel="noopener noreferrer" title="Mandar WhatsApp" className="text-sm leading-none text-slate transition hover:text-ok">
-          💬
+        <a href={wa} target="_blank" rel="noopener noreferrer" title="Mandar WhatsApp" className="transition hover:opacity-70">
+          <IconWhatsApp className="h-3.5 w-3.5" />
         </a>
       )}
       {tel && (

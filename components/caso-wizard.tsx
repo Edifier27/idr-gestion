@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { boton, campo, tarjetaElevada } from "@/lib/ui";
 import { plazoInforme } from "@/lib/etapa-contacto";
 import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
+import { googleCalendarUrl } from "@/lib/calendario";
 import { MapaEmbed } from "@/components/mapa-embed";
+import { IconWhatsApp } from "@/components/icon-whatsapp";
 import { TextoPanel } from "@/components/texto-panel";
 import { InformePanel } from "@/components/informe-panel";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
@@ -69,6 +71,17 @@ export function CasoWizard({
   const [cantArchivos, setCantArchivos] = useState(archivosIniciales.length);
 
   const plazo = plazoInforme(etapaContacto, fechaEntrevista);
+
+  // Link para agregar la entrevista a Google Calendar con un clic — a Dario
+  // se le ocurrió que en vez de solo guardar la fecha en el CRM, se pueda
+  // abrir directo el calendario. Se recalcula solo con lo que ya hay en
+  // pantalla (fecha cargada + datos del caso), sin pegarle a ninguna API.
+  const linkCalendario = fecha ? googleCalendarUrl({
+    titulo: `Entrevista — ${denunciante ?? "denunciante"}`,
+    inicioLocal: fecha,
+    ubicacion: domicilio || lugarTxt || undefined,
+    detalles: `Caso de ${denunciante ?? "—"}.${(telContacto ?? celContacto) ? ` Contacto: ${telContacto ?? celContacto}.` : ""}`,
+  }) : null;
 
   async function guardar(patch: Record<string, unknown>, siguiente?: PasoId) {
     setGuardando(true);
@@ -233,8 +246,8 @@ export function CasoWizard({
               </div>
               <div>
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">¿Ya quedó pactada la entrevista? Cargá fecha y hora acá</span>
-                <div className="flex gap-2">
-                  <input type="datetime-local" value={fecha} onChange={e => setFecha(e.target.value)} className={`w-full ${campo}`} />
+                <div className="flex flex-wrap gap-2">
+                  <input type="datetime-local" value={fecha} onChange={e => setFecha(e.target.value)} className={`w-full flex-1 ${campo}`} />
                   <button
                     type="button"
                     disabled={guardando || !fecha}
@@ -244,6 +257,11 @@ export function CasoWizard({
                     📅 Pactar entrevista →
                   </button>
                 </div>
+                {linkCalendario && (
+                  <a href={linkCalendario} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate hover:text-ink hover:underline">
+                    🗓️ Agregar a Google Calendar
+                  </a>
+                )}
               </div>
               <div>
                 <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate">Descargo</h3>
@@ -280,6 +298,11 @@ export function CasoWizard({
                 Guardar
               </button>
             </div>
+            {linkCalendario && (
+              <a href={linkCalendario} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate hover:text-ink hover:underline">
+                🗓️ Agregar a Google Calendar
+              </a>
+            )}
             {plazo && (
               <p className={`mt-1.5 text-xs font-medium ${plazo === "vencido" ? "text-fraude" : plazo === "atencion" ? "text-amber" : "text-slate"}`}>
                 {plazo === "vencido" && "⚠ Vencido — pasaron más de 48hs de la entrevista sin informe."}
@@ -414,8 +437,8 @@ function BotonesContacto({ numero, grande = false }: { numero: string; grande?: 
     return (
       <span className="flex shrink-0 items-center gap-1.5">
         {wa && (
-          <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-md border border-ok/30 bg-ok/5 px-2.5 py-1 text-xs font-medium text-ok shadow-sm transition hover:bg-ok/10">
-            💬 WhatsApp
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-ok/30 bg-ok/5 px-2.5 py-1 text-xs font-medium text-ok shadow-sm transition hover:bg-ok/10">
+            <IconWhatsApp className="h-3.5 w-3.5" /> WhatsApp
           </a>
         )}
         {tel && (
@@ -429,8 +452,8 @@ function BotonesContacto({ numero, grande = false }: { numero: string; grande?: 
   return (
     <span className="flex shrink-0 items-center gap-1.5">
       {wa && (
-        <a href={wa} target="_blank" rel="noopener noreferrer" title="Mandar WhatsApp" className="text-sm leading-none text-slate transition hover:text-ok">
-          💬
+        <a href={wa} target="_blank" rel="noopener noreferrer" title="Mandar WhatsApp" className="transition hover:opacity-70">
+          <IconWhatsApp className="h-3.5 w-3.5" />
         </a>
       )}
       {tel && (
