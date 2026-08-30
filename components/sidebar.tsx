@@ -13,6 +13,7 @@ import { colorPorTexto } from "@/lib/ui";
 const NAV = [
   { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false, quick: undefined as string | undefined },
   { href: "/panel?quick=cerrados", label: "Cerrados", icon: IconArchive, soloAdmin: false, quick: "cerrados" },
+  { href: "/admin/ranking", label: "Ranking", icon: IconTrophy, soloAdmin: true, quick: undefined as string | undefined },
   { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined },
   { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true, quick: undefined as string | undefined },
   { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined },
@@ -157,6 +158,9 @@ function IconGrid() {
 }
 function IconArchive() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1.5" y="2" width="13" height="3.2" rx="0.8" stroke="currentColor" strokeWidth="1.4"/><path d="M2.3 5.2v7.3a1.5 1.5 0 001.5 1.5h8.4a1.5 1.5 0 001.5-1.5V5.2" stroke="currentColor" strokeWidth="1.4"/><path d="M6.2 8.3h3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>;
+}
+function IconTrophy() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><path d="M5 2h6v4a3 3 0 01-6 0V2z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M5 3H2.5v1.2A2.3 2.3 0 005 6.3M11 3h2.5v1.2A2.3 2.3 0 0111 6.3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M8 9v2.5M6 14h4M6.5 11.5h3l.4 1.3a1 1 0 01-1 1.2h-1.8a1 1 0 01-1-1.2l.4-1.3z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>;
 }
 function IconUsers() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><circle cx="6" cy="5" r="2.3" stroke="currentColor" strokeWidth="1.4"/><path d="M1.5 14c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><circle cx="12" cy="5.5" r="1.8" stroke="currentColor" strokeWidth="1.3"/><path d="M10.5 8.2c1.9.2 3.5 1.5 3.5 3.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;

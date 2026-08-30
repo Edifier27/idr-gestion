@@ -122,11 +122,15 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
         {lista.map(u => {
           const etiqueta = u.nombre || u.username;
           return (
-            <div key={u.id} className={`flex overflow-hidden ${tarjetaElevada}`}>
-              <span className={`w-7 py-3 text-[10px] ${cinta}`} style={{ background: colorPorTexto(etiqueta) }} title={etiqueta}>
+            // Sin overflow-hidden acá (recorta la cinta si el nombre no
+            // entra en la altura de la fila, como pasó con "NACHO" viéndose
+            // "IACHO") — el redondeo va directo en la cinta y en el bloque
+            // de contenido.
+            <div key={u.id} className={`flex ${tarjetaElevada}`}>
+              <span className={`w-7 rounded-l-xl py-3 text-[10px] ${cinta}`} style={{ background: colorPorTexto(etiqueta) }} title={etiqueta}>
                 <span className={cintaTexto}>{etiqueta}</span>
               </span>
-              <div className="min-w-0 flex-1 p-3.5">
+              <div className="min-w-0 flex-1 rounded-r-xl bg-white p-3.5">
                 <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
                   <div className="min-w-0">
                     <p className="font-mono text-base font-bold text-ink">{u.username}</p>

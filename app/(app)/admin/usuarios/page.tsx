@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
-import { usuarios, siniestros } from "@/lib/db/schema";
+import { usuarios } from "@/lib/db/schema";
 import { UsuariosPanel } from "@/components/usuarios-panel";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +16,12 @@ export default async function AdminUsuarios() {
     rol: usuarios.rol, operador: usuarios.operador, activo: usuarios.activo, creadoEn: usuarios.creadoEn,
   }).from(usuarios).orderBy(usuarios.creadoEn) : [];
 
-  const operadoresExistentes = dbConfigurada()
-    ? Array.from(new Set((await getDb().select({ operador: siniestros.operador }).from(siniestros))
-        .map(r => r.operador).filter((v): v is string => !!v))).sort()
-    : [];
+  // Se deriva de la propia lista de usuarios ya cargada arriba (no de los
+  // siniestros): así un operador recién creado, sin casos todavía, ya
+  // aparece como sugerencia al crear el próximo.
+  const operadoresExistentes = Array.from(new Set(
+    lista.filter(u => u.rol === "vendedor" && u.activo).map(u => u.operador).filter((v): v is string => !!v)
+  )).sort();
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">

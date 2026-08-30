@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getDb, dbConfigurada } from "@/lib/db";
-import { siniestros } from "@/lib/db/schema";
 import { listarConexiones } from "@/lib/gmail";
+import { listarOperadoresActivos } from "@/lib/operadores";
 import { InboxPanel } from "@/components/inbox-panel";
 
 export const dynamic = "force-dynamic";
@@ -19,10 +18,7 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
     ? conexiones.find(c => c.id === session.user.gmailConexionId) ?? null
     : conexiones[0] ?? null;
 
-  const operadoresExistentes = dbConfigurada()
-    ? Array.from(new Set((await getDb().select({ operador: siniestros.operador }).from(siniestros))
-        .map(r => r.operador).filter((v): v is string => !!v))).sort()
-    : [];
+  const operadoresExistentes = await listarOperadoresActivos();
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 md:px-8 md:py-8">

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getDb, dbConfigurada } from "@/lib/db";
-import { siniestros } from "@/lib/db/schema";
+import { listarOperadoresActivos } from "@/lib/operadores";
 import { ImportarCasoPanel } from "@/components/importar-caso-panel";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +10,7 @@ export default async function ImportarCaso() {
   if (!session?.user) redirect("/login");
   if (session.user.rol !== "admin") redirect("/panel");
 
-  const operadoresExistentes = dbConfigurada()
-    ? Array.from(new Set((await getDb().select({ operador: siniestros.operador }).from(siniestros))
-        .map(r => r.operador).filter((v): v is string => !!v))).sort()
-    : [];
+  const operadoresExistentes = await listarOperadoresActivos();
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-8">

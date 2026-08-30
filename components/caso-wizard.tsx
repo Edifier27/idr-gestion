@@ -224,6 +224,20 @@ export function CasoWizard({
                 </button>
               </div>
               <div>
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">¿Ya quedó pactada la entrevista? Cargá fecha y hora acá</span>
+                <div className="flex gap-2">
+                  <input type="datetime-local" value={fecha} onChange={e => setFecha(e.target.value)} className={`w-full ${campo}`} />
+                  <button
+                    type="button"
+                    disabled={guardando || !fecha}
+                    onClick={() => guardar({ etapa_contacto: "entrevista_pactada", fecha_entrevista: fecha ? new Date(fecha).toISOString() : null }, "entrevista")}
+                    className={boton.primario}
+                  >
+                    📅 Pactar entrevista →
+                  </button>
+                </div>
+              </div>
+              <div>
                 <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate">Descargo</h3>
                 <TextoPanel
                   siniestroId={siniestroId}
@@ -233,8 +247,8 @@ export function CasoWizard({
                   etiquetaGuardar="Guardar descargo"
                 />
               </div>
-              <button onClick={() => setPasoActivo("entrevista")} className={boton.primario}>
-                Siguiente: entrevista →
+              <button onClick={() => setPasoActivo("entrevista")} className={boton.ghost}>
+                Todavía no tengo la fecha: pasar igual →
               </button>
             </div>
           )}

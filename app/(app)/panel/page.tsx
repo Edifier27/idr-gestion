@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import type { SiniestroRow } from "@/lib/db/schema";
+import { listarOperadoresActivos } from "@/lib/operadores";
 import { TablaSiniestros } from "@/components/tabla-siniestros";
 import { PanelLayout } from "@/components/panel-layout";
 
@@ -25,7 +26,12 @@ export default async function Dashboard() {
   const esAdmin = session.user.rol === "admin";
   const rows = esAdmin ? todas : todas.filter(r => r.operador === session.user.operador);
   const sinDb = !dbConfigurada();
-  const operadoresExistentes = Array.from(new Set(todas.map(r => r.operador).filter((v): v is string => !!v))).sort();
+  // Unión de operadores con usuario activo + los que aparecen en casos
+  // (por si algún caso viejo quedó con un operador ya dado de baja) — así
+  // el filtro nunca deja afuera a nadie que pueda tener casos.
+  const operadoresDeCasos = Array.from(new Set(todas.map(r => r.operador).filter((v): v is string => !!v)));
+  const operadoresActivos = await listarOperadoresActivos();
+  const operadoresExistentes = Array.from(new Set([...operadoresActivos, ...operadoresDeCasos])).sort();
 
   const total = rows.length;
   const montoFacturado = rows.filter(r => r.estadoCobro === "facturado" || r.estadoCobro === "presentado")
@@ -68,7 +74,7 @@ export default async function Dashboard() {
 
       <PanelLayout esAdmin={esAdmin} operadoresExistentes={operadoresExistentes}>
         {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : (
-          <TablaSiniestros rows={rows} esAdmin={esAdmin} montoFacturado={montoFacturado} montoCobrado={montoCobrado} />
+          <TablaSiniestros rows={rows} esAdmin={esAdmin} montoFacturado={montoFacturado} montoCobrado={montoCobrado} operadoresExistentes={operadoresExistentes} />
         )}
       </PanelLayout>
     </main>

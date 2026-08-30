@@ -58,8 +58,8 @@ function prioridad(r: SiniestroRow, esAdmin: boolean): number {
 const SIN_ASIGNAR = "__sin_asignar__";
 function claveOperador(r: SiniestroRow) { return r.operador ?? SIN_ASIGNAR; }
 
-export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }: {
-  rows: SiniestroRow[]; esAdmin: boolean; montoFacturado?: number; montoCobrado?: number;
+export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado, operadoresExistentes }: {
+  rows: SiniestroRow[]; esAdmin: boolean; montoFacturado?: number; montoCobrado?: number; operadoresExistentes?: string[];
 }) {
   // El link "Cerrados" de la sidebar manda a /panel?quick=cerrados — si viene
   // ese parámetro, la tabla arranca ya parada en esa bandeja.
@@ -74,9 +74,12 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
   const [resultado, setResultado] = useState("");
   const [busqueda, setBusqueda] = useState("");
 
+  // Une los operadores con usuario activo (viene del server, incluye a
+  // cualquiera que se haya creado aunque todavía no tenga casos) con los que
+  // aparecen en los casos actuales — así el filtro no deja afuera a nadie.
   const operadores = useMemo(
-    () => Array.from(new Set(rows.map(r => r.operador).filter((v): v is string => !!v))).sort(),
-    [rows]
+    () => Array.from(new Set([...(operadoresExistentes ?? []), ...rows.map(r => r.operador).filter((v): v is string => !!v)])).sort(),
+    [rows, operadoresExistentes]
   );
   const companias = useMemo(
     () => Array.from(new Set(rows.map(r => r.compania).filter((v): v is string => !!v))).sort(),
@@ -420,14 +423,18 @@ function TarjetaOperador({ nombre, total, pendientes, resueltos, vencidos, activ
   return (
     <button
       onClick={onClick}
-      className={`group flex overflow-hidden rounded-lg border text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm ${
+      className={`group flex rounded-lg border bg-white text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm ${
         activo ? "border-ink" : "border-line hover:border-ink/30"
       }`}
     >
-      <span className={`w-6 py-2 text-[9px] ${cinta}`} style={{ background: colorPorTexto(nombre) }} title={nombre}>
+      {/* Sin overflow-hidden en el contenedor (recorta la cinta si el nombre
+          no entra en la altura de la fila — ver el comentario en `cinta`,
+          en lib/ui.ts) — el redondeo va directo en la cinta para que igual
+          se vea prolijo contra el borde. */}
+      <span className={`w-6 rounded-l-lg py-2 text-[9px] ${cinta}`} style={{ background: colorPorTexto(nombre) }} title={nombre}>
         <span className={cintaTexto}>{nombre}</span>
       </span>
-      <div className={`min-w-0 flex-1 p-3 ${activo ? "bg-ink/5" : "bg-white"}`}>
+      <div className={`min-w-0 flex-1 rounded-r-lg p-3 ${activo ? "bg-ink/5" : "bg-white"}`}>
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="truncate text-sm font-semibold text-ink" title={nombre}>{nombre}</span>
           {vencidos > 0 && (
@@ -524,23 +531,31 @@ function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
         const venceColor = dias === null ? "text-slate" : dias < 0 ? "text-fraude" : dias <= 3 ? "text-amber" : "text-slate";
         const venceTexto = dias === null ? "Sin vencimiento" : dias < 0 ? `Vencido hace ${Math.abs(dias)}d` : `Vence en ${dias}d`;
         const compania = s.compania ?? "Sin compañía";
+        // La cinta vertical va por operador (no por aseguradora): a Dario le
+        // sirve más ver de un vistazo quién lleva cada caso; la aseguradora
+        // pasa al renglón de abajo, junto con asegurado/DNI/tipo.
+        const operadorRibbon = s.operador ?? "Sin operador";
         return (
           <a
             key={s.id}
             href={`/siniestros/${s.id}`}
-            className={`group flex overflow-hidden ${tarjetaClickeable}`}
+            className={`group flex ${tarjetaClickeable}`}
           >
-            <span className={`w-7 py-3 text-[10px] ${cinta}`} style={{ background: colorPorTexto(compania) }} title={compania}>
-              <span className={cintaTexto}>{compania}</span>
+            {/* Sin overflow-hidden acá (recorta la cinta si el nombre no
+                entra en la altura de la fila) — el redondeo va directo en
+                la cinta y en el bloque de contenido para que la tarjeta
+                siga viéndose prolija. */}
+            <span className={`w-7 rounded-l-xl py-3 text-[10px] ${cinta}`} style={{ background: colorPorTexto(operadorRibbon) }} title={operadorRibbon}>
+              <span className={cintaTexto}>{operadorRibbon}</span>
             </span>
-            <div className="min-w-0 flex-1 p-3.5">
+            <div className="min-w-0 flex-1 rounded-r-xl bg-white p-3.5">
               <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
                 <div className="min-w-0">
                   <p className="font-mono text-base font-bold text-ink">
                     #{s.numeroGestion ?? s.nroSiniestro ?? "—"}
                   </p>
                   <p className="truncate text-sm text-slate">
-                    {s.asegurado ?? "—"} · {s.dni ?? "—"} · {s.tipo ?? "—"}{s.operador ? ` · ${s.operador}` : ""}
+                    {s.asegurado ?? "—"} · {s.dni ?? "—"} · {s.tipo ?? "—"} · {compania}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-1.5">
