@@ -320,8 +320,7 @@ export function CasoWizard({
           queda solo para el admin, que es quien tiene la casilla. */}
       <div className={`p-5 ${tarjetaElevada}`}>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Acciones</h2>
-        <div className="grid grid-cols-2 gap-2 sm:max-w-sm">
-          <a href={`/api/caratula-pdf?id=${siniestroId}`} className={`${boton.secundario} w-full`}>📋 Carátula PDF</a>
+        <div className="grid grid-cols-1 gap-2 sm:max-w-sm">
           <a href={`/api/expediente-pdf?id=${siniestroId}`} className={`${boton.secundario} w-full`}>🗂️ Expediente PDF</a>
         </div>
         <div className="mt-2">

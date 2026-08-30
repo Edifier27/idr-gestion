@@ -228,9 +228,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
           {/* Botones de acción */}
           <Bloque id="acciones" titulo="Acciones" accento="slate">
-            <div className="grid grid-cols-2 gap-2">
-              {verFacturacion && <BtnLink href={`/api/factura-pdf?id=${s.id}`} label="📄 Factura PDF" />}
-              <BtnLink href={`/api/caratula-pdf?id=${s.id}`} label="📋 Carátula PDF" />
+            <div className="grid grid-cols-1 gap-2 sm:max-w-xs">
               <BtnLink href={`/api/expediente-pdf?id=${s.id}`} label="🗂️ Expediente PDF" />
             </div>
             <div className="mt-2">

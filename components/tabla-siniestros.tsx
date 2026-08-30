@@ -12,15 +12,7 @@ import { plazoInforme } from "@/lib/etapa-contacto";
 import { tarjetaElevada, tarjetaClickeable, selectCampo, colorPorTexto, cinta, cintaTexto } from "@/lib/ui";
 import { SelectShell } from "@/components/select-shell";
 
-const ESTADOS_COBRO = [
-  { value: "no_facturado", label: "Sin facturar" },
-  { value: "facturado", label: "Facturado" },
-  { value: "presentado", label: "Presentado" },
-  { value: "cobrado", label: "Cobrado" },
-  { value: "rechazado", label: "Rechazado" },
-];
-
-type QuickFilter = "hoy" | "todos" | "pendientes" | "sin_informe" | "por_facturar" | "por_cobrar" | "vencidos" | "derivados" | "cerrados";
+type QuickFilter = "hoy" | "todos" | "pendientes" | "sin_informe" | "vencidos" | "derivados" | "cerrados";
 
 function diasRestantes(fechaLimite: string | null): number | null {
   if (!fechaLimite) return null;
@@ -29,8 +21,6 @@ function diasRestantes(fechaLimite: string | null): number | null {
 }
 
 function esPendiente(r: SiniestroRow) { return !["facturado", "cerrado"].includes(r.estado); }
-function esPorFacturar(r: SiniestroRow) { return r.estado === "elevado" && (r.estadoCobro ?? "no_facturado") === "no_facturado"; }
-function esPorCobrar(r: SiniestroRow) { return r.estadoCobro === "facturado" || r.estadoCobro === "presentado"; }
 function esVencido(r: SiniestroRow) { const d = diasRestantes(r.fechaLimite); return d !== null && d < 0; }
 function esSinInforme(r: SiniestroRow) { return !r.informe; }
 function esCerrado(r: SiniestroRow) { return r.estado === "cerrado"; }
@@ -80,7 +70,6 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
   const [mostrarResumen, setMostrarResumen] = useState(false);
   const [operador, setOperador] = useState("");
   const [compania, setCompania] = useState("");
-  const [estadoCobro, setEstadoCobro] = useState("");
   const [etapaContacto, setEtapaContacto] = useState("");
   const [resultado, setResultado] = useState("");
   const [busqueda, setBusqueda] = useState("");
@@ -104,8 +93,6 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
     todos: activos.length,
     pendientes: activos.filter(esPendiente).length,
     sin_informe: activos.filter(esSinInforme).length,
-    por_facturar: activos.filter(esPorFacturar).length,
-    por_cobrar: activos.filter(esPorCobrar).length,
     vencidos: activos.filter(esVencido).length,
     derivados: activos.filter(r => r.derivadoAdmin).length,
     cerrados: rows.filter(esCerrado).length,
@@ -154,14 +141,11 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
     else if (quick === "cerrados") out = out.filter(esCerrado);
     else if (quick === "pendientes") out = out.filter(esPendiente);
     else if (quick === "sin_informe") out = out.filter(esSinInforme);
-    else if (quick === "por_facturar") out = out.filter(esPorFacturar);
-    else if (quick === "por_cobrar") out = out.filter(esPorCobrar);
     else if (quick === "vencidos") out = out.filter(esVencido);
     else if (quick === "derivados") out = out.filter(r => r.derivadoAdmin);
 
     if (operador) out = out.filter(r => claveOperador(r) === operador);
     if (compania) out = out.filter(r => r.compania === compania);
-    if (estadoCobro) out = out.filter(r => (r.estadoCobro ?? "no_facturado") === estadoCobro);
     if (etapaContacto === "recibido") out = out.filter(r => !r.etapaContacto);
     else if (etapaContacto) out = out.filter(r => r.etapaContacto === etapaContacto);
     if (resultado) out = out.filter(r => r.resultado === resultado);
@@ -177,7 +161,7 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
     }
     // Lo más urgente primero, siempre — no solo en la pestaña "Hoy".
     return [...out].sort((a, b) => prioridad(b, esAdmin) - prioridad(a, esAdmin));
-  }, [rows, quick, operador, compania, estadoCobro, etapaContacto, resultado, busqueda, esAdmin]);
+  }, [rows, quick, operador, compania, etapaContacto, resultado, busqueda, esAdmin]);
 
   // El resumen (por operador + resultados) queda un click abajo por default:
   // si algo ahí adentro está activo como filtro, lo mostramos igual para que
@@ -301,8 +285,6 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
           <QuickBtn label="Todos" activo={quick === "todos"} n={conteos.todos} onClick={() => setQuick("todos")} />
           <QuickBtn label="Pendientes" activo={quick === "pendientes"} n={conteos.pendientes} onClick={() => setQuick("pendientes")} />
           <QuickBtn label="Sin informe" activo={quick === "sin_informe"} n={conteos.sin_informe} onClick={() => setQuick("sin_informe")} />
-          {esAdmin && <QuickBtn label="Por facturar" activo={quick === "por_facturar"} n={conteos.por_facturar} onClick={() => setQuick("por_facturar")} />}
-          {esAdmin && <QuickBtn label="Por cobrar" activo={quick === "por_cobrar"} n={conteos.por_cobrar} onClick={() => setQuick("por_cobrar")} />}
           <QuickBtn label="Vencidos" activo={quick === "vencidos"} n={conteos.vencidos} onClick={() => setQuick("vencidos")} />
           <QuickBtn label="Cerrados" activo={quick === "cerrados"} n={conteos.cerrados} onClick={() => setQuick("cerrados")} />
         </div>
@@ -317,7 +299,6 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
           />
           <Select value={operador} onChange={setOperador} placeholder="Operador" opciones={operadores.map(o => ({ value: o, label: o }))} />
           <Select value={compania} onChange={setCompania} placeholder="Compañía" opciones={companias.map(c => ({ value: c, label: c }))} />
-          {esAdmin && <Select value={estadoCobro} onChange={setEstadoCobro} placeholder="Cobro" opciones={ESTADOS_COBRO} />}
         </div>
       </div>
 
@@ -485,6 +466,56 @@ function Select({ value, onChange, placeholder, opciones }: {
   );
 }
 
+// "Cartel" de una línea con el estado de contacto del caso, para que el
+// admin vea de un vistazo — sin entrar al caso — quién lo contactó, cuándo
+// es la entrevista y si el plazo de 48hs está vencido o por vencer. Dario
+// lo pidió explícitamente en este formato: "CONTACTADO POR LUCIA: ENTREVISTA
+// 01/09/2026 A LAS 14:00HS, VENCE EN 48HS".
+function formatearFechaHora(fecha: string | Date | null): string {
+  if (!fecha) return "";
+  const d = new Date(fecha);
+  if (Number.isNaN(d.getTime())) return "";
+  const fechaTxt = d.toLocaleDateString("es-AR");
+  const horaTxt = d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${fechaTxt} a las ${horaTxt}hs`;
+}
+
+function CartelEtapa({ s }: { s: SiniestroRow }) {
+  const operador = (s.operador ?? "sin operador").toUpperCase();
+  const plazo = plazoInforme(s.etapaContacto, s.fechaEntrevista);
+
+  let texto: string | null = null;
+  let color = "text-slate bg-line/50";
+
+  if (s.derivadoAdmin) {
+    // Prioridad sobre el resto: el operador ya dio por terminada su parte y
+    // te devolvió el trámite explícitamente — es más específico que un
+    // "contacto_fallido" genérico (ese puede ser solo un reintento en curso).
+    texto = `🚩 DERIVADO AL ADMIN POR ${operador}${s.motivoContacto ? `: ${s.motivoContacto}` : ""}`;
+    color = "text-fraude bg-fraude/10";
+  } else if (s.etapaContacto === "contacto_fallido") {
+    texto = `SIN CONTACTAR — ${operador}${s.motivoContacto ? `: ${s.motivoContacto}` : ""}`;
+    color = "text-fraude bg-fraude/10";
+  } else if (s.etapaContacto === "entrevista_pactada" && s.fechaEntrevista) {
+    const plazoTxt = plazo === "vencido" ? "vencido — más de 48hs sin informe" : plazo === "atencion" ? "vence pronto (48hs)" : "en plazo (48hs)";
+    texto = `CONTACTADO POR ${operador}: ENTREVISTA ${formatearFechaHora(s.fechaEntrevista).toUpperCase()} — ${plazoTxt.toUpperCase()}`;
+    color = plazo === "vencido" ? "text-fraude bg-fraude/10" : plazo === "atencion" ? "text-amber bg-amber/10" : "text-ok bg-ok/10";
+  } else if (s.etapaContacto === "contactado") {
+    texto = `CONTACTADO POR ${operador}`;
+    color = "text-ok bg-ok/10";
+  } else if (s.etapaContacto === "informe_enviado") {
+    texto = `INFORME ENVIADO POR ${operador}`;
+    color = "text-ok bg-ok/10";
+  }
+
+  if (!texto) return null;
+  return (
+    <p className={`mt-2 truncate rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${color}`} title={texto}>
+      {texto}
+    </p>
+  );
+}
+
 function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
   return (
     <div className="space-y-2">
@@ -518,6 +549,7 @@ function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
                   {esAdmin && <CobroBadge estado={s.estadoCobro} />}
                 </div>
               </div>
+              {esAdmin && <CartelEtapa s={s} />}
               <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line pt-2">
                 <span className="inline-flex items-center gap-1 text-sm font-semibold text-ok transition group-hover:gap-1.5">
                   Abrir caso
