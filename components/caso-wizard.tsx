@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { boton, campo, tarjetaElevada } from "@/lib/ui";
 import { plazoInforme } from "@/lib/etapa-contacto";
 import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
+import { MapaEmbed } from "@/components/mapa-embed";
 import { TextoPanel } from "@/components/texto-panel";
 import { InformePanel } from "@/components/informe-panel";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
@@ -146,6 +147,9 @@ export function CasoWizard({
             <DatoForm k="Email" v={emailContacto} />
             <DatoForm k="Vencimiento gestión" v={fechaLimite} />
           </fieldset>
+
+          <MapaEmbed direccion={domicilio || lugarTxt} />
+
           <div>
             <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate">Relato de la denuncia</h3>
             <TextoPanel

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { boton, campo } from "@/lib/ui";
 import { notificar, confirmar } from "@/components/notificaciones";
 import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
+import { MapaEmbed } from "@/components/mapa-embed";
 
 type DatoExtra = { id: string; etiqueta: string; valor: string };
 
@@ -110,6 +111,8 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
         <DatoInput k="Vencimiento gestión" value={form.fechaLimite} onChange={v => set("fechaLimite", v)} />
         <DatoInput k="Operador" value={form.operador} onChange={v => set("operador", v.toUpperCase())} />
       </fieldset>
+
+      <MapaEmbed direccion={form.domicilio || form.lugar} />
 
       {datosExtra.length > 0 && (
         <fieldset className="rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
