@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { boton, campo, selectCampo } from "@/lib/ui";
 import { SelectShell } from "@/components/select-shell";
@@ -113,7 +113,7 @@ export function BitacoraPanel({ siniestroId, entradasIniciales, esAdmin, nombreO
                   {ETIQUETA_TIPO[n.tipo] ?? n.tipo}
                 </span>
                 <span className="text-xs font-medium text-ink">{n.autor ?? nombreOperador}</span>
-                <span className="text-xs text-slate">{new Date(n.fecha).toLocaleString("es-AR")}</span>
+                <FechaLocal fecha={n.fecha} />
               </div>
               <p className="mt-1 whitespace-pre-wrap text-sm text-ink">{n.nota}</p>
             </div>
@@ -122,4 +122,16 @@ export function BitacoraPanel({ siniestroId, entradasIniciales, esAdmin, nombreO
       )}
     </div>
   );
+}
+
+// Arranca vacío y se completa recién en el cliente (useEffect) — el
+// servidor de Vercel corre en UTC y el navegador en hora de Argentina,
+// toLocaleString("es-AR") calculado en cada uno da un string distinto para
+// la misma fecha, y React tira error de hidratación al no coincidir con lo
+// que ya mandó el servidor (mismo problema de fondo que el del link de
+// Google Calendar — ver el comentario en caso-wizard.tsx).
+function FechaLocal({ fecha }: { fecha: string | Date }) {
+  const [texto, setTexto] = useState("");
+  useEffect(() => { setTexto(new Date(fecha).toLocaleString("es-AR")); }, [fecha]);
+  return <span className="text-xs text-slate">{texto}</span>;
 }

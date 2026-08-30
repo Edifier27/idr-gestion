@@ -207,8 +207,17 @@ function TarjetaArchivo({ f, onBorrar }: { f: Archivo; onBorrar: (id: string) =>
         Borrar
       </button>
       <div className="truncate px-1.5 py-1 text-[10px] text-slate">
-        {f.subidoPor ?? "—"} · {new Date(f.creadoEn).toLocaleDateString("es-AR")}
+        {f.subidoPor ?? "—"} · <FechaLocalCorta fecha={f.creadoEn} />
       </div>
     </div>
   );
+}
+
+// Arranca vacío y se completa en el cliente — el server (UTC) y el
+// navegador (hora de Argentina) dan un toLocaleDateString distinto para la
+// misma fecha, y React tira error de hidratación si no coinciden.
+function FechaLocalCorta({ fecha }: { fecha: string | Date }) {
+  const [texto, setTexto] = useState("");
+  useEffect(() => { setTexto(new Date(fecha).toLocaleDateString("es-AR")); }, [fecha]);
+  return <>{texto}</>;
 }

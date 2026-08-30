@@ -39,6 +39,11 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
   const [motivo, setMotivo] = useState(motivoContacto ?? "");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Mismo motivo que fecha arriba: toLocaleString calculado en el server
+  // (UTC) y en el cliente (hora de Argentina) da textos distintos y React
+  // tira error de hidratación — se completa recién en el cliente.
+  const [derivadoTxt, setDerivadoTxt] = useState("");
+  useEffect(() => { setDerivadoTxt(derivadoEn ? new Date(derivadoEn).toLocaleString("es-AR") : ""); }, [derivadoEn]);
 
   async function guardar(patch: Record<string, unknown>) {
     setGuardando(true);
@@ -76,7 +81,7 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
       {derivadoAdmin && (
         <div className="flex items-center justify-between gap-2 rounded-md border border-fraude/30 bg-fraude/5 px-3 py-2">
           <p className="text-sm font-medium text-fraude">
-            🚩 Derivado por el operador{derivadoEn ? ` · ${new Date(derivadoEn).toLocaleString("es-AR")}` : ""} — no logró contactarlo.
+            🚩 Derivado por el operador{derivadoTxt ? ` · ${derivadoTxt}` : ""} — no logró contactarlo.
           </p>
           <button
             type="button"
