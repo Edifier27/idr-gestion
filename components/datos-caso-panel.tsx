@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { boton, campo } from "@/lib/ui";
 import { notificar, confirmar } from "@/components/notificaciones";
+import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
 
 type DatoExtra = { id: string; etiqueta: string; valor: string };
 
@@ -100,11 +101,11 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
         <DatoInput k="DNI" value={form.dni} onChange={v => set("dni", v)} />
         <DatoInput k="Póliza" value={form.poliza} onChange={v => set("poliza", v)} />
         <DatoInput k="Denunciante" value={form.denunciante} onChange={v => set("denunciante", v)} />
-        <DatoInput k="Domicilio" value={form.domicilio} onChange={v => set("domicilio", v)} />
+        <DatoInput k="Domicilio" value={form.domicilio} onChange={v => set("domicilio", v)} extra={<BotonMaps direccion={form.domicilio} />} />
         <DatoInput k="Fecha ocurrencia" value={form.fechaOcurrencia} onChange={v => set("fechaOcurrencia", v)} />
-        <DatoInput k="Lugar del hecho" value={form.lugar} onChange={v => set("lugar", v)} />
-        <DatoInput k="Teléfono" value={form.telContacto} onChange={v => set("telContacto", v)} />
-        <DatoInput k="Celular" value={form.celContacto} onChange={v => set("celContacto", v)} />
+        <DatoInput k="Lugar del hecho" value={form.lugar} onChange={v => set("lugar", v)} extra={<BotonMaps direccion={form.lugar} />} />
+        <DatoInput k="Teléfono" value={form.telContacto} onChange={v => set("telContacto", v)} extra={<BotonesContacto numero={form.telContacto} />} />
+        <DatoInput k="Celular" value={form.celContacto} onChange={v => set("celContacto", v)} extra={<BotonesContacto numero={form.celContacto} />} />
         <DatoInput k="Email" value={form.emailContacto} onChange={v => set("emailContacto", v)} type="email" />
         <DatoInput k="Vencimiento gestión" value={form.fechaLimite} onChange={v => set("fechaLimite", v)} />
         <DatoInput k="Operador" value={form.operador} onChange={v => set("operador", v.toUpperCase())} />
@@ -157,7 +158,7 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
   );
 }
 
-function DatoInput({ k, value, onChange, type = "text" }: { k: string; value: string; onChange: (v: string) => void; type?: string }) {
+function DatoInput({ k, value, onChange, type = "text", extra }: { k: string; value: string; onChange: (v: string) => void; type?: string; extra?: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-2 border-b border-dotted border-ink/15 py-1 font-mono text-[11px] last:border-0">
       <span className="shrink-0 uppercase tracking-wide text-slate">{k}</span>
@@ -168,6 +169,46 @@ function DatoInput({ k, value, onChange, type = "text" }: { k: string; value: st
         placeholder="—"
         className="min-w-0 flex-1 rounded bg-transparent px-1 text-right text-ink outline-none transition focus:bg-ink/5"
       />
+      {extra}
     </div>
+  );
+}
+
+// Abre el domicilio/lugar directo en Google Maps — sin tener que copiar y
+// pegar la dirección a mano.
+function BotonMaps({ direccion }: { direccion: string }) {
+  const url = mapsUrl(direccion);
+  if (!url) return null;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Abrir en Google Maps"
+      className="shrink-0 text-sm leading-none text-slate transition hover:text-ink"
+    >
+      📍
+    </a>
+  );
+}
+
+// Llamar o mandar WhatsApp directo al número cargado.
+function BotonesContacto({ numero }: { numero: string }) {
+  const wa = whatsappUrl(numero);
+  const tel = telUrl(numero);
+  if (!wa && !tel) return null;
+  return (
+    <span className="flex shrink-0 items-center gap-1.5">
+      {wa && (
+        <a href={wa} target="_blank" rel="noopener noreferrer" title="Mandar WhatsApp" className="text-sm leading-none text-slate transition hover:text-ok">
+          💬
+        </a>
+      )}
+      {tel && (
+        <a href={tel} title="Llamar" className="text-sm leading-none text-slate transition hover:text-ink">
+          📞
+        </a>
+      )}
+    </span>
   );
 }

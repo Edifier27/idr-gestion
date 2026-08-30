@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { boton, campo, tarjetaElevada } from "@/lib/ui";
 import { plazoInforme } from "@/lib/etapa-contacto";
+import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
 import { TextoPanel } from "@/components/texto-panel";
 import { InformePanel } from "@/components/informe-panel";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
@@ -138,10 +139,10 @@ export function CasoWizard({
             <DatoForm k="DNI" v={dni} />
             <DatoForm k="Póliza" v={poliza} />
             <DatoForm k="Denunciante" v={denunciante} />
-            <DatoForm k="Domicilio" v={domicilio} />
+            <DatoForm k="Domicilio" v={domicilio} extra={domicilio && <BotonMaps direccion={domicilio} />} />
             <DatoForm k="Fecha ocurrencia" v={fechaOcurrencia} />
-            <DatoForm k="Lugar del hecho" v={lugarTxt || null} />
-            <DatoForm k="Contacto" v={telContacto ?? celContacto} />
+            <DatoForm k="Lugar del hecho" v={lugarTxt || null} extra={lugarTxt && <BotonMaps direccion={lugarTxt} />} />
+            <DatoForm k="Contacto" v={telContacto ?? celContacto} extra={(telContacto ?? celContacto) && <BotonesContacto numero={(telContacto ?? celContacto)!} />} />
             <DatoForm k="Email" v={emailContacto} />
             <DatoForm k="Vencimiento gestión" v={fechaLimite} />
           </fieldset>
@@ -167,7 +168,10 @@ export function CasoWizard({
           <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Contactar al denunciante</h2>
           <div className="rounded-md border border-line bg-paper p-3 text-sm">
             <p className="text-slate">Datos de contacto</p>
-            <p className="font-mono text-ink">{telContacto ?? celContacto ?? "— sin teléfono cargado"}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-mono text-ink">{telContacto ?? celContacto ?? "— sin teléfono cargado"}</p>
+              {(telContacto ?? celContacto) && <BotonesContacto numero={(telContacto ?? celContacto)!} grande />}
+            </div>
             {emailContacto && <p className="font-mono text-ink">{emailContacto}</p>}
           </div>
 
@@ -372,12 +376,64 @@ export function CasoWizard({
   );
 }
 
-function DatoForm({ k, v }: { k: string; v: string | null }) {
+function DatoForm({ k, v, extra }: { k: string; v: string | null; extra?: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-2 border-b border-dotted border-ink/15 py-1 font-mono text-[11px] last:border-0">
       <span className="shrink-0 uppercase tracking-wide text-slate">{k}</span>
       <span className="min-w-[0.5rem] flex-1 border-b border-dotted border-ink/25" />
       <span className="shrink-0 max-w-[60%] truncate text-right text-ink" title={v ?? undefined}>{v ?? "—"}</span>
+      {extra}
     </div>
+  );
+}
+
+// Abre el domicilio/lugar directo en Google Maps.
+function BotonMaps({ direccion }: { direccion: string }) {
+  const url = mapsUrl(direccion);
+  if (!url) return null;
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" title="Abrir en Google Maps" className="shrink-0 text-sm leading-none text-slate transition hover:text-ink">
+      📍
+    </a>
+  );
+}
+
+// Llamar o mandar WhatsApp directo al número cargado. "grande" es la
+// variante con look de botón para el bloque "Datos de contacto" del paso
+// Contacto — ahí es LA acción que el operador va a tocar, no un ícono
+// chico al costado.
+function BotonesContacto({ numero, grande = false }: { numero: string; grande?: boolean }) {
+  const wa = whatsappUrl(numero);
+  const tel = telUrl(numero);
+  if (!wa && !tel) return null;
+  if (grande) {
+    return (
+      <span className="flex shrink-0 items-center gap-1.5">
+        {wa && (
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-md border border-ok/30 bg-ok/5 px-2.5 py-1 text-xs font-medium text-ok shadow-sm transition hover:bg-ok/10">
+            💬 WhatsApp
+          </a>
+        )}
+        {tel && (
+          <a href={tel} className="inline-flex items-center gap-1 rounded-md border border-ink/15 bg-white px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition hover:bg-paper">
+            📞 Llamar
+          </a>
+        )}
+      </span>
+    );
+  }
+  return (
+    <span className="flex shrink-0 items-center gap-1.5">
+      {wa && (
+        <a href={wa} target="_blank" rel="noopener noreferrer" title="Mandar WhatsApp" className="text-sm leading-none text-slate transition hover:text-ok">
+          💬
+        </a>
+      )}
+      {tel && (
+        <a href={tel} title="Llamar" className="text-sm leading-none text-slate transition hover:text-ink">
+          📞
+        </a>
+      )}
+    </span>
   );
 }
