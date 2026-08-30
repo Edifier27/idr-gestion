@@ -98,7 +98,7 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
 
   return (
     <div className="space-y-2">
-      <fieldset className="rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
+      <fieldset className="min-w-0 rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
         <legend className="px-1.5 text-[10px] font-bold uppercase tracking-wide text-ink">Siniestro</legend>
         <DatoInput k="DNI" value={form.dni} onChange={v => set("dni", v)} />
         <DatoInput k="Póliza" value={form.poliza} onChange={v => set("poliza", v)} />
@@ -116,7 +116,7 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
       <MapaEmbed direccion={form.domicilio || form.lugar} />
 
       {datosExtra.length > 0 && (
-        <fieldset className="rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
+        <fieldset className="min-w-0 rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
           <legend className="px-1.5 text-[10px] font-bold uppercase tracking-wide text-ink">Datos adicionales</legend>
           {datosExtra.map(d => (
             <div key={d.id} className="group flex items-baseline gap-2 border-b border-dotted border-ink/15 py-1 font-mono text-[11px] last:border-0">

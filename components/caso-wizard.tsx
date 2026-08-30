@@ -157,7 +157,7 @@ export function CasoWizard({
       {pasoActivo === "recibido" && (
         <div className={`space-y-4 p-5 ${tarjetaElevada}`}>
           <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Datos del caso</h2>
-          <fieldset className="rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
+          <fieldset className="min-w-0 rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
             <legend className="px-1.5 text-[10px] font-bold uppercase tracking-wide text-ink">Siniestro</legend>
             <DatoForm k="DNI" v={dni} />
             <DatoForm k="Póliza" v={poliza} />
