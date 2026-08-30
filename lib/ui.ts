@@ -83,5 +83,11 @@ export function colorPorTexto(texto: string): string {
 // pisar esas utilidades con las del propio uso — cada lugar las suma aparte.
 // Sin el rotate-180 extra: así el texto se lee de arriba hacia abajo (Dario
 // reportó que con la vuelta de más las letras se veían "dadas vuelta").
-export const cinta = "flex shrink-0 items-center justify-center overflow-hidden font-bold uppercase tracking-wide text-white";
+// Sin overflow-hidden a propósito: con nombres largos (ATM SEGUROS,
+// operadores de 5-6 letras) en filas cortas (ej. la lista de Usuarios), el
+// texto vertical no entraba en la altura disponible y el overflow-hidden le
+// cortaba la primera letra (Dario reportó "NACHO" viéndose como "IACHO").
+// Al sacarlo, si el texto no entra la fila entera crece para que quepa
+// (comportamiento normal de flexbox) en vez de recortar contenido.
+export const cinta = "flex shrink-0 items-center justify-center font-bold uppercase tracking-wide text-white";
 export const cintaTexto = "[writing-mode:vertical-rl] whitespace-nowrap";

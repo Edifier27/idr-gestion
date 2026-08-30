@@ -37,10 +37,14 @@ function esCerrado(r: SiniestroRow) { return r.estado === "cerrado"; }
 
 // "Bandeja de hoy": todo lo que necesita una acción ya — contacto que falló
 // (le cae al admin), informe atrasado/por atrasarse (plazo de 48hs desde la
-// entrevista), o vencimiento general del caso a menos de 2 días.
-function esHoy(r: SiniestroRow) {
+// entrevista), vencimiento general del caso a menos de 2 días, o (solo para
+// el admin) un informe recién enviado por el operador: ahí es el admin el
+// que tiene que tomarlo y mandarlo a la aseguradora, así que hasta que no
+// cierre el caso, se queda visible en "Hoy" en vez de perderse en "Todos".
+function esHoy(r: SiniestroRow, esAdmin: boolean) {
   if (esCerrado(r)) return false;
   if (r.etapaContacto === "contacto_fallido") return true;
+  if (esAdmin && r.etapaContacto === "informe_enviado") return true;
   const plazo = plazoInforme(r.etapaContacto, r.fechaEntrevista);
   if (plazo === "vencido" || plazo === "atencion") return true;
   const d = diasRestantes(r.fechaLimite);
@@ -49,8 +53,9 @@ function esHoy(r: SiniestroRow) {
 
 // Ordena lo más urgente primero, así lo que necesita atención ya no se
 // pierde en el medio de la lista aunque no estés en la pestaña "Hoy".
-function prioridad(r: SiniestroRow): number {
+function prioridad(r: SiniestroRow, esAdmin: boolean): number {
   if (r.etapaContacto === "contacto_fallido") return 5;
+  if (esAdmin && r.etapaContacto === "informe_enviado") return 5;
   const plazo = plazoInforme(r.etapaContacto, r.fechaEntrevista);
   if (plazo === "vencido") return 4;
   const d = diasRestantes(r.fechaLimite);
@@ -95,7 +100,7 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
   const activos = useMemo(() => rows.filter(r => !esCerrado(r)), [rows]);
 
   const conteos = useMemo(() => ({
-    hoy: activos.filter(esHoy).length,
+    hoy: activos.filter(r => esHoy(r, esAdmin)).length,
     todos: activos.length,
     pendientes: activos.filter(esPendiente).length,
     sin_informe: activos.filter(esSinInforme).length,
@@ -145,7 +150,7 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
     let out = rows;
     if (quick !== "cerrados") out = out.filter(r => !esCerrado(r));
 
-    if (quick === "hoy") out = out.filter(esHoy);
+    if (quick === "hoy") out = out.filter(r => esHoy(r, esAdmin));
     else if (quick === "cerrados") out = out.filter(esCerrado);
     else if (quick === "pendientes") out = out.filter(esPendiente);
     else if (quick === "sin_informe") out = out.filter(esSinInforme);
@@ -171,8 +176,8 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado }:
       );
     }
     // Lo más urgente primero, siempre — no solo en la pestaña "Hoy".
-    return [...out].sort((a, b) => prioridad(b) - prioridad(a));
-  }, [rows, quick, operador, compania, estadoCobro, etapaContacto, resultado, busqueda]);
+    return [...out].sort((a, b) => prioridad(b, esAdmin) - prioridad(a, esAdmin));
+  }, [rows, quick, operador, compania, estadoCobro, etapaContacto, resultado, busqueda, esAdmin]);
 
   // El resumen (por operador + resultados) queda un click abajo por default:
   // si algo ahí adentro está activo como filtro, lo mostramos igual para que
