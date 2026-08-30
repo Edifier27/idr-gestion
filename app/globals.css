@@ -6,10 +6,21 @@
   color-scheme: light;
 }
 
+/* Nunca permite scroll horizontal de toda la página (Dario reportó poder
+   "deslizar hacia la derecha" en mobile) — cualquier cosa ancha adentro
+   tiene que scrollear en su propio contenedor (overflow-x-auto), como ya
+   hace la mini-navegación del caso, no arrastrar la página entera. */
+html {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   background: #f6f5f1;
   color: #141b2e;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* Numeración tabular para columnas de plata y km */
