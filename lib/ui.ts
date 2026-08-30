@@ -77,12 +77,16 @@ export function colorPorTexto(texto: string): string {
   return `hsl(${hue} 45% 34%)`;
 }
 
-// Cinta vertical reusable: bloque de color angosto con el texto rotado, a la
-// izquierda de una tarjeta de lista (fila de caso, operador, usuario…). No
-// incluye ancho/padding/tamaño de texto (varían según la tarjeta) para no
+// Cinta vertical reusable: bloque de color angosto con el texto vertical, a
+// la izquierda de una tarjeta de lista (fila de caso, operador, usuario…).
+// No incluye ancho/padding/tamaño de texto (varían según la tarjeta) para no
 // pisar esas utilidades con las del propio uso — cada lugar las suma aparte.
-// Sin el rotate-180 extra: así el texto se lee de arriba hacia abajo (Dario
-// reportó que con la vuelta de más las letras se veían "dadas vuelta").
+// text-orientation: upright (no el "mixed" por default del navegador): con
+// solo writing-mode: vertical-rl, letras latinas como estas se rotan 90°
+// enteras como si fuera una palabra horizontal recostada de costado — a
+// simple vista sigue pareciendo texto "en línea" (Dario lo reportó así, dos
+// veces). Con upright cada letra queda derecha, apilada de arriba hacia
+// abajo (N-A-C-H-O), que es lo que se lee como "vertical" de verdad.
 // Sin overflow-hidden a propósito: con nombres largos (ATM SEGUROS,
 // operadores de 5-6 letras) en filas cortas (ej. la lista de Usuarios), el
 // texto vertical no entraba en la altura disponible y el overflow-hidden le
@@ -90,4 +94,4 @@ export function colorPorTexto(texto: string): string {
 // Al sacarlo, si el texto no entra la fila entera crece para que quepa
 // (comportamiento normal de flexbox) en vez de recortar contenido.
 export const cinta = "flex shrink-0 items-center justify-center font-bold uppercase tracking-wide text-white";
-export const cintaTexto = "[writing-mode:vertical-rl] whitespace-nowrap";
+export const cintaTexto = "[writing-mode:vertical-rl] [text-orientation:upright] whitespace-nowrap";
