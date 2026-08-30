@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { boton, campo, tarjetaElevada } from "@/lib/ui";
 import { plazoInforme } from "@/lib/etapa-contacto";
@@ -64,7 +64,15 @@ export function CasoWizard({
   const pasoAlcanzado = pasoDesdeEtapa(etapaContacto);
   const indiceAlcanzado = ORDEN.indexOf(pasoAlcanzado);
   const [pasoActivo, setPasoActivo] = useState<PasoId>(pasoAlcanzado);
-  const [fecha, setFecha] = useState(aInputLocal(fechaEntrevista));
+  // Arranca vacío (no aInputLocal(fechaEntrevista) directo): el server de
+  // Vercel corre en UTC y el navegador en hora de Argentina — calcular la
+  // fecha local durante el render de servidor y el de cliente da resultados
+  // distintos (desfasan 3hs), y React puede quedarse con el valor del
+  // servidor pegado en algunos atributos (le pasó al link de Google
+  // Calendar: mostraba bien la hora en el input pero el link salía 3hs
+  // corrido). Se carga posta recién en el cliente, vía useEffect.
+  const [fecha, setFecha] = useState("");
+  useEffect(() => { setFecha(aInputLocal(fechaEntrevista)); }, [fechaEntrevista]);
   const [motivo, setMotivo] = useState(motivoContacto ?? "");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);

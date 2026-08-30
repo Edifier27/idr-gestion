@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { boton, campo, selectCampo } from "@/lib/ui";
 import { SelectShell } from "@/components/select-shell";
@@ -29,7 +29,13 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
 }) {
   const router = useRouter();
   const [etapa, setEtapa] = useState(etapaContacto ?? "");
-  const [fecha, setFecha] = useState(aInputLocal(fechaEntrevista));
+  // Arranca vacío, no aInputLocal(fechaEntrevista) directo: el server (UTC)
+  // y el navegador (hora de Argentina) calculan la hora local distinto, y
+  // el link de Google Calendar puede quedar pegado al valor del servidor,
+  // desfasado — se carga posta recién en el cliente. Ver el mismo comentario
+  // en caso-wizard.tsx.
+  const [fecha, setFecha] = useState("");
+  useEffect(() => { setFecha(aInputLocal(fechaEntrevista)); }, [fechaEntrevista]);
   const [motivo, setMotivo] = useState(motivoContacto ?? "");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
