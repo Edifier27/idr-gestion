@@ -213,7 +213,16 @@ export function CasoWizard({
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm font-medium text-ok">✅ Contactado.</p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium text-ok">✅ Contactado.</p>
+                <button
+                  disabled={guardando}
+                  onClick={() => guardar({ etapa_contacto: "contacto_fallido" })}
+                  className="text-xs font-medium text-fraude underline decoration-dotted underline-offset-2 hover:text-fraude/80 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  📵 En realidad no pude contactarlo
+                </button>
+              </div>
               <div>
                 <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate">Descargo</h3>
                 <TextoPanel
