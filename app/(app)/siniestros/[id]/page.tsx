@@ -9,7 +9,6 @@ import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
 import { DatosCasoPanel } from "@/components/datos-caso-panel";
 import { EstadoBadge } from "@/components/estado-badge";
-import { CobroBadge } from "@/components/cobro-badge";
 import { ResultadoBadge } from "@/components/resultado-badge";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
 import { TextoPanel } from "@/components/texto-panel";
@@ -102,7 +101,6 @@ export default async function Detalle({ params }: { params: { id: string } }) {
                 🚩 Derivado
               </span>
             )}
-            {verFacturacion && <CobroBadge estado={s.estadoCobro} />}
           </div>
         </div>
       </div>
@@ -195,8 +193,6 @@ export default async function Detalle({ params }: { params: { id: string } }) {
                 siniestroId={s.id}
                 estado={s.estado}
                 resultado={s.resultado}
-                estadoCobro={s.estadoCobro}
-                verFacturacion={verFacturacion}
               />
             </Bloque>
           )}

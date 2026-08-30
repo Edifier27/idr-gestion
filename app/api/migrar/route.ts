@@ -10,6 +10,7 @@ import { asegurarColumnaGmailMensajeId } from "@/lib/db/asegurar-gmail-mensaje-i
 import { asegurarColumnaGmailConexionUsuario } from "@/lib/db/asegurar-usuario-gmail-conexion";
 import { asegurarColumnasDerivadoAdmin } from "@/lib/db/asegurar-derivado-admin";
 import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
+import { asegurarColumnaFechaDesistido } from "@/lib/db/asegurar-fecha-desistido";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,5 +32,6 @@ export async function GET() {
   await asegurarColumnaGmailConexionUsuario();
   await asegurarColumnasDerivadoAdmin();
   await asegurarTablaDatoExtra();
+  await asegurarColumnaFechaDesistido();
   return NextResponse.json({ ok: true });
 }

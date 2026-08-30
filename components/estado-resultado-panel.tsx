@@ -24,20 +24,10 @@ const RESULTADOS = [
   { value: "sin_cobertura", label: "Sin cobertura" },
 ];
 
-const COBROS = [
-  { value: "no_facturado", label: "Sin facturar" },
-  { value: "facturado", label: "Facturado" },
-  { value: "presentado", label: "Presentado" },
-  { value: "cobrado", label: "Cobrado" },
-  { value: "rechazado", label: "Rechazado" },
-];
-
-export function EstadoResultadoPanel({ siniestroId, estado, resultado, estadoCobro, verFacturacion }: {
+export function EstadoResultadoPanel({ siniestroId, estado, resultado }: {
   siniestroId: string;
   estado: string;
   resultado: string;
-  estadoCobro: string | null;
-  verFacturacion: boolean;
 }) {
   const router = useRouter();
   const [guardando, setGuardando] = useState<string | null>(null);
@@ -78,15 +68,6 @@ export function EstadoResultadoPanel({ siniestroId, estado, resultado, estadoCob
         disabled={guardando === "resultado"}
         onChange={v => actualizar("resultado", v)}
       />
-      {verFacturacion && (
-        <CampoSelect
-          label="Cobro"
-          valor={estadoCobro ?? "no_facturado"}
-          opciones={COBROS}
-          disabled={guardando === "estado_cobro"}
-          onChange={v => actualizar("estado_cobro", v)}
-        />
-      )}
       {error && <p className="text-xs text-fraude">{error}</p>}
     </div>
   );

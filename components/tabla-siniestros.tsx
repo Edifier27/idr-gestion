@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
 import { EstadoBadge } from "@/components/estado-badge";
-import { CobroBadge } from "@/components/cobro-badge";
 import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
 import { PuntoUrgente } from "@/components/punto-urgente";
 import { plazoInforme } from "@/lib/etapa-contacto";
@@ -58,8 +57,8 @@ function prioridad(r: SiniestroRow, esAdmin: boolean): number {
 const SIN_ASIGNAR = "__sin_asignar__";
 function claveOperador(r: SiniestroRow) { return r.operador ?? SIN_ASIGNAR; }
 
-export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado, operadoresExistentes }: {
-  rows: SiniestroRow[]; esAdmin: boolean; montoFacturado?: number; montoCobrado?: number; operadoresExistentes?: string[];
+export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
+  rows: SiniestroRow[]; esAdmin: boolean; operadoresExistentes?: string[];
 }) {
   // El link "Cerrados" de la sidebar manda a /panel?quick=cerrados — si viene
   // ese parámetro, la tabla arranca ya parada en esa bandeja.
@@ -226,13 +225,6 @@ export function TablaSiniestros({ rows, esAdmin, montoFacturado, montoCobrado, o
           alturas a mano en JS — truco moderno de CSS puro. */}
       <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${(mostrarResumen || hayFiltroEnResumen) ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className="overflow-hidden">
-          {esAdmin && (montoFacturado !== undefined || montoCobrado !== undefined) && (
-            <div className="mb-4 grid grid-cols-2 gap-2.5 sm:max-w-xs">
-              <MiniStatMoney label="Por cobrar" valor={formatARS(montoFacturado ?? 0)} accent="amber" />
-              <MiniStatMoney label="Cobrado" valor={formatARS(montoCobrado ?? 0)} accent="ok" />
-            </div>
-          )}
-
           {esAdmin && porOperador.length > 0 && (
             <div className={`mb-4 p-4 ${tarjetaElevada}`}>
               <div className="mb-3 flex items-center justify-between">
@@ -379,21 +371,6 @@ function EtapaCard({ label, valor, pct, accent, activo, urgente, onClick }: {
         </span>
       </span>
     </button>
-  );
-}
-
-// Cajita de plata (no clickeable, no es filtro) con el mismo lenguaje visual
-// que EtapaCard — cinta arriba — para "Por cobrar"/"Cobrado" dentro del
-// resumen colapsado.
-function MiniStatMoney({ label, valor, accent }: { label: string; valor: string; accent: "amber" | "ok" }) {
-  return (
-    <div className="overflow-hidden rounded-lg border border-line bg-white shadow-sm">
-      <span className={`block h-1.5 w-full ${COLOR_BARRA_MINI[accent]}`} />
-      <div className="px-3 py-2.5">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate">{label}</p>
-        <p className={`tnum text-lg font-bold ${COLOR_TEXTO_MINI[accent]}`}>{valor}</p>
-      </div>
-    </div>
   );
 }
 
@@ -561,7 +538,6 @@ function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
                 <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                   <EstadoBadge estado={s.estado} />
                   <EtapaContactoBadge etapaContacto={s.etapaContacto} fechaEntrevista={s.fechaEntrevista} />
-                  {esAdmin && <CobroBadge estado={s.estadoCobro} />}
                 </div>
               </div>
               {esAdmin && <CartelEtapa s={s} />}

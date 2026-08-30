@@ -29,6 +29,10 @@ export const siniestros = pgTable("siniestros", {
   // Gestión interna
   estado: text("estado").notNull().default("ingresado"),
   resultado: text("resultado").notNull().default("pendiente"),
+  // Momento exacto en que "resultado" pasó a "desistido" — no alcanza con
+  // actualizado_en, que se pisa con cualquier otro cambio posterior al caso.
+  // La usa el ranking de operadores para filtrar por mes.
+  fechaDesistido: timestamp("fecha_desistido", { withTimezone: true }),
   fechaLimite: text("fecha_limite"),                       // vencimiento de la gestión
   estadoCobro: text("estado_cobro").notNull().default("no_facturado"), // no_facturado|facturado|presentado|cobrado|rechazado
   kmTotal: integer("km_total"),

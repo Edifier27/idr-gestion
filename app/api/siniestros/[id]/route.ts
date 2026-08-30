@@ -71,6 +71,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     patch.derivadoAdmin = false;
     patch.derivadoEn = null;
   }
+
+  // Marca el momento exacto en que el caso pasa a "desistido" (para el
+  // ranking mensual de operadores) — y lo limpia si el resultado se corrige
+  // para otro lado, para no dejar una fecha vieja colgada de un desistido
+  // que ya no es tal.
+  if (patch.resultado === "desistido" && actual.resultado !== "desistido") {
+    patch.fechaDesistido = new Date();
+  } else if (typeof patch.resultado === "string" && patch.resultado !== "desistido" && actual.resultado === "desistido") {
+    patch.fechaDesistido = null;
+  }
+
   const [row] = await db.update(siniestros).set(patch).where(eq(siniestros.id, params.id)).returning();
   if (!row) return NextResponse.json({ error: "No existe." }, { status: 404 });
   const siniestro = verFacturacion ? row : ocultarFacturacion(row);

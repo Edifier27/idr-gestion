@@ -34,10 +34,6 @@ export default async function Dashboard() {
   const operadoresExistentes = Array.from(new Set([...operadoresActivos, ...operadoresDeCasos])).sort();
 
   const total = rows.length;
-  const montoFacturado = rows.filter(r => r.estadoCobro === "facturado" || r.estadoCobro === "presentado")
-    .reduce((a,r) => a + (r.facturar ?? 0), 0);
-  const montoCobrado = rows.filter(r => r.estadoCobro === "cobrado")
-    .reduce((a,r) => a + (r.facturar ?? 0), 0);
   const derivados = esAdmin ? rows.filter(r => r.derivadoAdmin && r.estado !== "cerrado").length : 0;
 
   return (
@@ -74,7 +70,7 @@ export default async function Dashboard() {
 
       <PanelLayout esAdmin={esAdmin} operadoresExistentes={operadoresExistentes}>
         {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : (
-          <TablaSiniestros rows={rows} esAdmin={esAdmin} montoFacturado={montoFacturado} montoCobrado={montoCobrado} operadoresExistentes={operadoresExistentes} />
+          <TablaSiniestros rows={rows} esAdmin={esAdmin} operadoresExistentes={operadoresExistentes} />
         )}
       </PanelLayout>
     </main>
