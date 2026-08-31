@@ -23,6 +23,9 @@ const ORDEN: PasoId[] = ["recibido", "contacto", "entrevista", "informe"];
 const ETIQUETA_PASO: Record<PasoId, string> = {
   recibido: "Recibido", contacto: "Contacto", entrevista: "Entrevista", informe: "Informe",
 };
+const TITULO_PASO: Record<PasoId, string> = {
+  recibido: "Datos del caso", contacto: "Contactar al denunciante", entrevista: "Entrevista", informe: "Pruebas e informe",
+};
 
 function pasoDesdeEtapa(etapaContacto: string | null): PasoId {
   if (!etapaContacto) return "recibido";
@@ -46,6 +49,14 @@ function aInputLocal(fecha: string | Date | null): string {
 // unidireccional. Mail, Bitácora y Acciones quedan siempre a mano abajo,
 // porque no son parte de un paso puntual sino cosas que se usan en cualquier
 // momento del caso.
+//
+// "ATB" (así lo llama Dario — apto para operadores sin ganas de pelearse
+// con un CRM): cada paso arranca con un numerito grande + título, así nunca
+// hay duda de en qué parte del flujo se está. Y las acciones que se tocan
+// (llamar, whatsapear, ver el mapa) van SIEMPRE en su propia tarjeta
+// separada de los datos de solo lectura — antes el ícono de WhatsApp vivía
+// pegado en la misma fila apretada que el DNI o la fecha de ocurrencia, y
+// costaba distinguir "esto lo puedo tocar" de "esto es solo para leer".
 export function CasoWizard({
   siniestroId, dni, poliza, denunciante, domicilio, fechaOcurrencia, lugarTxt,
   telContacto, celContacto, emailContacto, fechaLimite, relatoDenuncia,
@@ -80,6 +91,8 @@ export function CasoWizard({
   const [cantArchivos, setCantArchivos] = useState(archivosIniciales.length);
 
   const plazo = plazoInforme(etapaContacto, fechaEntrevista);
+  const telUno = telContacto ?? celContacto;
+  const direccionMapa = domicilio || lugarTxt;
 
   // Link para agregar la entrevista a Google Calendar con un clic — a Dario
   // se le ocurrió que en vez de solo guardar la fecha en el CRM, se pueda
@@ -89,7 +102,7 @@ export function CasoWizard({
     titulo: `Entrevista — ${denunciante ?? "denunciante"}`,
     inicioLocal: fecha,
     ubicacion: domicilio || lugarTxt || undefined,
-    detalles: `Caso de ${denunciante ?? "—"}.${(telContacto ?? celContacto) ? ` Contacto: ${telContacto ?? celContacto}.` : ""}`,
+    detalles: `Caso de ${denunciante ?? "—"}.${telUno ? ` Contacto: ${telUno}.` : ""}`,
   }) : null;
 
   async function guardar(patch: Record<string, unknown>, siguiente?: PasoId) {
@@ -156,21 +169,36 @@ export function CasoWizard({
       {/* Paso 1: Recibido — solo mirar los datos, nada para guardar acá. */}
       {pasoActivo === "recibido" && (
         <div className={`space-y-4 p-5 ${tarjetaElevada}`}>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Datos del caso</h2>
+          <PasoHeader numero={1} titulo={TITULO_PASO.recibido} />
+
+          {/* Tarjeta de acción, separada a propósito de la lista de datos de
+              abajo: lo primero que hace falta acá es poder llamar/escribir,
+              no leer 9 campos. */}
+          <div className="rounded-lg border border-line bg-paper p-3.5">
+            <p className="min-w-0 truncate text-sm font-semibold text-ink">{denunciante ?? "Sin denunciante cargado"}</p>
+            <p className="truncate font-mono text-xs text-slate">{telUno ?? "Sin teléfono cargado"}</p>
+            {(telUno || direccionMapa) && (
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                {telUno && <BotonesContacto numero={telUno} grande />}
+                <BotonMapsGrande direccion={direccionMapa} />
+              </div>
+            )}
+          </div>
+
           <fieldset className="min-w-0 rounded-md border border-ink/20 px-3 pb-2 pt-0.5">
             <legend className="px-1.5 text-[10px] font-bold uppercase tracking-wide text-ink">Siniestro</legend>
             <DatoForm k="DNI" v={dni} />
             <DatoForm k="Póliza" v={poliza} />
             <DatoForm k="Denunciante" v={denunciante} />
-            <DatoForm k="Domicilio" v={domicilio} extra={domicilio && <BotonMaps direccion={domicilio} />} />
+            <DatoForm k="Domicilio" v={domicilio} />
             <DatoForm k="Fecha ocurrencia" v={fechaOcurrencia} />
-            <DatoForm k="Lugar del hecho" v={lugarTxt || null} extra={lugarTxt && <BotonMaps direccion={lugarTxt} />} />
-            <DatoForm k="Contacto" v={telContacto ?? celContacto} extra={(telContacto ?? celContacto) && <BotonesContacto numero={(telContacto ?? celContacto)!} />} />
+            <DatoForm k="Lugar del hecho" v={lugarTxt || null} />
+            <DatoForm k="Contacto" v={telUno} />
             <DatoForm k="Email" v={emailContacto} />
             <DatoForm k="Vencimiento gestión" v={fechaLimite} />
           </fieldset>
 
-          <MapaEmbed direccion={domicilio || lugarTxt} />
+          <MapaEmbed direccion={direccionMapa} />
 
           <div>
             <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate">Relato de la denuncia</h3>
@@ -182,7 +210,7 @@ export function CasoWizard({
               etiquetaGuardar="Guardar relato"
             />
           </div>
-          <button onClick={() => setPasoActivo("contacto")} className={boton.primario}>
+          <button onClick={() => setPasoActivo("contacto")} className={`w-full py-3 text-base ${boton.primario}`}>
             Siguiente: contactar →
           </button>
         </div>
@@ -191,59 +219,67 @@ export function CasoWizard({
       {/* Paso 2: Contacto — logra o falla el contacto. */}
       {pasoActivo === "contacto" && (
         <div className={`space-y-4 p-5 ${tarjetaElevada}`}>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Contactar al denunciante</h2>
-          <div className="rounded-md border border-line bg-paper p-3 text-sm">
-            <p className="text-slate">Datos de contacto</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-mono text-ink">{telContacto ?? celContacto ?? "— sin teléfono cargado"}</p>
-              {(telContacto ?? celContacto) && <BotonesContacto numero={(telContacto ?? celContacto)!} grande />}
-            </div>
-            {emailContacto && <p className="font-mono text-ink">{emailContacto}</p>}
+          <PasoHeader numero={2} titulo={TITULO_PASO.contacto} />
+
+          <div className="rounded-lg border border-line bg-paper p-3.5">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate">Datos de contacto</p>
+            <p className="mt-0.5 font-mono text-sm text-ink">{telUno ?? "— sin teléfono cargado"}</p>
+            {emailContacto && <p className="font-mono text-xs text-slate">{emailContacto}</p>}
+            {telUno && (
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                <BotonesContacto numero={telUno} grande />
+              </div>
+            )}
           </div>
 
           {etapaContacto !== "contacto_fallido" && etapaContacto !== "contactado" ? (
-            <div className="flex flex-wrap gap-2">
-              <button disabled={guardando} onClick={() => guardar({ etapa_contacto: "contactado" })} className={boton.primario}>
-                ✅ Lo contacté
-              </button>
-              <button
-                disabled={guardando}
-                onClick={() => guardar({ etapa_contacto: "contacto_fallido" })}
-                className="inline-flex items-center justify-center gap-1.5 rounded-md border border-fraude/30 bg-fraude/5 px-3.5 py-2 text-sm font-medium text-fraude shadow-sm transition hover:bg-fraude/10 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                📵 No pude contactarlo
-              </button>
+            <div className="rounded-lg border border-line p-3.5">
+              <p className="mb-2.5 text-sm font-medium text-ink">¿Pudiste contactarlo?</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button disabled={guardando} onClick={() => guardar({ etapa_contacto: "contactado" })} className={`py-3 text-base ${boton.primario}`}>
+                  ✅ Sí, lo contacté
+                </button>
+                <button
+                  disabled={guardando}
+                  onClick={() => guardar({ etapa_contacto: "contacto_fallido" })}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-fraude/30 bg-fraude/5 px-3.5 py-3 text-base font-medium text-fraude shadow-sm transition hover:bg-fraude/10 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  📵 No pude contactarlo
+                </button>
+              </div>
             </div>
           ) : etapaContacto === "contacto_fallido" ? (
-            <div className="space-y-2">
+            <div className="space-y-3 rounded-lg border border-fraude/30 bg-fraude/5 p-3.5">
               <p className="text-sm font-medium text-fraude">📵 Marcado como "sin contactar".</p>
-              <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Motivo (le avisa al admin)</span>
-              <div className="flex gap-2">
-                <input value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Ej: no coincide el DNI, celular incorrecto…" className={`w-full ${campo}`} />
-                <button type="button" disabled={guardando} onClick={() => guardar({ motivo_contacto: motivo })} className={boton.secundario}>Guardar</button>
+              <div>
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Motivo (le avisa al admin)</span>
+                <div className="flex gap-2">
+                  <input value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Ej: no coincide el DNI, celular incorrecto…" className={`w-full bg-white ${campo}`} />
+                  <button type="button" disabled={guardando} onClick={() => guardar({ motivo_contacto: motivo })} className={boton.secundario}>Guardar</button>
+                </div>
               </div>
 
+              <button disabled={guardando} onClick={() => guardar({ etapa_contacto: "contactado" })} className={`w-full py-3 text-base ${boton.primario}`}>
+                ✅ Ahora sí lo contacté
+              </button>
+
               {derivadoAdmin ? (
-                <p className="rounded-md border border-fraude/30 bg-fraude/5 px-3 py-2 text-sm font-medium text-fraude">
+                <p className="rounded-md border border-fraude/30 bg-white px-3 py-2 text-sm font-medium text-fraude">
                   🚩 Derivado al administrador — lo va a contactar directamente.
                 </p>
               ) : (
                 <button
                   disabled={guardando}
                   onClick={() => guardar({ derivado_admin: true, motivo_contacto: motivo })}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-md border border-fraude/30 bg-fraude/5 px-3.5 py-2 text-sm font-semibold text-fraude shadow-sm transition hover:bg-fraude/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full text-center text-xs font-medium text-fraude underline decoration-dotted underline-offset-2 hover:text-fraude/80 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  🚩 Derivar al administrador
+                  🚩 No puedo con este caso: derivar al administrador
                 </button>
               )}
-
-              <button disabled={guardando} onClick={() => guardar({ etapa_contacto: "contactado" })} className={boton.primario}>
-                ✅ Ahora sí lo contacté
-              </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ok/30 bg-ok/5 p-3.5">
                 <p className="text-sm font-medium text-ok">✅ Contactado.</p>
                 <button
                   disabled={guardando}
@@ -253,8 +289,9 @@ export function CasoWizard({
                   📵 En realidad no pude contactarlo
                 </button>
               </div>
-              <div>
-                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">¿Ya quedó pactada la entrevista? Cargá fecha y hora acá</span>
+
+              <div className="rounded-lg border border-line p-3.5">
+                <span className="mb-1.5 block text-sm font-medium text-ink">¿Ya quedó pactada la entrevista?</span>
                 <div className="flex flex-wrap gap-2">
                   <input type="datetime-local" value={fecha} onChange={e => setFecha(e.target.value)} className={`w-full flex-1 ${campo}`} />
                   <button
@@ -263,7 +300,7 @@ export function CasoWizard({
                     onClick={() => guardar({ etapa_contacto: "entrevista_pactada", fecha_entrevista: fecha ? new Date(fecha).toISOString() : null }, "entrevista")}
                     className={boton.primario}
                   >
-                    📅 Pactar entrevista →
+                    📅 Pactar →
                   </button>
                 </div>
                 {linkCalendario && (
@@ -271,7 +308,11 @@ export function CasoWizard({
                     🗓️ Agregar a Google Calendar
                   </a>
                 )}
+                <button onClick={() => setPasoActivo("entrevista")} className={`mt-2.5 w-full text-center text-xs font-medium text-slate underline decoration-dotted underline-offset-2 hover:text-ink`}>
+                  Todavía no tengo la fecha: pasar igual →
+                </button>
               </div>
+
               <div>
                 <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate">Descargo</h3>
                 <TextoPanel
@@ -282,10 +323,7 @@ export function CasoWizard({
                   etiquetaGuardar="Guardar descargo"
                 />
               </div>
-              <button onClick={() => setPasoActivo("entrevista")} className={boton.ghost}>
-                Todavía no tengo la fecha: pasar igual →
-              </button>
-            </div>
+            </>
           )}
         </div>
       )}
@@ -293,11 +331,12 @@ export function CasoWizard({
       {/* Paso 3: Entrevista — fecha + seguir cargando el descargo. */}
       {pasoActivo === "entrevista" && (
         <div className={`space-y-4 p-5 ${tarjetaElevada}`}>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Entrevista</h2>
-          <div>
-            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Fecha y hora</span>
-            <div className="flex gap-2">
-              <input type="datetime-local" value={fecha} onChange={e => setFecha(e.target.value)} className={`w-full ${campo}`} />
+          <PasoHeader numero={3} titulo={TITULO_PASO.entrevista} />
+
+          <div className="rounded-lg border border-line p-3.5">
+            <span className="mb-1.5 block text-sm font-medium text-ink">Fecha y hora</span>
+            <div className="flex flex-wrap gap-2">
+              <input type="datetime-local" value={fecha} onChange={e => setFecha(e.target.value)} className={`w-full flex-1 ${campo}`} />
               <button
                 type="button"
                 disabled={guardando}
@@ -332,7 +371,7 @@ export function CasoWizard({
           </div>
           <button
             onClick={() => setPasoActivo("informe")}
-            className={boton.primario}
+            className={`w-full py-3 text-base ${boton.primario}`}
             disabled={!fechaEntrevista}
             title={!fechaEntrevista ? "Guardá la fecha de la entrevista primero" : undefined}
           >
@@ -345,7 +384,7 @@ export function CasoWizard({
           poder cerrar esta etapa. */}
       {pasoActivo === "informe" && (
         <div className={`space-y-4 p-5 ${tarjetaElevada}`}>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate">Pruebas e informe</h2>
+          <PasoHeader numero={4} titulo={TITULO_PASO.informe} />
           <div>
             <h3 className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate">
               Evidencia {cantArchivos === 0 && <span className="rounded-full bg-fraude/10 px-1.5 py-0.5 text-[10px] font-bold normal-case text-fraude">Obligatorio subir al menos 1</span>}
@@ -399,24 +438,37 @@ export function CasoWizard({
   );
 }
 
-function DatoForm({ k, v, extra }: { k: string; v: string | null; extra?: React.ReactNode }) {
+// Encabezado de cada paso: número grande + título, siempre en el mismo
+// lugar y con el mismo look — para que nunca haya duda de en qué parte del
+// flujo de 4 pasos se está parado (el chip de arriba ya lo marca, esto lo
+// repite en grande justo donde el operador está mirando).
+function PasoHeader({ numero, titulo }: { numero: number; titulo: string }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-bold text-paper">{numero}</span>
+      <h2 className="text-base font-bold text-ink">{titulo}</h2>
+    </div>
+  );
+}
+
+function DatoForm({ k, v }: { k: string; v: string | null }) {
   return (
     <div className="flex items-baseline gap-2 border-b border-dotted border-ink/15 py-1 font-mono text-[11px] last:border-0">
       <span className="shrink-0 uppercase tracking-wide text-slate">{k}</span>
       <span className="min-w-[0.5rem] flex-1 border-b border-dotted border-ink/25" />
       <span className="shrink-0 max-w-[60%] truncate text-right text-ink" title={v ?? undefined}>{v ?? "—"}</span>
-      {extra}
     </div>
   );
 }
 
-// Abre el domicilio/lugar directo en Google Maps.
-function BotonMaps({ direccion }: { direccion: string }) {
+// Botón de Maps con look de botón (no solo ícono) — para las tarjetas de
+// "acción rápida" de arriba de todo, junto a Llamar/WhatsApp.
+function BotonMapsGrande({ direccion }: { direccion: string }) {
   const url = mapsUrl(direccion);
   if (!url) return null;
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" title="Abrir en Google Maps" className="shrink-0 text-sm leading-none text-slate transition hover:text-ink">
-      📍
+    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-ink/15 bg-white px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition hover:bg-paper">
+      📍 Maps
     </a>
   );
 }

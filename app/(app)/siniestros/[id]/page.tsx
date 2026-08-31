@@ -114,6 +114,19 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         </div>
       </div>
 
+      {/* Resumen para el admin: de un vistazo, qué falta para poder armar el
+          informe — sin tener que scrollear toda la página para averiguarlo.
+          Cada chip salta directo a la sección correspondiente. */}
+      {esAdmin && (
+        <ChecklistInforme
+          datosOk={Boolean(s.dni && (s.domicilio || lugarTxt) && (s.telContacto || s.celContacto))}
+          descargoOk={Boolean(s.descargo)}
+          evidenciaOk={archivos.length > 0}
+          informeOk={Boolean(s.informe)}
+          resolucionOk={verInformeFinal ? Boolean(s.informeFinal) : undefined}
+        />
+      )}
+
       {/* El operador ve el carrusel guiado (recibido → contacto → entrevista
           → informe): un paso a la vez, con lo justo y necesario en cada uno,
           en vez de la página larga de abajo — esa queda solo para el admin,
@@ -390,6 +403,41 @@ function Bloque({ titulo, children, accento = "ink", colorOperador, extra, numer
     </section>
   );
 }
+// De un vistazo: qué le falta al admin para poder armar el informe de este
+// caso — sin tener que scrollear toda la página larga de abajo para
+// averiguarlo. Cada chip es un link directo a la sección que corresponde.
+function ChecklistInforme({ datosOk, descargoOk, evidenciaOk, informeOk, resolucionOk }: {
+  datosOk: boolean; descargoOk: boolean; evidenciaOk: boolean; informeOk: boolean; resolucionOk?: boolean;
+}) {
+  const items: { href: string; label: string; ok: boolean }[] = [
+    { href: "#datos", label: "Datos", ok: datosOk },
+    { href: "#cotejo", label: "Descargo del operador", ok: descargoOk },
+    { href: "#evidencia", label: "Evidencia", ok: evidenciaOk },
+    { href: "#cotejo", label: "Informe técnico", ok: informeOk },
+  ];
+  if (resolucionOk !== undefined) items.push({ href: "#resolucion", label: "Resolución final", ok: resolucionOk });
+  const faltan = items.filter(i => !i.ok).length;
+
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-paper p-3">
+      <span className="mr-1 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate">
+        {faltan === 0 ? "✅ Todo listo para el informe" : `Falta para el informe (${faltan})`}
+      </span>
+      {items.map(i => (
+        <a
+          key={i.label}
+          href={i.href}
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
+            i.ok ? "bg-ok/10 text-ok hover:bg-ok/15" : "bg-fraude/10 text-fraude hover:bg-fraude/15"
+          }`}
+        >
+          {i.ok ? "✓" : "○"} {i.label}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function Dato({ k, v }: { k:string; v:string|null }) {
   return (
     <div className="flex justify-between gap-4 text-sm">
