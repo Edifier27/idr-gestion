@@ -23,6 +23,26 @@ function etiquetaCategoria(cat?: string | null): string | null {
   return cat ? etiquetaCategoriaEvidencia(cat) : null;
 }
 
+// Un botón de cámara por tipo de documento/foto, en vez de un único "+"
+// genérico + un desplegable para elegir la categoría antes de subir — Dario
+// pidió esto explícitamente: que el operador toque directo "DNI" o "Cédula"
+// y la cámara se abra ya con esa categoría cargada, sin un paso intermedio.
+// Curado a mano (no las 13 categorías): quedan afuera geolocalización/
+// llamadas/mensajes (son capturas de pantalla que se importan de la
+// galería, no algo que se fotografía) y "Otro" (ambiguo) — esas siguen
+// disponibles en "Más opciones" más abajo, con el desplegable de siempre.
+const CAPTURA_RAPIDA: { value: string; emoji: string; corta: string }[] = [
+  { value: "foto_siniestro", emoji: "🚗", corta: "Siniestro" },
+  { value: "foto_lugar", emoji: "📍", corta: "Lugar" },
+  { value: "dni", emoji: "🪪", corta: "DNI" },
+  { value: "registro_conducir", emoji: "🚘", corta: "Registro" },
+  { value: "cedula_vehiculo", emoji: "📇", corta: "Cédula" },
+  { value: "denuncia", emoji: "📃", corta: "Denuncia" },
+  { value: "ampliacion", emoji: "✍️", corta: "Ampliación" },
+  { value: "desiste", emoji: "📝", corta: "Desistimiento" },
+  { value: "fotos", emoji: "🖼️", corta: "Otra foto" },
+];
+
 // onArchivosChange (opcional): avisa hacia afuera cada vez que cambia la
 // lista (subida o borrado) — lo usa el carrusel del operador para saber si
 // ya hay al menos una prueba cargada antes de dejar avanzar a "Informe".
@@ -44,7 +64,12 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
 
   useEffect(() => { onArchivosChange?.(archivos); }, [archivos]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function onFiles(files: FileList | null) {
+  // categoriaForzada (para los botones de captura rápida): NO alcanza con
+  // hacer setCategoria(cat) y después llamar onFiles() — React no actualiza
+  // el estado "categoria" a tiempo dentro del mismo tick, así que esta
+  // función seguiría leyendo el valor viejo. Se la pasa directo como
+  // parámetro en vez de depender del estado para evitar ese lío de timing.
+  async function onFiles(files: FileList | null, categoriaForzada?: string) {
     if (!files || files.length === 0) return;
     setError(null);
     setSubiendo(true);
@@ -61,7 +86,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
           body: JSON.stringify({
             siniestroId, nombre: file.name, url: blob.url,
             tipo: file.type || "application/octet-stream", tamano: file.size,
-            categoria: categoria || null,
+            categoria: categoriaForzada ?? (categoria || null),
           }),
         });
         const data = await res.json();
@@ -119,30 +144,43 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Botón grande y redondo a propósito: es el que usa el operador
-              parado en el lugar del siniestro, con el celular en la mano —
-              tiene que ser fácil de tocar sin apuntar con precisión. El
-              atributo capture="environment" es lo que hace que el celular
-              abra la cámara directo en vez de la galería (en desktop, donde
-              no aplica, el navegador simplemente abre el selector de
-              archivos de siempre). */}
-          <label className="group flex shrink-0 cursor-pointer flex-col items-center gap-1" title="Sacar foto con la cámara">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-azul text-2xl font-light leading-none text-paper shadow-sm transition duration-150 group-hover:opacity-90 group-active:scale-[0.97]">
-              +
-            </span>
-            <span className="text-[10px] font-medium text-slate">Sacar foto</span>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate">Sacar foto por tipo</p>
+        <span className="shrink-0 text-xs text-slate">{archivos.length} archivo{archivos.length === 1 ? "" : "s"}</span>
+      </div>
+
+      {/* Un botón de cámara por categoría: el operador toca directo "DNI" o
+          "Cédula" y la cámara se abre ya con esa categoría cargada — sin
+          desplegable ni paso intermedio. capture="environment" es lo que
+          abre la cámara directo en vez de la galería (en desktop, donde no
+          aplica, el navegador abre el selector de archivos de siempre). */}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+        {CAPTURA_RAPIDA.map(c => (
+          <label
+            key={c.value}
+            className="flex cursor-pointer flex-col items-center gap-1 rounded-xl border border-line bg-white px-1.5 py-2.5 text-center shadow-sm transition hover:border-azul/30 hover:bg-azul/5"
+          >
+            <span className="text-xl leading-none">{c.emoji}</span>
+            <span className="text-[10px] font-semibold leading-tight text-ink">{c.corta}</span>
             <input
               type="file"
               accept="image/*"
               capture="environment"
               className="hidden"
               disabled={subiendo}
-              onChange={e => onFiles(e.target.files)}
+              onChange={e => onFiles(e.target.files, c.value)}
             />
           </label>
+        ))}
+      </div>
 
+      <details className="group">
+        <summary className="cursor-pointer select-none text-xs font-medium text-slate marker:hidden hover:text-ink">
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-block transition group-open:rotate-90">›</span> Más opciones (mensajes, llamadas, geolocalización, subir desde archivos…)
+          </span>
+        </summary>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <SelectShell className="w-56">
             <select
               value={categoria}
@@ -165,10 +203,8 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
             />
           </label>
         </div>
-        <span className="text-xs text-slate">{archivos.length} archivo{archivos.length === 1 ? "" : "s"}</span>
-      </div>
-
-      <p className="text-[11px] text-slate">O arrastrá y soltá los archivos en cualquier parte de este cuadro.</p>
+        <p className="mt-1.5 text-[11px] text-slate">O arrastrá y soltá los archivos en cualquier parte de este cuadro.</p>
+      </details>
 
       {error && <p className="text-xs text-fraude">{error}</p>}
 
