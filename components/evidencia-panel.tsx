@@ -119,8 +119,30 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Botón grande y redondo a propósito: es el que usa el operador
+              parado en el lugar del siniestro, con el celular en la mano —
+              tiene que ser fácil de tocar sin apuntar con precisión. El
+              atributo capture="environment" es lo que hace que el celular
+              abra la cámara directo en vez de la galería (en desktop, donde
+              no aplica, el navegador simplemente abre el selector de
+              archivos de siempre). */}
+          <label className="group flex shrink-0 cursor-pointer flex-col items-center gap-1" title="Sacar foto con la cámara">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-2xl font-light leading-none text-paper shadow-sm transition duration-150 group-hover:opacity-90 group-active:scale-[0.97]">
+              +
+            </span>
+            <span className="text-[10px] font-medium text-slate">Sacar foto</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              disabled={subiendo}
+              onChange={e => onFiles(e.target.files)}
+            />
+          </label>
+
           <SelectShell className="w-56">
             <select
               value={categoria}
@@ -131,7 +153,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
             </select>
           </SelectShell>
           <label className="cursor-pointer rounded-md border border-ink/20 bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-sm transition hover:bg-ink hover:text-paper">
-            {subiendo ? "Subiendo…" : "+ Subir archivos"}
+            {subiendo ? "Subiendo…" : "📎 Subir archivo"}
             <input
               ref={inputRef}
               type="file"
