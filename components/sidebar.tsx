@@ -10,13 +10,16 @@ import { colorPorTexto } from "@/lib/ui";
 // la bandeja de hoy, Cerrados manda directo a la pestaña de casos cerrados
 // (mismo query param que ya lee TablaSiniestros al montar). undefined = sin
 // query — cualquier otra pestaña activada a mano no rompe el resaltado.
+// "enBarraInferior": los 2-3 accesos que van también en la barra fija de
+// abajo en mobile (ver más abajo) — el resto (Usuarios/Mail/Importar caso)
+// queda solo en el drawer completo, se abre con "Más".
 const NAV = [
-  { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false, quick: undefined as string | undefined },
-  { href: "/panel?quick=cerrados", label: "Cerrados", icon: IconArchive, soloAdmin: false, quick: "cerrados" },
-  { href: "/admin/ranking", label: "Ranking", icon: IconTrophy, soloAdmin: true, quick: undefined as string | undefined },
-  { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined },
-  { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true, quick: undefined as string | undefined },
-  { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined },
+  { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false, quick: undefined as string | undefined, enBarraInferior: true },
+  { href: "/panel?quick=cerrados", label: "Cerrados", icon: IconArchive, soloAdmin: false, quick: "cerrados", enBarraInferior: true },
+  { href: "/admin/ranking", label: "Ranking", icon: IconTrophy, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: true },
+  { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
+  { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
+  { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
 ];
 
 export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggleColapsado }: {
@@ -31,6 +34,12 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
   const quickActual = searchParams.get("quick") ?? undefined;
   const [abierto, setAbierto] = useState(false);
   const esAdmin = rol === "admin";
+
+  function esActivo(item: (typeof NAV)[number]) {
+    return item.href.startsWith("/panel")
+      ? pathname === "/panel" && quickActual === item.quick
+      : pathname === item.href || pathname.startsWith(item.href);
+  }
 
   // Los textos usan md:hidden condicionado a "colapsado" (en vez de sacarlos
   // del DOM) para que solo se oculten en la sidebar fija de desktop: el
@@ -142,6 +151,45 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
           </aside>
         </div>
       )}
+
+      {/* Barra de navegación inferior en mobile — el pulgar llega natural
+          acá abajo (mismo motivo por el que WhatsApp/Instagram la usan en
+          vez de un menú hamburguesa como único acceso). El hamburguesa de
+          arriba sigue estando para lo que no entra acá — "Más" abre el
+          mismo drawer completo (Usuarios/Mail/Importar caso, cerrar sesión).
+          safe-area-inset-bottom: para no quedar debajo de la barra de
+          gestos/home indicator en celulares con pantalla sin bordes. */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-line bg-white/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(20,24,31,.08)] md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        {NAV.filter(item => item.enBarraInferior && (!item.soloAdmin || esAdmin)).map(item => {
+          const activo = esActivo(item);
+          const Icon = item.icon;
+          return (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold transition ${
+                activo ? "text-azul" : "text-slate"
+              }`}
+            >
+              {item.href === "/panel" && derivados > 0 && (
+                <span className="absolute right-[28%] top-1.5 h-2 w-2 rounded-full border-2 border-white bg-fraude" />
+              )}
+              <Icon />
+              {item.label}
+            </a>
+          );
+        })}
+        <button
+          onClick={() => setAbierto(true)}
+          className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold text-slate"
+        >
+          <IconMore />
+          Más
+        </button>
+      </nav>
     </>
   );
 }
@@ -176,4 +224,7 @@ function IconLogout() {
 }
 function IconMenu() {
   return <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
+}
+function IconMore() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><circle cx="3" cy="8" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="13" cy="8" r="1.3" fill="currentColor"/></svg>;
 }

@@ -22,7 +22,10 @@ export function AppShell({ nombre, rol, derivados = 0, children }: { nombre: str
   }
 
   return (
-    <div className={`relative min-h-screen bg-paper transition-[padding] duration-200 ${colapsado ? "md:pl-16" : "md:pl-56"}`}>
+    // pb-20 en mobile: deja lugar para la barra de navegación inferior fija
+    // (ver sidebar.tsx) — en desktop esa barra no existe (md:hidden), así
+    // que ahí no hace falta el padding.
+    <div className={`relative min-h-screen bg-paper pb-20 transition-[padding] duration-200 md:pb-0 ${colapsado ? "md:pl-16" : "md:pl-56"}`}>
       {/* Fondo decorativo: dos manchas de color muy tenues, fijas al viewport,
           para que el CRM no se sienta un formulario plano. No interactivo ni
           parte del layout (position: fixed + pointer-events-none). */}

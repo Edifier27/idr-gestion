@@ -100,7 +100,10 @@ export function NotificacionesHost() {
     <>
       {/* Toasts */}
       {toasts.length > 0 && (
-        <div className="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-full max-w-xs flex-col gap-2">
+        /* bottom-20 en mobile: la barra de navegación inferior nueva (ver
+           sidebar.tsx) ocupa esa franja — en desktop no existe, así que ahí
+           vuelve a bottom-4. */
+        <div className="pointer-events-none fixed bottom-20 right-4 z-[100] flex w-full max-w-xs flex-col gap-2 md:bottom-4">
           {toasts.map(t => (
             <div
               key={t.id}
