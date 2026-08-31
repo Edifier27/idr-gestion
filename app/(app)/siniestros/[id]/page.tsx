@@ -174,7 +174,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           { href: "#evidencia", label: "Evidencia" },
           { href: "#cotejo", label: "Cotejo" },
           ...(verInformeFinal ? [{ href: "#resolucion", label: "Resolución" }] : []),
-          { href: "#bitacora", label: "Bitácora" },
+          { href: "#bitacora", label: "Chat" },
         ]}
       />
 
@@ -357,7 +357,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 
         {/* Bitácora */}
         <div className="md:col-span-2">
-          <Bloque id="bitacora" titulo={`Bitácora de ${nombreOperador} (${notas.length} entradas)`} colorOperador={colorOperador}>
+          <Bloque id="bitacora" titulo={`Chat de ${nombreOperador} (${notas.length} entradas)`} colorOperador={colorOperador}>
             <BitacoraPanel siniestroId={s.id} entradasIniciales={notas} esAdmin={esAdmin} nombreOperador={nombreOperador} />
           </Bloque>
         </div>

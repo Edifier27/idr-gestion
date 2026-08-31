@@ -56,6 +56,13 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
   const [error, setError] = useState<string | null>(null);
   const [categoria, setCategoria] = useState("");
   const [arrastrando, setArrastrando] = useState(false);
+  // Qué cuadradito de la grilla está "sobrevolado" mientras se arrastra un
+  // archivo — en PC, Dario pidió poder arrastrar y soltar un archivo directo
+  // sobre "Siniestro", "DNI", etc. para que quede categorizado con solo
+  // soltarlo ahí, en vez de tener que elegir la categoría de un desplegable
+  // aparte. null = no se está arrastrando sobre ningún cuadradito puntual
+  // (drop genérico en cualquier otra parte del panel).
+  const [categoriaSobrevolada, setCategoriaSobrevolada] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Cuenta enter/leave en vez de un booleano simple: al arrastrar sobre un
   // hijo del cuadro, el navegador dispara dragleave del padre + dragenter del
@@ -122,6 +129,33 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
     if (!subiendo) onFiles(e.dataTransfer.files);
   }
 
+  // Handlers de arrastrar-y-soltar para UN cuadradito puntual de la grilla.
+  // dragenter/dragleave/dragover se dejan burbujear normal hacia el onDrop*
+  // del panel de arriba (mismo dragCounter, sigue contando bien: es
+  // exactamente el caso "entrar a un hijo" que ese contador ya contempla).
+  // Solo onDrop lleva stopPropagation — ahí sí hace falta: si no, el drop
+  // también dispara el onDrop genérico del panel y el archivo se subiría
+  // DOS veces (una categorizado acá, otra sin categoría allá).
+  function handlersTile(valor: string) {
+    return {
+      onDragEnter: (e: React.DragEvent) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        setCategoriaSobrevolada(valor);
+      },
+      onDragLeave: () => {
+        setCategoriaSobrevolada(v => (v === valor ? null : v));
+      },
+      onDrop: (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setCategoriaSobrevolada(null);
+        dragCounter.current = 0;
+        setArrastrando(false);
+        if (!subiendo) onFiles(e.dataTransfer.files, valor);
+      },
+    };
+  }
+
   async function borrar(id: string) {
     const ok = await confirmar("¿Borrar este archivo?", { textoConfirmar: "Borrar", peligroso: true });
     if (!ok) return;
@@ -138,27 +172,41 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
       onDrop={onDrop}
       className={`relative space-y-3 rounded-lg transition ${arrastrando ? "ring-2 ring-azul/30 ring-offset-2" : ""}`}
     >
-      {arrastrando && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-ink/40 bg-paper/95 backdrop-blur-sm">
-          <p className="text-sm font-semibold text-ink">📥 Soltá los archivos acá para subirlos</p>
-        </div>
-      )}
-
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate">Sacar foto por tipo</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate">Sacar foto o arrastrar por tipo</p>
         <span className="shrink-0 text-xs text-slate">{archivos.length} archivo{archivos.length === 1 ? "" : "s"}</span>
       </div>
+
+      {/* Aviso liviano en vez del overlay opaco de antes — ese tapaba los
+          cuadraditos justo cuando hacía falta verlos para apuntar el drop.
+          Este es un renglón normal (no cubre nada) y cambia de texto según
+          si estás sobrevolando un cuadradito puntual o soltando en
+          cualquier otro lado del panel. */}
+      {arrastrando && (
+        <p className="rounded-md border border-dashed border-azul/40 bg-azul/5 px-3 py-1.5 text-center text-xs font-medium text-azul">
+          {categoriaSobrevolada
+            ? `📥 Soltar como "${CAPTURA_RAPIDA.find(c => c.value === categoriaSobrevolada)?.corta}"`
+            : "📥 Soltá sobre un tipo para clasificarlo, o acá para dejarlo sin categoría"}
+        </p>
+      )}
 
       {/* Un botón de cámara por categoría: el operador toca directo "DNI" o
           "Cédula" y la cámara se abre ya con esa categoría cargada — sin
           desplegable ni paso intermedio. capture="environment" es lo que
           abre la cámara directo en vez de la galería (en desktop, donde no
-          aplica, el navegador abre el selector de archivos de siempre). */}
+          aplica, el navegador abre el selector de archivos de siempre, y
+          además cada cuadradito acepta arrastrar-y-soltar un archivo
+          directo encima para categorizarlo igual). */}
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
         {CAPTURA_RAPIDA.map(c => (
           <label
             key={c.value}
-            className="flex cursor-pointer flex-col items-center gap-1 rounded-xl border border-line bg-white px-1.5 py-2.5 text-center shadow-sm transition hover:border-azul/30 hover:bg-azul/5"
+            {...handlersTile(c.value)}
+            className={`flex cursor-pointer flex-col items-center gap-1 rounded-xl border px-1.5 py-2.5 text-center shadow-sm transition ${
+              categoriaSobrevolada === c.value
+                ? "border-azul bg-azul/10 ring-2 ring-azul/40"
+                : "border-line bg-white hover:border-azul/30 hover:bg-azul/5"
+            }`}
           >
             <span className="text-xl leading-none">{c.emoji}</span>
             <span className="text-[10px] font-semibold leading-tight text-ink">{c.corta}</span>

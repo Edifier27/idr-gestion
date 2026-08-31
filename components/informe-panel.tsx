@@ -84,7 +84,7 @@ export function InformePanel({ siniestroId, informeInicial }: { siniestroId: str
         </div>
       ) : (
         <p className="text-sm text-slate">
-          Todavía no se generó. Compara ① la denuncia con ② el descargo del operador (más la bitácora) y arma el cotejo, la conclusión y una sugerencia de redacción lista para el mail de cierre.
+          Todavía no se generó. Compara ① la denuncia con ② el descargo del operador (más el chat) y arma el cotejo, la conclusión y una sugerencia de redacción lista para el mail de cierre.
         </p>
       )}
     </div>

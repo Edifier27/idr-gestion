@@ -436,7 +436,7 @@ export function CasoWizard({
       </div>
 
       <div className={`p-5 ${tarjetaElevada}`}>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Bitácora de {nombreOperador} ({notas.length} entradas)</h2>
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Chat de {nombreOperador} ({notas.length} entradas)</h2>
         <BitacoraPanel siniestroId={siniestroId} entradasIniciales={notas} esAdmin={false} nombreOperador={nombreOperador} />
       </div>
     </div>
