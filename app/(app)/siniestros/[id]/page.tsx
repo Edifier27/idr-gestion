@@ -24,7 +24,7 @@ import { EtapaContactoBadge } from "@/components/etapa-contacto-badge";
 import { CerrarCasoBoton } from "@/components/cerrar-caso-boton";
 import { CasoWizard } from "@/components/caso-wizard";
 import { MiniNavScrollSpy } from "@/components/mini-nav-scroll-spy";
-import { boton, tarjetaElevada, RESULTADO_ACENTO, colorPorTexto } from "@/lib/ui";
+import { boton, tarjetaElevada, colorPorTexto } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -92,26 +92,29 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         <span aria-hidden>←</span> Tablero
       </a>
 
-      {/* Cabecera */}
-      <div className={`relative mb-6 overflow-hidden ${tarjetaElevada}`}>
-        <span className={`absolute inset-x-0 top-0 h-1.5 ${RESULTADO_ACENTO[s.resultado] ?? "bg-slate"}`} />
-        <div className="flex items-start justify-between gap-3 p-5 pt-6">
-          <div>
-            <p className="font-mono text-xs text-slate">Gestión {s.numeroGestion ?? "—"} · Siniestro {s.nroSiniestro ?? "—"}</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">{s.asegurado ?? "Sin asegurado"}</h1>
-            <p className="text-sm text-slate">{s.tipo ?? "—"} · {s.compania ?? "—"}</p>
+      {/* Cabecera: tarjeta azul con degradé — de un vistazo, el caso y en qué
+          etapa está (mismo lenguaje que la maqueta de diseño que aprobó
+          Dario). Estado/Resultado necesitan buen contraste para el admin,
+          así que van en una tira aparte debajo, sobre fondo claro — un
+          badge tintado (bg-amber/15) se pierde contra un fondo oscuro. */}
+      <div className="relative mb-3 overflow-hidden rounded-xl bg-gradient-to-br from-azul to-azul/80 p-5 pt-6 text-paper shadow-sm">
+        <p className="font-mono text-xs text-paper/70">Gestión {s.numeroGestion ?? "—"} · Siniestro {s.nroSiniestro ?? "—"}</p>
+        <h1 className="mt-1 truncate text-2xl font-bold tracking-tight">{s.asegurado ?? "Sin asegurado"}</h1>
+        <p className="text-sm text-paper/70">{s.tipo ?? "—"} · {s.compania ?? "—"}</p>
+        {s.etapaContacto && (
+          <div className="mt-3">
+            <EtapaContactoBadge etapaContacto={s.etapaContacto} fechaEntrevista={s.fechaEntrevista} variante="hero" />
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <EstadoBadge estado={s.estado} />
-            <ResultadoBadge resultado={s.resultado} />
-            <EtapaContactoBadge etapaContacto={s.etapaContacto} fechaEntrevista={s.fechaEntrevista} />
-            {s.derivadoAdmin && (
-              <span className="rounded-full border border-fraude/30 bg-fraude/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-fraude">
-                🚩 Derivado
-              </span>
-            )}
-          </div>
-        </div>
+        )}
+      </div>
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <EstadoBadge estado={s.estado} />
+        <ResultadoBadge resultado={s.resultado} />
+        {s.derivadoAdmin && (
+          <span className="rounded-full border border-fraude/30 bg-fraude/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-fraude">
+            🚩 Derivado
+          </span>
+        )}
       </div>
 
       {/* Resumen para el admin: de un vistazo, qué falta para poder armar el

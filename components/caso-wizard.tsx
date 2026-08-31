@@ -178,9 +178,10 @@ export function CasoWizard({
             <p className="min-w-0 truncate text-sm font-semibold text-ink">{denunciante ?? "Sin denunciante cargado"}</p>
             <p className="truncate font-mono text-xs text-slate">{telUno ?? "Sin teléfono cargado"}</p>
             {(telUno || direccionMapa) && (
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                {telUno && <BotonesContacto numero={telUno} grande />}
-                <BotonMapsGrande direccion={direccionMapa} />
+              <div className="mt-3 flex gap-2">
+                <AccionIcono href={direccionMapa ? mapsUrl(direccionMapa) : null} icono="📍" label="Maps" />
+                <AccionIcono href={telUno ? whatsappUrl(telUno) : null} icono={<IconWhatsApp className="h-4 w-4" />} label="WhatsApp" />
+                <AccionIcono href={telUno ? telUrl(telUno) : null} icono="📞" label="Llamar" />
               </div>
             )}
           </div>
@@ -461,14 +462,30 @@ function DatoForm({ k, v }: { k: string; v: string | null }) {
   );
 }
 
-// Botón de Maps con look de botón (no solo ícono) — para las tarjetas de
-// "acción rápida" de arriba de todo, junto a Llamar/WhatsApp.
-function BotonMapsGrande({ direccion }: { direccion: string }) {
-  const url = mapsUrl(direccion);
-  if (!url) return null;
+// Grilla de acciones rápidas (Maps/WhatsApp/Llamar) — mismo lenguaje que la
+// maqueta de diseño: ícono en caja blanca + etiqueta abajo, en vez de un
+// botón de texto. Si no hay dato para esa acción (ej. sin teléfono
+// cargado), el botón queda deshabilitado en vez de desaparecer — así la
+// grilla no se desarma ni "salta" un lugar.
+function AccionIcono({ href, icono, label }: { href: string | null; icono: React.ReactNode; label: string }) {
+  const contenido = (
+    <>
+      <span className="text-lg leading-none">{icono}</span>
+      {label}
+    </>
+  );
+  const clases = "flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-2.5 text-[10px] font-semibold shadow-sm transition";
+  if (!href) {
+    return <span className={`${clases} border-line bg-white text-slate/40`}>{contenido}</span>;
+  }
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-ink/15 bg-white px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition hover:bg-paper">
-      📍 Maps
+    <a
+      href={href}
+      target={href.startsWith("tel:") ? undefined : "_blank"}
+      rel="noopener noreferrer"
+      className={`${clases} border-line bg-white text-ink hover:border-azul/30 hover:bg-azul/5`}
+    >
+      {contenido}
     </a>
   );
 }
