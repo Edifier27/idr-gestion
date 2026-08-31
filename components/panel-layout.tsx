@@ -40,7 +40,12 @@ export function PanelLayout({ esAdmin, operadoresExistentes, children }: { esAdm
       {mostrarMail ? (
         <div className="grid items-start gap-5 lg:grid-cols-[1fr_360px]">
           <div className="min-w-0">{children}</div>
-          <div className="lg:sticky lg:top-6">
+          {/* min-w-0 acá también: en mobile los dos hijos de este grid
+              comparten una única columna implícita — sin min-w-0 en AMBOS,
+              si el contenido de la bandeja no se achica, esa columna
+              compartida se ensancha y rompe el responsive de toda la
+              página, no solo del panel de mail. */}
+          <div className="min-w-0 lg:sticky lg:top-6">
             <InboxPanel operadoresExistentes={operadoresExistentes} />
           </div>
         </div>
