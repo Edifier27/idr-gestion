@@ -19,6 +19,14 @@ type Archivo = {
 
 const CATEGORIAS = [{ value: "", label: "🤖 Que la IA la sugiera" }, ...CATEGORIAS_EVIDENCIA];
 
+// Tipo de dato propio en el dataTransfer para distinguir "estoy arrastrando
+// un archivo nuevo desde el escritorio" (trae "Files") de "estoy arrastrando
+// una tarjeta que ya está subida, para recategorizarla" (trae esto, con el
+// id del archivo) — dataTransfer.types se puede leer durante el arrastre
+// (antes del drop) en todos los navegadores, así que alcanza para elegir
+// qué lógica correr sin esperar al drop.
+const MIME_ARCHIVO = "application/x-idr-evidencia-id";
+
 function etiquetaCategoria(cat?: string | null): string | null {
   return cat ? etiquetaCategoriaEvidencia(cat) : null;
 }
@@ -129,17 +137,41 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
     if (!subiendo) onFiles(e.dataTransfer.files);
   }
 
-  // Handlers de arrastrar-y-soltar para UN cuadradito puntual de la grilla.
-  // dragenter/dragleave/dragover se dejan burbujear normal hacia el onDrop*
-  // del panel de arriba (mismo dragCounter, sigue contando bien: es
-  // exactamente el caso "entrar a un hijo" que ese contador ya contempla).
-  // Solo onDrop lleva stopPropagation — ahí sí hace falta: si no, el drop
-  // también dispara el onDrop genérico del panel y el archivo se subiría
-  // DOS veces (una categorizado acá, otra sin categoría allá).
+  // Cambia la categoría de un archivo YA subido — arrastrar su tarjeta desde
+  // un grupo (ej. "Cédula del vehículo") y soltarla sobre otro (ej. "Otro")
+  // en vez de tener que borrarlo y volver a subirlo bien categorizado.
+  // Optimista: se ve el cambio al toque, y si el PATCH falla se revierte
+  // solo (con aviso) — no hace falta esperar a la respuesta para ver el
+  // archivo saltar de grupo.
+  async function recategorizar(id: string, categoriaNueva: string | null) {
+    const anterior = archivos.find(a => a.id === id);
+    if (!anterior || (anterior.categoria ?? null) === categoriaNueva) return;
+    setArchivos(a => a.map(x => (x.id === id ? { ...x, categoria: categoriaNueva } : x)));
+    try {
+      const res = await fetch(`/api/evidencia/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoria: categoriaNueva }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setArchivos(a => a.map(x => (x.id === id ? { ...x, categoria: anterior.categoria } : x)));
+      notificar.error("No se pudo cambiar la categoría.");
+    }
+  }
+
+  // Handlers de arrastrar-y-soltar para UN cuadradito puntual de la grilla
+  // de arriba — acepta tanto un archivo nuevo del escritorio (sube con esa
+  // categoría) como una tarjeta ya subida (la recategoriza). dragenter/
+  // dragleave/dragover se dejan burbujear normal hacia el onDrop* del panel
+  // de arriba (mismo dragCounter, sigue contando bien: es exactamente el
+  // caso "entrar a un hijo" que ese contador ya contempla). Solo onDrop
+  // lleva stopPropagation — ahí sí hace falta: si no, el drop también
+  // dispara el onDrop genérico del panel y el archivo se subiría DOS veces.
   function handlersTile(valor: string) {
     return {
       onDragEnter: (e: React.DragEvent) => {
-        if (!e.dataTransfer.types.includes("Files")) return;
+        if (!e.dataTransfer.types.includes("Files") && !e.dataTransfer.types.includes(MIME_ARCHIVO)) return;
         setCategoriaSobrevolada(valor);
       },
       onDragLeave: () => {
@@ -149,9 +181,43 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
         e.preventDefault();
         e.stopPropagation();
         setCategoriaSobrevolada(null);
+        if (e.dataTransfer.types.includes(MIME_ARCHIVO)) {
+          const id = e.dataTransfer.getData(MIME_ARCHIVO);
+          if (id) recategorizar(id, valor);
+          return;
+        }
         dragCounter.current = 0;
         setArrastrando(false);
         if (!subiendo) onFiles(e.dataTransfer.files, valor);
+      },
+    };
+  }
+
+  // Igual que handlersTile, pero para los grupos de más abajo (donde ya
+  // están los archivos subidos) — ahí solo tiene sentido recategorizar
+  // (arrastrar una tarjeta de un grupo a otro), no subir un archivo nuevo
+  // del escritorio: para eso ya están los cuadraditos de arriba.
+  // categoriaGrupo null = el grupo "Sin categoría".
+  function handlersGrupo(categoriaGrupo: string | null) {
+    const clave = categoriaGrupo ?? "";
+    return {
+      onDragEnter: (e: React.DragEvent) => {
+        if (!e.dataTransfer.types.includes(MIME_ARCHIVO)) return;
+        setCategoriaSobrevolada(clave);
+      },
+      onDragOver: (e: React.DragEvent) => {
+        if (e.dataTransfer.types.includes(MIME_ARCHIVO)) e.preventDefault();
+      },
+      onDragLeave: () => {
+        setCategoriaSobrevolada(v => (v === clave ? null : v));
+      },
+      onDrop: (e: React.DragEvent) => {
+        if (!e.dataTransfer.types.includes(MIME_ARCHIVO)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setCategoriaSobrevolada(null);
+        const id = e.dataTransfer.getData(MIME_ARCHIVO);
+        if (id) recategorizar(id, categoriaGrupo);
       },
     };
   }
@@ -260,8 +326,15 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
         <p className="text-sm text-slate">Sin evidencia cargada todavía.</p>
       ) : (
         <div className="space-y-4">
+          <p className="text-[11px] text-slate">📦 Arrastrá una tarjeta a otro grupo para recategorizarla.</p>
           {agruparPorCategoria(archivos).map(grupo => (
-            <div key={grupo.categoria}>
+            <div
+              key={grupo.categoria ?? "sin-categoria"}
+              {...handlersGrupo(grupo.categoria)}
+              className={`rounded-lg p-1.5 -m-1.5 transition ${
+                categoriaSobrevolada === (grupo.categoria ?? "") ? "bg-azul/10 ring-2 ring-azul/40" : ""
+              }`}
+            >
               <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate">
                 {etiquetaCategoria(grupo.categoria) ?? "Sin categoría"} <span className="text-slate/50">({grupo.archivos.length})</span>
               </p>
@@ -294,7 +367,15 @@ function agruparPorCategoria(archivos: Archivo[]): { categoria: string | null; a
 
 function TarjetaArchivo({ f, onBorrar }: { f: Archivo; onBorrar: (id: string) => void }) {
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-line bg-paper shadow-sm transition hover:shadow-md">
+    <div
+      draggable
+      onDragStart={e => {
+        e.dataTransfer.setData(MIME_ARCHIVO, f.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      title="Arrastrar a otra categoría para recategorizar"
+      className="group relative cursor-grab overflow-hidden rounded-lg border border-line bg-paper shadow-sm transition hover:shadow-md active:cursor-grabbing"
+    >
       <a href={f.url} target="_blank" rel="noopener noreferrer" className="block">
         {f.tipo.startsWith("image/") ? (
           // eslint-disable-next-line @next/next/no-img-element
