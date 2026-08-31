@@ -13,13 +13,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#141b2e",       // navy profundo (seriedad legal/seguros)
+        ink: "#141b2e",       // navy profundo — queda como color de TEXTO/lectura (no de marca)
         slate: "#3a4358",
         paper: "#f6f5f1",     // fondo papel expediente
         line: "#e2e0d8",
-        amber: "#c9902e",     // acento: "acción requerida"
+        amber: "#c9902e",     // texto de "atención" (vencido, cambios sin guardar) — se mantiene por legibilidad, el amarillo puro no sirve como texto
         fraude: "#b23a3a",    // rojo dictamen fraude
         ok: "#2f7d5b",        // verde facturado / sin fraude
+        // Paleta de marca del CRM (pedido de Dario, referencia Mercado Libre):
+        // azul reemplaza a "ink" como color de superficie/acción principal
+        // (botones, sidebar, estados activos) — ink se queda solo como texto.
+        // amarillo es el acento de marca (logo, franja activa del menú).
+        azul: "#3483fa",
+        amarillo: "#ffe600",
       },
       fontFamily: {
         sans: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],

@@ -142,7 +142,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
         <div className={`mb-4 overflow-hidden ${tarjeta}`}>
           <div className="flex items-start justify-between gap-3 border-b border-line bg-paper/60 p-4">
             <div className="flex min-w-0 items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-paper">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-azul text-sm font-semibold text-paper">
                 {inicial(parsearRemitente(abierto.de).nombre)}
               </span>
               <div className="min-w-0">
@@ -168,7 +168,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
                     <a
                       key={a.attachmentId}
                       href={`/api/gmail/mensajes/${abierto.id}/adjuntos/${a.attachmentId}?nombre=${encodeURIComponent(a.nombre)}&tipo=${encodeURIComponent(a.tipo)}`}
-                      className="rounded border border-ink/20 bg-paper px-2.5 py-1.5 text-xs text-ink transition hover:bg-ink hover:text-paper"
+                      className="rounded border border-azul/20 bg-paper px-2.5 py-1.5 text-xs text-ink transition hover:bg-azul hover:text-paper"
                     >
                       📎 {a.nombre} <span className="text-slate">({formatearTamano(a.tamano)})</span>
                     </a>
@@ -262,16 +262,16 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
                 onClick={() => abrir(m.id)}
                 className={`flex w-full items-start gap-3 rounded-md border px-2.5 py-2.5 text-left transition ${
                   seleccionado
-                    ? "border-ink/20 bg-ink/5"
+                    ? "border-azul/20 bg-azul/5"
                     : "border-transparent hover:border-line hover:bg-paper"
                 }`}
               >
                 <span className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-                  m.noLeido ? "bg-ink text-paper" : "bg-line text-slate"
+                  m.noLeido ? "bg-azul text-paper" : "bg-line text-slate"
                 }`}>
                   {inicial(remitente.nombre)}
                   {m.noLeido && (
-                    <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber" />
+                    <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-amarillo" />
                   )}
                 </span>
                 <div className="min-w-0 flex-1">

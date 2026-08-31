@@ -145,7 +145,7 @@ function Mensaje({ n, esAdmin, nombreOperador }: { n: EntradaBitacora; esAdmin: 
         {!n.leida && <span className="text-[10px] font-semibold text-fraude">● Sin leer</span>}
         <div
           className={`min-w-0 rounded-2xl px-3 py-2 text-sm shadow-sm ${
-            propio ? "rounded-br-sm bg-ink text-paper" : "rounded-bl-sm border border-line bg-paper text-ink"
+            propio ? "rounded-br-sm bg-azul text-paper" : "rounded-bl-sm border border-line bg-paper text-ink"
           }`}
         >
           {tag && (

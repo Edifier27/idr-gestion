@@ -111,7 +111,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      className={`relative space-y-3 rounded-lg transition ${arrastrando ? "ring-2 ring-ink/30 ring-offset-2" : ""}`}
+      className={`relative space-y-3 rounded-lg transition ${arrastrando ? "ring-2 ring-azul/30 ring-offset-2" : ""}`}
     >
       {arrastrando && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-ink/40 bg-paper/95 backdrop-blur-sm">
@@ -129,7 +129,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
               no aplica, el navegador simplemente abre el selector de
               archivos de siempre). */}
           <label className="group flex shrink-0 cursor-pointer flex-col items-center gap-1" title="Sacar foto con la cámara">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-2xl font-light leading-none text-paper shadow-sm transition duration-150 group-hover:opacity-90 group-active:scale-[0.97]">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-azul text-2xl font-light leading-none text-paper shadow-sm transition duration-150 group-hover:opacity-90 group-active:scale-[0.97]">
               +
             </span>
             <span className="text-[10px] font-medium text-slate">Sacar foto</span>
@@ -152,7 +152,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
               {CATEGORIAS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </SelectShell>
-          <label className="cursor-pointer rounded-md border border-ink/20 bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-sm transition hover:bg-ink hover:text-paper">
+          <label className="cursor-pointer rounded-md border border-azul/20 bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-sm transition hover:bg-azul hover:text-paper">
             {subiendo ? "Subiendo…" : "📎 Subir archivo"}
             <input
               ref={inputRef}

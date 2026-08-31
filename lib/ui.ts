@@ -7,8 +7,10 @@
 // outline del navegador) para que la navegación por teclado también se vea
 // prolija.
 export const boton = {
+  // bg-azul (no bg-ink): el azul es el color de marca/acción del CRM — ink
+  // se reserva para texto de lectura. Ver comentario en tailwind.config.ts.
   primario:
-    "inline-flex items-center justify-center gap-1.5 rounded-md bg-ink px-3.5 py-2 text-sm font-medium text-paper shadow-sm transition duration-150 hover:opacity-90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
+    "inline-flex items-center justify-center gap-1.5 rounded-md bg-azul px-3.5 py-2 text-sm font-medium text-paper shadow-sm transition duration-150 hover:opacity-90 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azul/30 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
   secundario:
     "inline-flex items-center justify-center gap-1.5 rounded-md border border-ink/15 bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-sm transition duration-150 hover:border-ink/30 hover:bg-paper active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
   ghost:
@@ -22,7 +24,7 @@ export const boton = {
 };
 
 export const campo =
-  "rounded-md border border-line bg-white px-3 py-1.5 text-sm text-ink shadow-sm transition focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-ink/10";
+  "rounded-md border border-line bg-white px-3 py-1.5 text-sm text-ink shadow-sm transition focus:border-azul/40 focus:outline-none focus:ring-2 focus:ring-azul/10";
 
 // Select nativo con el mismo lenguaje visual que campo, pero sin la flechita
 // de fábrica del navegador/SO (appearance-none) — se usa siempre envuelto en
@@ -32,7 +34,7 @@ export const campo =
 // automático) — así no queda un w-full peleando por especificidad con un
 // ancho puntual pasado aparte.
 export const selectCampo =
-  "cursor-pointer appearance-none rounded-md border border-line bg-white py-1.5 pl-3 pr-8 text-sm text-ink shadow-sm transition hover:border-ink/30 focus:border-ink/40 focus:outline-none focus:ring-2 focus:ring-ink/10 disabled:cursor-not-allowed disabled:opacity-50";
+  "cursor-pointer appearance-none rounded-md border border-line bg-white py-1.5 pl-3 pr-8 text-sm text-ink shadow-sm transition hover:border-azul/30 focus:border-azul/40 focus:outline-none focus:ring-2 focus:ring-azul/10 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const tarjeta = "rounded-lg border border-line bg-white shadow-sm";
 

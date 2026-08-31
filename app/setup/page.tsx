@@ -75,7 +75,7 @@ export default function Setup() {
         </Campo>
         {error && <p className="text-sm text-fraude">{error}</p>}
         <button type="submit" disabled={enviando}
-          className="w-full rounded bg-ink px-3 py-2 text-sm font-medium text-paper transition hover:opacity-90 disabled:opacity-50">
+          className="w-full rounded bg-azul px-3 py-2 text-sm font-medium text-paper transition hover:opacity-90 disabled:opacity-50">
           {enviando ? "Creando…" : "Crear administrador"}
         </button>
       </form>

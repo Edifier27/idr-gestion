@@ -55,7 +55,7 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
         {conexiones.length === 0 && (
           <p className="rounded-lg border border-dashed border-line bg-white p-4 text-sm text-slate">Todavía no hay ninguna casilla conectada.</p>
         )}
-        <a href="/api/gmail/connect" className="inline-block rounded border border-ink/20 bg-white px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-ink hover:text-paper">
+        <a href="/api/gmail/connect" className="inline-block rounded border border-azul/20 bg-white px-3 py-1.5 text-sm font-medium text-ink transition hover:bg-azul hover:text-paper">
           {conexiones.length === 0 ? "Conectar Gmail" : "+ Conectar otra casilla"}
         </a>
       </section>

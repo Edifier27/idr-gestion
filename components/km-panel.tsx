@@ -72,7 +72,7 @@ export function KmPanel({ siniestroId, kmTotal, domicilio, lugarHecho }: {
           <button
             onClick={calcular}
             disabled={calculando}
-            className="rounded-md border border-ink/20 bg-white px-2 py-1 text-xs font-medium text-ink shadow-sm transition hover:bg-ink hover:text-paper disabled:opacity-50"
+            className="rounded-md border border-azul/20 bg-white px-2 py-1 text-xs font-medium text-ink shadow-sm transition hover:bg-azul hover:text-paper disabled:opacity-50"
           >
             {calculando ? "Calculando…" : kmTotal != null ? "Recalcular" : "Calcular"}
           </button>
@@ -92,12 +92,12 @@ export function KmPanel({ siniestroId, kmTotal, domicilio, lugarHecho }: {
             type="number"
             min={0}
             placeholder="Km"
-            className="w-24 rounded-md border border-line bg-white px-2 py-1 text-xs shadow-sm focus:border-ink/40 focus:outline-none"
+            className="w-24 rounded-md border border-line bg-white px-2 py-1 text-xs shadow-sm focus:border-azul/40 focus:outline-none"
           />
           <button
             onClick={guardarManual}
             disabled={guardando}
-            className="rounded-md bg-ink px-2 py-1 text-xs font-medium text-paper shadow-sm transition hover:opacity-90 disabled:opacity-50"
+            className="rounded-md bg-azul px-2 py-1 text-xs font-medium text-paper shadow-sm transition hover:opacity-90 disabled:opacity-50"
           >
             {guardando ? "Guardando…" : "Guardar"}
           </button>

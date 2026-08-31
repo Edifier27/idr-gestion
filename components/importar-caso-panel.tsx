@@ -152,7 +152,7 @@ export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistent
               type="file"
               accept="application/pdf"
               onChange={e => setArchivo(e.target.files?.[0] ?? null)}
-              className={`block w-full file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-paper ${campo}`}
+              className={`block w-full file:mr-3 file:rounded-md file:border-0 file:bg-azul file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-paper ${campo}`}
             />
           </label>
         ) : (
@@ -239,7 +239,7 @@ function TabBtn({ label, activo, onClick }: { label: string; activo: boolean; on
       type="button"
       onClick={onClick}
       className={`rounded-full px-3 py-1.5 text-xs font-medium shadow-sm transition ${
-        activo ? "bg-ink text-paper" : "border border-ink/15 bg-white text-ink hover:border-ink/30 hover:bg-paper"
+        activo ? "bg-azul text-paper" : "border border-ink/15 bg-white text-ink hover:border-azul/30 hover:bg-paper"
       }`}
     >
       {label}

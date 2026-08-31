@@ -70,7 +70,7 @@ export function MiniNavScrollSpy({ items }: { items: Item[] }) {
           onClick={() => setActivo(item.href)}
           className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium shadow-sm transition duration-150 ${
             activo === item.href
-              ? "border-ink bg-ink text-paper"
+              ? "border-azul bg-azul text-paper"
               : "border-ink/15 bg-white text-ink hover:-translate-y-0.5 hover:border-ink/30 hover:bg-paper hover:shadow-md"
           }`}
         >

@@ -32,16 +32,16 @@ export default function Login() {
           así el login ya se siente parte del mismo producto, no una pantalla
           genérica aparte. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-ink/[0.04] blur-3xl" />
-        <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amber/[0.08] blur-3xl" />
+        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-azul/[0.05] blur-3xl" />
+        <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amarillo/[0.08] blur-3xl" />
       </div>
 
       <div className="w-full max-w-sm">
         <div className="mb-7 flex flex-col items-center text-center">
-          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber to-amber/70 text-lg font-bold text-ink shadow-sm">
+          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-amarillo text-lg font-bold text-ink shadow-sm">
             IDR
           </span>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber">IDR Gestión</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-azul">IDR Gestión</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">Iniciar sesión</h1>
           <p className="mt-1 text-sm text-slate">Investigación de siniestros</p>
         </div>

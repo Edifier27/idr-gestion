@@ -366,7 +366,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
 }
 
 const ACENTO_BARRA: Record<string, string> = {
-  ink: "bg-ink", slate: "bg-slate", amber: "bg-amber", ok: "bg-ok", fraude: "bg-fraude",
+  ink: "bg-azul", slate: "bg-slate", amber: "bg-amber", ok: "bg-ok", fraude: "bg-fraude",
 };
 
 // colorOperador (si viene) pisa el accento fijo — así el bloque queda con

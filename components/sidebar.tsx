@@ -40,7 +40,7 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
   const contenido = (
     <>
       <div className={`flex items-center gap-2 px-5 pb-4 pt-5 ${colapsado ? "md:justify-center md:px-0" : ""}`}>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-amber to-amber/70 text-sm font-bold text-ink shadow-sm">IDR</span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amarillo text-sm font-bold text-ink shadow-sm">IDR</span>
         <span className={`text-sm font-semibold uppercase tracking-[0.15em] text-paper ${ocultarEnDesktop}`}>Gestión</span>
       </div>
 
@@ -69,7 +69,7 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
                 colapsado ? "md:justify-center md:px-0" : ""
               } ${activo ? "bg-white/10 text-paper" : "text-paper/60 hover:bg-white/5 hover:text-paper"}`}
             >
-              {activo && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-amber transition-all duration-200" />}
+              {activo && <span className="absolute -left-3 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-amarillo transition-all duration-200" />}
               <span className="flex shrink-0 transition-transform duration-150 group-hover:translate-x-0.5"><Icon /></span>
               <span className={`flex-1 ${ocultarEnDesktop}`}>{item.label}</span>
               {item.href === "/panel" && derivados > 0 && (
@@ -116,9 +116,9 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
   return (
     <>
       {/* Mobile: barra superior con botón hamburguesa */}
-      <div className="flex items-center justify-between border-b border-line bg-ink px-4 py-3 md:hidden">
+      <div className="flex items-center justify-between border-b border-line bg-azul px-4 py-3 md:hidden">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded bg-amber text-xs font-bold text-ink">IDR</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded bg-amarillo text-xs font-bold text-ink">IDR</span>
           <span className="text-xs font-semibold uppercase tracking-[0.15em] text-paper">Gestión</span>
         </div>
         <button onClick={() => setAbierto(true)} aria-label="Abrir menú" className="text-paper">
@@ -127,7 +127,7 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
       </div>
 
       {/* Sidebar fija en desktop */}
-      <aside className={`hidden md:fixed md:inset-y-0 md:left-0 md:flex md:flex-col md:bg-ink md:transition-[width] md:duration-200 ${
+      <aside className={`hidden md:fixed md:inset-y-0 md:left-0 md:flex md:flex-col md:bg-azul md:transition-[width] md:duration-200 ${
         colapsado ? "md:w-16" : "md:w-56"
       }`}>
         {contenido}
@@ -136,8 +136,8 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
       {/* Drawer en mobile */}
       {abierto && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-ink/60" onClick={() => setAbierto(false)} />
-          <aside className="relative flex h-full w-64 flex-col bg-ink" onClick={() => setAbierto(false)}>
+          <div className="absolute inset-0 bg-azul/60" onClick={() => setAbierto(false)} />
+          <aside className="relative flex h-full w-64 flex-col bg-azul" onClick={() => setAbierto(false)}>
             {contenido}
           </aside>
         </div>

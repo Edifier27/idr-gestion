@@ -149,11 +149,11 @@ export function CasoWizard({
                 onClick={() => irA(paso)}
                 disabled={!habilitado}
                 className={`flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-3 text-xs font-semibold uppercase tracking-wide transition ${
-                  activo ? "border-ink text-ink" : alcanzado ? "border-ok/50 text-ok hover:border-ok" : "border-line text-slate/40"
+                  activo ? "border-azul text-azul" : alcanzado ? "border-ok/50 text-ok hover:border-ok" : "border-line text-slate/40"
                 } ${habilitado ? "cursor-pointer" : "cursor-not-allowed"}`}
               >
                 <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${
-                  alcanzado ? "bg-ok text-white" : activo ? "bg-ink text-white" : "bg-line text-slate"
+                  alcanzado ? "bg-ok text-white" : activo ? "bg-azul text-white" : "bg-line text-slate"
                 }`}>
                   {alcanzado && paso !== pasoActivo ? "✓" : i + 1}
                 </span>
@@ -445,7 +445,7 @@ export function CasoWizard({
 function PasoHeader({ numero, titulo }: { numero: number; titulo: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-bold text-paper">{numero}</span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-azul text-sm font-bold text-paper">{numero}</span>
       <h2 className="text-base font-bold text-ink">{titulo}</h2>
     </div>
   );

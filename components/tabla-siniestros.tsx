@@ -218,7 +218,7 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
           <path d="M7.5 4.5L13 10l-5.5 5.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         {mostrarResumen ? "Ocultar resumen" : "Ver resumen (por operador y por resultado)"}
-        {hayFiltroEnResumen && !mostrarResumen && <span className="rounded-full bg-ink/10 px-1.5 py-0.5 text-[10px] text-ink">filtro activo</span>}
+        {hayFiltroEnResumen && !mostrarResumen && <span className="rounded-full bg-azul/10 px-1.5 py-0.5 text-[10px] text-azul">filtro activo</span>}
       </button>
 
       {/* Grid de una fila que anima entre 0fr y 1fr: acordeón suave sin medir
@@ -325,7 +325,7 @@ function QuickBtn({ label, n, activo, urgente, onClick }: { label: string; n: nu
     <button
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-sm transition duration-150 active:scale-95 ${
-        activo ? "bg-ink text-paper" : "border border-ink/20 bg-white text-ink hover:bg-ink/5"
+        activo ? "bg-azul text-paper" : "border border-ink/20 bg-white text-ink hover:bg-azul/5"
       }`}
     >
       {urgente && <PuntoUrgente />}
@@ -348,14 +348,14 @@ function EtapaCard({ label, valor, pct, accent, activo, urgente, onClick }: {
     <button
       onClick={onClick}
       className={`flex h-full w-full flex-col overflow-hidden text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm ${
-        activo ? "rounded-lg border border-ink" : "rounded-lg border border-line hover:border-ink/30"
+        activo ? "rounded-lg border border-azul" : "rounded-lg border border-line hover:border-azul/30"
       }`}
     >
       <span className={`h-1.5 w-full shrink-0 ${COLOR_BARRA_MINI[accent]}`} />
       {/* justify-between: la etiqueta queda arriba y el número+barra abajo,
           así todas las tarjetas alinean el número a la misma altura aunque
           alguna etiqueta ocupe dos líneas y la fila del grid sea más alta. */}
-      <span className={`flex flex-1 flex-col justify-between gap-2 px-3 py-3 ${activo ? "bg-ink/5" : "bg-white"}`}>
+      <span className={`flex flex-1 flex-col justify-between gap-2 px-3 py-3 ${activo ? "bg-azul/5" : "bg-white"}`}>
         <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate">
           {urgente && <PuntoUrgente />}
           {label}
@@ -383,7 +383,7 @@ function MiniStat({ label, valor, accent, activo, onClick }: {
     <button
       onClick={onClick}
       className={`relative overflow-hidden p-3 pl-4 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm ${
-        activo ? "rounded-lg border border-ink bg-ink/5" : `rounded-lg border border-line bg-white hover:border-ink/30`
+        activo ? "rounded-lg border border-azul bg-azul/5" : `rounded-lg border border-line bg-white hover:border-azul/30`
       }`}
     >
       <span className={`absolute inset-y-0 left-0 w-1 ${COLOR_BARRA_MINI[accent]}`} />
@@ -401,7 +401,7 @@ function TarjetaOperador({ nombre, total, pendientes, resueltos, vencidos, activ
     <button
       onClick={onClick}
       className={`group flex rounded-lg border bg-white text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm ${
-        activo ? "border-ink" : "border-line hover:border-ink/30"
+        activo ? "border-azul" : "border-line hover:border-azul/30"
       }`}
     >
       {/* Sin overflow-hidden en el contenedor (recorta la cinta si el nombre
@@ -411,7 +411,7 @@ function TarjetaOperador({ nombre, total, pendientes, resueltos, vencidos, activ
       <span className={`w-6 rounded-l-lg py-2 text-[9px] ${cinta}`} style={{ background: colorPorTexto(nombre) }} title={nombre}>
         <span className={cintaTexto}>{nombre}</span>
       </span>
-      <div className={`min-w-0 flex-1 rounded-r-lg p-3 ${activo ? "bg-ink/5" : "bg-white"}`}>
+      <div className={`min-w-0 flex-1 rounded-r-lg p-3 ${activo ? "bg-azul/5" : "bg-white"}`}>
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="truncate text-sm font-semibold text-ink" title={nombre}>{nombre}</span>
           {vencidos > 0 && (
@@ -441,7 +441,7 @@ function Select({ value, onChange, placeholder, opciones }: {
         value={value}
         onChange={e => onChange(e.target.value)}
         title={placeholder}
-        className={`${selectCampo} ${value ? "border-ink/30 bg-ink/5 font-medium text-ink" : ""}`}
+        className={`${selectCampo} ${value ? "border-azul/30 bg-azul/5 font-medium text-ink" : ""}`}
       >
         <option value="">Todos — {placeholder}</option>
         {opciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}

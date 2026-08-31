@@ -27,8 +27,8 @@ export function AppShell({ nombre, rol, derivados = 0, children }: { nombre: str
           para que el CRM no se sienta un formulario plano. No interactivo ni
           parte del layout (position: fixed + pointer-events-none). */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-ink/[0.04] blur-3xl" />
-        <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amber/[0.06] blur-3xl" />
+        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-azul/[0.05] blur-3xl" />
+        <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amarillo/[0.08] blur-3xl" />
       </div>
       <Sidebar nombre={nombre} rol={rol} derivados={derivados} colapsado={colapsado} onToggleColapsado={toggle} />
       {children}
