@@ -464,6 +464,23 @@ function formatearFechaHora(fecha: string | Date | null): string {
   return `${fechaTxt} a las ${horaTxt}hs`;
 }
 
+// 4 puntitos (relleno = paso ya alcanzado) que calcan el mismo orden del
+// wizard del operador (recibido → contacto → entrevista → informe) — de un
+// vistazo en el tablero, sin entrar al caso.
+function MiniProgresoPasos({ etapaContacto }: { etapaContacto: string | null }) {
+  const paso = !etapaContacto ? 1
+    : etapaContacto === "contacto_fallido" || etapaContacto === "contactado" ? 2
+    : etapaContacto === "entrevista_pactada" ? 3
+    : 4; // informe_enviado
+  return (
+    <span className="flex items-center gap-0.5" title={`Paso ${paso} de 4 del wizard`}>
+      {[1, 2, 3, 4].map(i => (
+        <span key={i} className={`h-1.5 w-1.5 rounded-full ${i <= paso ? "bg-azul" : "bg-line"}`} />
+      ))}
+    </span>
+  );
+}
+
 function CartelEtapa({ s }: { s: SiniestroRow }) {
   const operador = (s.operador ?? "sin operador").toUpperCase();
   const plazo = plazoInforme(s.etapaContacto, s.fechaEntrevista);
@@ -538,6 +555,11 @@ function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
                 <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                   <EstadoBadge estado={s.estado} />
                   <EtapaContactoBadge etapaContacto={s.etapaContacto} fechaEntrevista={s.fechaEntrevista} />
+                  {/* Para el admin: en qué de los 4 pasos del wizard del
+                      operador está el caso, sin tener que entrar a mirar —
+                      mismo orden que caso-wizard.tsx (recibido → contacto →
+                      entrevista → informe). */}
+                  {esAdmin && <MiniProgresoPasos etapaContacto={s.etapaContacto} />}
                 </div>
               </div>
               {esAdmin && <CartelEtapa s={s} />}
