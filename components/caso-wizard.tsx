@@ -226,11 +226,15 @@ export function CasoWizard({
             <p className="text-xs font-medium uppercase tracking-wide text-slate">Datos de contacto</p>
             <p className="mt-0.5 font-mono text-sm text-ink">{telUno ?? "— sin teléfono cargado"}</p>
             {emailContacto && <p className="font-mono text-xs text-slate">{emailContacto}</p>}
-            {telUno && (
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                <BotonesContacto numero={telUno} grande />
-              </div>
-            )}
+            <div className="mt-3 flex gap-2">
+              <AccionIcono href={direccionMapa ? mapsUrl(direccionMapa) : null} icono="📍" label="Maps" />
+              <AccionIcono href={telUno ? whatsappUrl(telUno) : null} icono={<IconWhatsApp className="h-4 w-4" />} label="WhatsApp" />
+              <AccionIcono href={telUno ? telUrl(telUno) : null} icono="📞" label="Llamar" />
+              {/* linkCalendario ya viene calculado más arriba a partir de
+                  "fecha" — nace deshabilitado (gris) y se activa solo apenas
+                  se pacta la entrevista más abajo, sin estado nuevo. */}
+              <AccionIcono href={linkCalendario} icono="🗓️" label="Agendar" />
+            </div>
           </div>
 
           {etapaContacto !== "contacto_fallido" && etapaContacto !== "contactado" ? (
@@ -304,11 +308,11 @@ export function CasoWizard({
                     📅 Pactar →
                   </button>
                 </div>
-                {linkCalendario && (
-                  <a href={linkCalendario} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate hover:text-ink hover:underline">
-                    🗓️ Agregar a Google Calendar
-                  </a>
-                )}
+                {/* El link de texto "Agregar a Google Calendar" que estaba
+                    acá se sacó — ahora es el ícono "Agendar" de la tarjeta
+                    de arriba, que se activa solo apenas se carga la fecha
+                    (mismo linkCalendario). Repetirlo acá abajo era la misma
+                    acción dos veces en la misma pantalla. */}
                 <button onClick={() => setPasoActivo("entrevista")} className={`mt-2.5 w-full text-center text-xs font-medium text-slate underline decoration-dotted underline-offset-2 hover:text-ink`}>
                   Todavía no tengo la fecha: pasar igual →
                 </button>
@@ -490,42 +494,3 @@ function AccionIcono({ href, icono, label }: { href: string | null; icono: React
   );
 }
 
-// Llamar o mandar WhatsApp directo al número cargado. "grande" es la
-// variante con look de botón para el bloque "Datos de contacto" del paso
-// Contacto — ahí es LA acción que el operador va a tocar, no un ícono
-// chico al costado.
-function BotonesContacto({ numero, grande = false }: { numero: string; grande?: boolean }) {
-  const wa = whatsappUrl(numero);
-  const tel = telUrl(numero);
-  if (!wa && !tel) return null;
-  if (grande) {
-    return (
-      <span className="flex shrink-0 items-center gap-1.5">
-        {wa && (
-          <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-ok/30 bg-ok/5 px-2.5 py-1 text-xs font-medium text-ok shadow-sm transition hover:bg-ok/10">
-            <IconWhatsApp className="h-3.5 w-3.5" /> WhatsApp
-          </a>
-        )}
-        {tel && (
-          <a href={tel} className="inline-flex items-center gap-1 rounded-md border border-ink/15 bg-white px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition hover:bg-paper">
-            📞 Llamar
-          </a>
-        )}
-      </span>
-    );
-  }
-  return (
-    <span className="flex shrink-0 items-center gap-1.5">
-      {wa && (
-        <a href={wa} target="_blank" rel="noopener noreferrer" title="Mandar WhatsApp" className="transition hover:opacity-70">
-          <IconWhatsApp className="h-3.5 w-3.5" />
-        </a>
-      )}
-      {tel && (
-        <a href={tel} title="Llamar" className="text-sm leading-none text-slate transition hover:text-ink">
-          📞
-        </a>
-      )}
-    </span>
-  );
-}
