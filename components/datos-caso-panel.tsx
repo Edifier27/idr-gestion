@@ -116,8 +116,6 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
         </div>
       </div>
 
-      <MapaEmbed direccion={form.domicilio || form.lugar} />
-
       {datosExtra.length > 0 && (
         <div className={`min-w-0 ${tarjeta} p-4`}>
           <CabeceraTarjeta icono="🏷️" titulo="Datos adicionales" />
@@ -156,6 +154,8 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
           + Agregar dato
         </button>
       </form>
+
+      <MapaEmbed direccion={form.domicilio || form.lugar} />
 
       <div className="flex items-center gap-3 pt-1">
         <button onClick={guardar} disabled={guardando || !cambio} className={boton.primario}>
