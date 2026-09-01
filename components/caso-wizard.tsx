@@ -226,14 +226,16 @@ export function CasoWizard({
             <p className="text-xs font-medium uppercase tracking-wide text-slate">Datos de contacto</p>
             <p className="mt-0.5 font-mono text-sm text-ink">{telUno ?? "— sin teléfono cargado"}</p>
             {emailContacto && <p className="font-mono text-xs text-slate">{emailContacto}</p>}
+            {/* Sin "Agendar" acá — Dario prefirió sacarlo: es un link de
+                una sola vía (arma un evento en Google Calendar a partir de
+                lo cargado en el CRM, pero si después lo cambian allá el CRM
+                no se entera), y confundía. Sigue estando donde sí hace
+                falta: el link de texto del paso Entrevista, al lado del
+                campo de fecha. */}
             <div className="mt-3 flex gap-2">
               <AccionIcono href={direccionMapa ? mapsUrl(direccionMapa) : null} icono="📍" label="Maps" />
               <AccionIcono href={telUno ? whatsappUrl(telUno) : null} icono={<IconWhatsApp className="h-4 w-4" />} label="WhatsApp" />
               <AccionIcono href={telUno ? telUrl(telUno) : null} icono="📞" label="Llamar" />
-              {/* linkCalendario ya viene calculado más arriba a partir de
-                  "fecha" — nace deshabilitado (gris) y se activa solo apenas
-                  se pacta la entrevista más abajo, sin estado nuevo. */}
-              <AccionIcono href={linkCalendario} icono="🗓️" label="Agendar" />
             </div>
           </div>
 
