@@ -12,6 +12,7 @@ import { asegurarColumnasDerivadoAdmin } from "@/lib/db/asegurar-derivado-admin"
 import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
 import { asegurarColumnaFechaDesistido } from "@/lib/db/asegurar-fecha-desistido";
 import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
+import { asegurarColumnaRecordatorioPlazo } from "@/lib/db/asegurar-recordatorio-plazo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,5 +36,6 @@ export async function GET() {
   await asegurarTablaDatoExtra();
   await asegurarColumnaFechaDesistido();
   await asegurarColumnasComunicacion();
+  await asegurarColumnaRecordatorioPlazo();
   return NextResponse.json({ ok: true });
 }

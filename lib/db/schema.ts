@@ -34,6 +34,10 @@ export const siniestros = pgTable("siniestros", {
   // La usa el ranking de operadores para filtrar por mes.
   fechaDesistido: timestamp("fecha_desistido", { withTimezone: true }),
   fechaLimite: text("fecha_limite"),                       // vencimiento de la gestión
+  // Cuándo se le mandó al operador el mail automático de "se acerca el
+  // vencimiento del informe" (Cron diario, ver app/api/recordatorio-plazo) —
+  // para no mandarlo de nuevo por el mismo caso.
+  recordatorioPlazoEnviadoEn: timestamp("recordatorio_plazo_enviado_en", { withTimezone: true }),
   estadoCobro: text("estado_cobro").notNull().default("no_facturado"), // no_facturado|facturado|presentado|cobrado|rechazado
   kmTotal: integer("km_total"),
   facturar: integer("facturar"),
