@@ -84,7 +84,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
   // el estado "categoria" a tiempo dentro del mismo tick, así que esta
   // función seguiría leyendo el valor viejo. Se la pasa directo como
   // parámetro en vez de depender del estado para evitar ese lío de timing.
-  async function onFiles(files: FileList | null, categoriaForzada?: string) {
+  async function onFiles(files: FileList | File[] | null, categoriaForzada?: string) {
     if (!files || files.length === 0) return;
     setError(null);
     setSubiendo(true);
@@ -256,13 +256,13 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
         </p>
       )}
 
-      {/* Un botón de cámara por categoría: el operador toca directo "DNI" o
-          "Cédula" y la cámara se abre ya con esa categoría cargada — sin
-          desplegable ni paso intermedio. capture="environment" es lo que
-          abre la cámara directo en vez de la galería (en desktop, donde no
-          aplica, el navegador abre el selector de archivos de siempre, y
-          además cada cuadradito acepta arrastrar-y-soltar un archivo
-          directo encima para categorizarlo igual). */}
+      {/* Un botón por categoría: el operador toca directo "DNI" o "Cédula"
+          y lo que suba queda ya con esa categoría — sin desplegable ni paso
+          intermedio. Sin capture="environment" a propósito: con eso el
+          celular abría solo la cámara y de a UNA foto; así el celular ofrece
+          Cámara / Galería / Archivos y se pueden elegir varios de una vez
+          (multiple). En desktop abre el selector de archivos, y cada
+          cuadradito acepta además arrastrar-y-soltar archivos encima. */}
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
         {CAPTURA_RAPIDA.map(c => (
           <label
@@ -278,11 +278,18 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
             <span className="text-[10px] font-semibold leading-tight text-ink">{c.corta}</span>
             <input
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept="image/*,.pdf"
+              multiple
               className="hidden"
               disabled={subiendo}
-              onChange={e => onFiles(e.target.files, c.value)}
+              onChange={e => {
+                // Se copia la lista y se vacía el input, así se puede volver
+                // a elegir el mismo archivo y el cuadradito queda listo para
+                // la próxima tanda.
+                const lista = Array.from(e.target.files ?? []);
+                e.target.value = "";
+                onFiles(lista, c.value);
+              }}
             />
           </label>
         ))}
