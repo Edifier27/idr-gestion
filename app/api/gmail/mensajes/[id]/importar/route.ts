@@ -6,6 +6,7 @@ import { obtenerMensaje, obtenerAdjunto } from "@/lib/gmail";
 import { extraerCaratula, extraerDeMail } from "@/lib/extraction";
 import { esPdf } from "@/lib/adjuntos";
 import { crearSiniestro } from "@/lib/siniestros";
+import { avisarAsignacion } from "@/lib/aviso-asignacion";
 import { getDb } from "@/lib/db";
 import { evidencia, siniestros } from "@/lib/db/schema";
 import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
@@ -103,6 +104,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         // si un adjunto puntual falla, seguimos con el resto — el caso ya está creado
       }
     }
+
+    await avisarAsignacion(siniestro, operador, conexion.conexionId);
 
     return NextResponse.json({ siniestro, archivosImportados }, { status: 201 });
   } catch (err) {

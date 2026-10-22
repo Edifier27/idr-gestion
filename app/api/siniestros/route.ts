@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { desc } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
-import { sesionRequerida, puedeVerFacturacion, ocultarFacturacion } from "@/lib/acceso";
+import { sesionRequerida, puedeVerFacturacion, ocultarFacturacion, conexionGmailDeSesion } from "@/lib/acceso";
+import { avisarAsignacion } from "@/lib/aviso-asignacion";
 import { crearSiniestro } from "@/lib/siniestros";
 import type { CaratulaExtraida } from "@/lib/types";
 
@@ -41,6 +42,8 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as CaratulaExtraida & { operador?: string };
     if (!body.operador) return NextResponse.json({ error: "Falta el operador." }, { status: 400 });
     const row = await crearSiniestro(body, body.operador);
+    const conexion = conexionGmailDeSesion(session);
+    if (!("error" in conexion)) await avisarAsignacion(row, row.operador ?? body.operador, conexion.conexionId);
     return NextResponse.json({ siniestro: row }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error al crear el siniestro.";
