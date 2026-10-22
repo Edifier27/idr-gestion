@@ -2,6 +2,7 @@ import { getDb } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import { calcularFacturacion } from "@/lib/facturacion";
 import type { CaratulaExtraida } from "@/lib/types";
+import { normalizarTipo } from "@/lib/tipos-siniestro";
 
 // Alta de un siniestro a partir de los datos ya extraídos (de un PDF de
 // carátula o de un mail). Compartido entre el alta manual y la importación
@@ -18,7 +19,7 @@ export async function crearSiniestro(datos: CaratulaExtraida, operador: string, 
       numeroGestion: datos.numero_gestion ?? null,
       compania: datos.compania ?? null,
       rama: datos.rama ?? null,
-      tipo: datos.tipo ?? null,
+      tipo: normalizarTipo(datos.tipo),
       poliza: datos.poliza ?? null,
       asegurado: datos.asegurado ?? null,
       denunciante: datos.denunciante ?? null,

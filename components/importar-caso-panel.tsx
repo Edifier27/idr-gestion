@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { boton, campo, tarjeta } from "@/lib/ui";
+import { TIPOS_SINIESTRO } from "@/lib/tipos-siniestro";
 
 type Datos = {
   nro_siniestro: string | null;
@@ -197,7 +198,7 @@ export function ImportarCasoPanel({ operadoresExistentes }: { operadoresExistent
             <Campo label="N° Gestión"><Input v={datos.numero_gestion} onChange={v => set("numero_gestion", v)} /></Campo>
             <Campo label="Compañía"><Input v={datos.compania} onChange={v => set("compania", v)} /></Campo>
             <Campo label="Rama"><Input v={datos.rama} onChange={v => set("rama", v)} /></Campo>
-            <Campo label="Tipo"><Input v={datos.tipo} onChange={v => set("tipo", v)} /></Campo>
+            <Campo label="Tipo"><Input v={datos.tipo} onChange={v => set("tipo", v)} lista="tipos-siniestro" /><datalist id="tipos-siniestro">{TIPOS_SINIESTRO.map(t => <option key={t.codigo} value={t.nombre}>{t.codigo}</option>)}</datalist></Campo>
             <Campo label="Póliza"><Input v={datos.poliza} onChange={v => set("poliza", v)} /></Campo>
             <Campo label="Asegurado"><Input v={datos.asegurado} onChange={v => set("asegurado", v)} /></Campo>
             <Campo label="Denunciante"><Input v={datos.denunciante} onChange={v => set("denunciante", v)} /></Campo>
@@ -254,9 +255,9 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
-function Input({ v, onChange, placeholder }: { v: string | null; onChange: (v: string) => void; placeholder?: string }) {
+function Input({ v, onChange, placeholder, lista }: { v: string | null; onChange: (v: string) => void; placeholder?: string; lista?: string }) {
   return (
-    <input value={v ?? ""} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+    <input value={v ?? ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} list={lista}
       className={`w-full ${campo}`} />
   );
 }

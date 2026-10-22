@@ -20,6 +20,7 @@ const NAV = [
   { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
+  { href: "/admin/importar-planilla", label: "Importar planilla", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
 ];
 
 export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggleColapsado }: {

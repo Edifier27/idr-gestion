@@ -29,7 +29,7 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
 
       {searchParams.conectado && (
         <div className="mb-5 rounded-lg border border-ok/30 bg-ok/5 px-4 py-3 text-sm text-ok">
-          Conectado correctamente.
+          Conectado correctamente. Si no ves la casilla nueva, cerrá sesión y volvé a entrar.
         </div>
       )}
       {searchParams.error && (

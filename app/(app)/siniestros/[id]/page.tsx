@@ -186,6 +186,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         <Bloque id="datos" titulo="Datos del siniestro">
           <DatosCasoPanel
             siniestroId={s.id}
+            tipo={s.tipo}
             dni={s.dni}
             poliza={s.poliza}
             denunciante={s.denunciante}

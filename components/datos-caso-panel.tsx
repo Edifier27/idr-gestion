@@ -7,6 +7,7 @@ import { notificar, confirmar } from "@/components/notificaciones";
 import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
 import { MapaEmbed } from "@/components/mapa-embed";
 import { IconWhatsApp } from "@/components/icon-whatsapp";
+import { TIPOS_SINIESTRO } from "@/lib/tipos-siniestro";
 
 type DatoExtra = { id: string; etiqueta: string; valor: string };
 
@@ -17,8 +18,9 @@ type DatoExtra = { id: string; etiqueta: string; valor: string };
 // la izquierda, valor editable a la derecha) en vez del <fieldset> angosto
 // de antes — más aire, más fácil de escanear, y cada fila se resalta al
 // pasar el mouse para que se note que es editable.
-export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicilio, fechaOcurrencia, lugarInicial, telContacto, celContacto, emailContacto, fechaLimite, operador, datosExtraIniciales }: {
+export function DatosCasoPanel({ siniestroId, tipo, dni, poliza, denunciante, domicilio, fechaOcurrencia, lugarInicial, telContacto, celContacto, emailContacto, fechaLimite, operador, datosExtraIniciales }: {
   siniestroId: string;
+  tipo: string | null;
   dni: string | null; poliza: string | null; denunciante: string | null; domicilio: string | null;
   fechaOcurrencia: string | null; lugarInicial: string; telContacto: string | null; celContacto: string | null;
   emailContacto: string | null; fechaLimite: string | null; operador: string | null;
@@ -26,7 +28,7 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
 }) {
   const router = useRouter();
   const [form, setForm] = useState({
-    dni: dni ?? "", poliza: poliza ?? "", denunciante: denunciante ?? "", domicilio: domicilio ?? "",
+    tipo: tipo ?? "", dni: dni ?? "", poliza: poliza ?? "", denunciante: denunciante ?? "", domicilio: domicilio ?? "",
     fechaOcurrencia: fechaOcurrencia ?? "", lugar: lugarInicial, telContacto: telContacto ?? "",
     celContacto: celContacto ?? "", emailContacto: emailContacto ?? "", fechaLimite: fechaLimite ?? "",
     operador: operador ?? "",
@@ -50,7 +52,7 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dni: form.dni, poliza: form.poliza, denunciante: form.denunciante, domicilio: form.domicilio,
+          tipo: form.tipo || null, dni: form.dni, poliza: form.poliza, denunciante: form.denunciante, domicilio: form.domicilio,
           fecha_ocurrencia: form.fechaOcurrencia, tel_contacto: form.telContacto, cel_contacto: form.celContacto,
           email_contacto: form.emailContacto, fecha_limite: form.fechaLimite, operador: form.operador,
           lugar_siniestro: { calle1: form.lugar },
@@ -102,6 +104,15 @@ export function DatosCasoPanel({ siniestroId, dni, poliza, denunciante, domicili
       <div className={`min-w-0 ${tarjeta} p-4`}>
         <CabeceraTarjeta icono="📋" titulo="Datos del siniestro" />
         <div className="divide-y divide-dashed divide-line">
+          <div className="-mx-1.5 grid grid-cols-[104px_1fr] items-center gap-2 rounded-md px-1.5 py-2 font-mono text-[11px] transition hover:bg-paper/70">
+            <span className="truncate uppercase tracking-wide text-slate">Tipo</span>
+            <select value={form.tipo} onChange={e => set("tipo", e.target.value)}
+              className="min-w-0 rounded bg-transparent px-1 text-right text-ink outline-none transition focus:bg-white focus:shadow-sm">
+              <option value="">—</option>
+              {TIPOS_SINIESTRO.map(t => <option key={t.codigo} value={t.nombre}>{t.codigo} · {t.nombre}</option>)}
+              {form.tipo && !TIPOS_SINIESTRO.some(t => t.nombre === form.tipo) && <option value={form.tipo}>{form.tipo}</option>}
+            </select>
+          </div>
           <DatoInput k="DNI" value={form.dni} onChange={v => set("dni", v)} />
           <DatoInput k="Póliza" value={form.poliza} onChange={v => set("poliza", v)} />
           <DatoInput k="Denunciante" value={form.denunciante} onChange={v => set("denunciante", v)} />

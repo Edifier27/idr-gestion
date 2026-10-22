@@ -13,6 +13,7 @@ type Usuario = {
   rol: string;
   operador: string | null;
   email: string | null;
+  zona?: string | null;
   activo: boolean;
   creadoEn: Date | string;
 };
@@ -74,6 +75,20 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
     if (!res.ok) { notificar.error(data.error ?? "No se pudo guardar el mail."); return; }
     setLista(l => l.map(x => x.id === u.id ? { ...x, email: data.usuario.email } : x));
     notificar.ok("Mail actualizado.");
+  }
+
+  async function cambiarZona(u: Usuario) {
+    const nueva = await pedirTexto(`Zona de ${u.nombre || u.username}`, { placeholder: u.zona ?? "Ej: Zona Sur Lomas-Ezeiza" });
+    if (nueva === null) return;
+    const res = await fetch(`/api/usuarios/${u.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ zona: nueva.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) { notificar.error(data.error ?? "No se pudo guardar la zona."); return; }
+    setLista(l => l.map(x => x.id === u.id ? { ...x, zona: data.usuario.zona } : x));
+    notificar.ok("Zona actualizada.");
   }
 
   async function resetPassword(u: Usuario) {
@@ -165,6 +180,9 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
                         {u.email ? `✉️ ${u.email}` : "Sin mail cargado — no le llegan avisos"}
                       </p>
                     )}
+                    {u.rol === "vendedor" && u.zona && (
+                      <p className="truncate text-xs text-slate">📍 {u.zona}</p>
+                    )}
                   </div>
                   <span className={`${badge} ${u.activo ? "bg-ok/15 text-ok" : "bg-fraude/15 text-fraude"}`}>
                     <span className={badgeDot} />
@@ -181,6 +199,11 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
                   {u.rol === "vendedor" && (
                     <button onClick={() => cambiarEmail(u)} className={boton.ghost}>
                       {u.email ? "Cambiar mail" : "Cargar mail"}
+                    </button>
+                  )}
+                  {u.rol === "vendedor" && (
+                    <button onClick={() => cambiarZona(u)} className={boton.ghost}>
+                      {u.zona ? "Cambiar zona" : "Cargar zona"}
                     </button>
                   )}
                 </div>

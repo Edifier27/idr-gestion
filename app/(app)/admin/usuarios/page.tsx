@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { usuarios } from "@/lib/db/schema";
 import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
+import { asegurarColumnaZonaUsuario } from "@/lib/db/asegurar-zona-usuario";
+import { sql } from "drizzle-orm";
 import { UsuariosPanel } from "@/components/usuarios-panel";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +20,16 @@ export default async function AdminUsuarios() {
     rol: usuarios.rol, operador: usuarios.operador, email: usuarios.email, activo: usuarios.activo, creadoEn: usuarios.creadoEn,
   }).from(usuarios).orderBy(usuarios.creadoEn) : [];
 
+  // La zona va por SQL directo (no está en el schema de Drizzle para que el
+  // login no dependa de que la columna exista).
+  let zonas: Record<string, string | null> = {};
+  if (dbConfigurada()) {
+    await asegurarColumnaZonaUsuario();
+    const res = await getDb().execute(sql`SELECT id, zona FROM usuarios`);
+    zonas = Object.fromEntries((res.rows as { id: string; zona: string | null }[]).map(r => [r.id, r.zona]));
+  }
+  const listaConZona = lista.map(u => ({ ...u, zona: zonas[u.id] ?? null }));
+
   // Se deriva de la propia lista de usuarios ya cargada arriba (no de los
   // siniestros): así un operador recién creado, sin casos todavía, ya
   // aparece como sugerencia al crear el próximo.
@@ -31,7 +43,7 @@ export default async function AdminUsuarios() {
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Usuarios</h1>
         <p className="text-sm text-slate">Creá una cuenta por cada operador. Cada uno ve solo los casos donde su "operador" vinculado coincide con el campo Operador del caso.</p>
       </header>
-      <UsuariosPanel usuariosIniciales={lista} operadoresExistentes={operadoresExistentes} />
+      <UsuariosPanel usuariosIniciales={listaConZona} operadoresExistentes={operadoresExistentes} />
     </main>
   );
 }

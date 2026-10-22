@@ -64,7 +64,15 @@ async function accessTokenDesdeRefresh(refreshToken: string): Promise<string> {
     }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description ?? data.error ?? "No se pudo renovar el acceso a Gmail.");
+  if (!res.ok) {
+    // invalid_grant = Google dio de baja el permiso: la app de Google Cloud
+    // sigue en modo "Testing" (los permisos vencen a los 7 días), se cambió
+    // la contraseña de la cuenta o se quitó el acceso a mano.
+    if (data.error === "invalid_grant") {
+      throw new Error("Venció la conexión con Gmail. Volvé a conectar la casilla desde Mail → Conectar Gmail.");
+    }
+    throw new Error(data.error_description ?? data.error ?? "No se pudo renovar el acceso a Gmail.");
+  }
   return data.access_token as string;
 }
 

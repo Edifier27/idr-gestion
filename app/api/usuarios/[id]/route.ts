@@ -6,6 +6,8 @@ import { getDb } from "@/lib/db";
 import { usuarios } from "@/lib/db/schema";
 import { asegurarColumnaGmailConexionUsuario } from "@/lib/db/asegurar-usuario-gmail-conexion";
 import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
+import { asegurarColumnaZonaUsuario } from "@/lib/db/asegurar-zona-usuario";
+import { sql } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,7 +35,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     patch.passwordHash = await bcrypt.hash(body.password, 10);
   }
 
-  if (Object.keys(patch).length === 0) return NextResponse.json({ error: "Nada para actualizar." }, { status: 400 });
+  const zona = typeof body?.zona === "string" ? body.zona.trim() || null : undefined;
+
+  if (Object.keys(patch).length === 0 && zona === undefined) return NextResponse.json({ error: "Nada para actualizar." }, { status: 400 });
 
   // No permitir que el admin se desactive a si mismo por error y se quede afuera.
   if (params.id === session.user.id && patch.activo === false) {
@@ -43,8 +47,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   await asegurarColumnaGmailConexionUsuario();
   await asegurarColumnasComunicacion();
   const db = getDb();
-  const [row] = await db.update(usuarios).set(patch).where(eq(usuarios.id, params.id))
-    .returning({ id: usuarios.id, username: usuarios.username, nombre: usuarios.nombre, rol: usuarios.rol, operador: usuarios.operador, email: usuarios.email, activo: usuarios.activo, gmailConexionId: usuarios.gmailConexionId });
+  // La zona no está en el schema de Drizzle (ver admin/usuarios/page.tsx).
+  if (zona !== undefined) {
+    await asegurarColumnaZonaUsuario();
+    await db.execute(sql`UPDATE usuarios SET zona = ${zona} WHERE id = ${params.id}`);
+  }
+  const columnas = { id: usuarios.id, username: usuarios.username, nombre: usuarios.nombre, rol: usuarios.rol, operador: usuarios.operador, email: usuarios.email, activo: usuarios.activo, gmailConexionId: usuarios.gmailConexionId };
+  const [row] = Object.keys(patch).length > 0
+    ? await db.update(usuarios).set(patch).where(eq(usuarios.id, params.id)).returning(columnas)
+    : await db.select(columnas).from(usuarios).where(eq(usuarios.id, params.id));
   if (!row) return NextResponse.json({ error: "No existe." }, { status: 404 });
-  return NextResponse.json({ usuario: row });
+  return NextResponse.json({ usuario: zona !== undefined ? { ...row, zona } : row });
 }

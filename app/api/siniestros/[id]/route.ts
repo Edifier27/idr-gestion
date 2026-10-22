@@ -41,7 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // corregir a mano desde "Datos del siniestro" si la extracción se
     // equivocó o vino incompleta.
     "dni","poliza","denunciante","domicilio","fecha_ocurrencia","tel_contacto","cel_contacto",
-    "email_contacto","lugar_siniestro",
+    "email_contacto","lugar_siniestro","tipo",
   ];
   const campos = verFacturacion
     ? [...camposComunes, "numero_fc","gasto_fijo","km_total","estado_cobro","informe_final"]
@@ -55,7 +55,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     derivado_admin:"derivadoAdmin",
     dni:"dni", poliza:"poliza", denunciante:"denunciante", domicilio:"domicilio",
     fecha_ocurrencia:"fechaOcurrencia", tel_contacto:"telContacto", cel_contacto:"celContacto",
-    email_contacto:"emailContacto", lugar_siniestro:"lugarSiniestro",
+    email_contacto:"emailContacto", lugar_siniestro:"lugarSiniestro", tipo:"tipo",
   };
   for (const k of campos) {
     if (!(k in body)) continue;
