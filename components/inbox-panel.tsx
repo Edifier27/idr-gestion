@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { esPdf } from "@/lib/adjuntos";
 import { boton, campo, tarjeta } from "@/lib/ui";
 import { confirmar } from "@/components/notificaciones";
 
@@ -195,7 +196,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
                   Ver el caso →
                 </a>
               </div>
-            ) : abierto.adjuntos.some(a => a.tipo === "application/pdf") ? (
+            ) : (
               <div className="mt-3 border-t border-line pt-3">
                 {mostrarImportar ? (
                   <div className="flex flex-wrap items-center gap-2">
@@ -230,8 +231,11 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
                     🗂️ Crear legajo desde este mail
                   </button>
                 )}
+                {!abierto.adjuntos.some(esPdf) && (
+                  <p className="mt-1.5 text-xs text-slate">Este mail no trae PDF: los datos se leen del texto del mail.</p>
+                )}
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       )}

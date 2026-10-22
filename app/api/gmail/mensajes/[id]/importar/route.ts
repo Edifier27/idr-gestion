@@ -3,7 +3,8 @@ import { eq, or } from "drizzle-orm";
 import { put } from "@vercel/blob";
 import { sesionRequerida, conexionGmailDeSesion } from "@/lib/acceso";
 import { obtenerMensaje, obtenerAdjunto } from "@/lib/gmail";
-import { extraerCaratula } from "@/lib/extraction";
+import { extraerCaratula, extraerDeMail } from "@/lib/extraction";
+import { esPdf } from "@/lib/adjuntos";
 import { crearSiniestro } from "@/lib/siniestros";
 import { getDb } from "@/lib/db";
 import { evidencia, siniestros } from "@/lib/db/schema";
@@ -49,13 +50,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const mensaje = await obtenerMensaje(params.id, conexion.conexionId);
-    const pdfAdjunto = mensaje.adjuntos.find(a => a.tipo === "application/pdf");
-    if (!pdfAdjunto) {
-      return NextResponse.json({ error: "Este mail no tiene ningún PDF adjunto para leer los datos del caso." }, { status: 400 });
+    // Con PDF de carátula se leen los datos de ahí; si el mail no trae PDF
+    // (la aseguradora mandó los datos en el cuerpo), se leen del texto.
+    const pdfAdjunto = mensaje.adjuntos.find(esPdf);
+    let pdfBytes: Buffer | null = null;
+    let datos;
+    if (pdfAdjunto) {
+      pdfBytes = await obtenerAdjunto(params.id, pdfAdjunto.attachmentId, conexion.conexionId);
+      datos = await extraerCaratula(pdfBytes.toString("base64"));
+    } else {
+      const texto = [mensaje.asunto, mensaje.cuerpo].filter(Boolean).join("\n\n").trim();
+      if (!texto) return NextResponse.json({ error: "Este mail no tiene PDF ni texto para leer los datos del caso." }, { status: 400 });
+      datos = await extraerDeMail(texto);
     }
-
-    const pdfBytes = await obtenerAdjunto(params.id, pdfAdjunto.attachmentId, conexion.conexionId);
-    const datos = await extraerCaratula(pdfBytes.toString("base64"));
 
     // Además, si el número de siniestro/gestión ya existe en otro caso (se
     // importó por otra vía, o el operador lo tocó dos veces), avisamos antes
@@ -80,13 +87,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     let archivosImportados = 0;
     for (const adjunto of mensaje.adjuntos) {
       try {
-        const bytes = adjunto.attachmentId === pdfAdjunto.attachmentId ? pdfBytes : await obtenerAdjunto(params.id, adjunto.attachmentId, conexion.conexionId);
-        const blob = await put(adjunto.nombre, bytes, { access: "public", addRandomSuffix: true, contentType: adjunto.tipo });
+        const bytes = pdfBytes && adjunto.attachmentId === pdfAdjunto?.attachmentId ? pdfBytes : await obtenerAdjunto(params.id, adjunto.attachmentId, conexion.conexionId);
+        const tipo = esPdf(adjunto) ? "application/pdf" : adjunto.tipo;
+        const blob = await put(adjunto.nombre, bytes, { access: "public", addRandomSuffix: true, contentType: tipo });
         await db.insert(evidencia).values({
           siniestroId: siniestro.id,
           nombre: adjunto.nombre,
           url: blob.url,
-          tipo: adjunto.tipo,
+          tipo,
           tamano: adjunto.tamano || bytes.length,
           subidoPor: session.user.username,
         });
