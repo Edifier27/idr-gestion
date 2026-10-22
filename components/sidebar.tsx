@@ -2,9 +2,11 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { etiquetaRol } from "@/lib/roles";
 import { colorPorTexto } from "@/lib/ui";
+import { instalarCapturaErrores } from "@/lib/errores-navegador";
+import { ReportarProblema } from "@/components/reportar-problema";
 
 // "quick" distingue entre los dos accesos directos a /panel: Tablero abre en
 // la bandeja de hoy, Cerrados manda directo a la pestaña de casos cerrados
@@ -34,7 +36,12 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
   const searchParams = useSearchParams();
   const quickActual = searchParams.get("quick") ?? undefined;
   const [abierto, setAbierto] = useState(false);
+  const [reportando, setReportando] = useState(false);
   const esAdmin = rol === "admin";
+
+  // Junta los errores de JavaScript desde que se abre el CRM, para que el
+  // reporte de problemas los pueda mandar.
+  useEffect(() => { instalarCapturaErrores(); }, []);
 
   function esActivo(item: (typeof NAV)[number]) {
     return item.href.startsWith("/panel")
@@ -109,6 +116,18 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
             <p className="text-xs uppercase tracking-wide text-paper/50">{etiquetaRol(rol)}</p>
           </div>
         </div>
+        {esAdmin && (
+          <button
+            onClick={() => setReportando(true)}
+            title="Reportar un problema"
+            className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-1.5 text-xs text-paper/40 transition hover:bg-white/5 hover:text-paper ${
+              colapsado ? "md:justify-center md:px-0" : ""
+            }`}
+          >
+            <span aria-hidden className="w-4 text-center">?</span>
+            <span className={ocultarEnDesktop}>Reportar un problema</span>
+          </button>
+        )}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           title="Cerrar sesión"
@@ -142,6 +161,8 @@ export function Sidebar({ nombre, rol, derivados = 0, colapsado = false, onToggl
       }`}>
         {contenido}
       </aside>
+
+      {reportando && <ReportarProblema onCerrar={() => setReportando(false)} />}
 
       {/* Drawer en mobile */}
       {abierto && (

@@ -155,3 +155,17 @@ export type EvidenciaRow = typeof evidencia.$inferSelect;
 export type GmailConexionRow = typeof gmailConexion.$inferSelect;
 export type MailEnviadoRow = typeof mailEnviado.$inferSelect;
 export type DatoExtraRow = typeof datoExtra.$inferSelect;
+
+// Problemas que reporta un admin desde el CRM ("Reportar un problema", abajo
+// del menú). La IA contesta al toque y el reporte sale por mail para que
+// Dario se lo pase a Claude Code y se arregle.
+export const reporteProblema = pgTable("reporte_problema", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  autor: text("autor"),
+  pagina: text("pagina"),
+  descripcion: text("descripcion").notNull(),
+  contexto: jsonb("contexto"),               // navegador y últimos errores de JavaScript que vio la pantalla
+  respuestaIa: text("respuesta_ia"),
+  mailEnviadoA: text("mail_enviado_a"),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+});
