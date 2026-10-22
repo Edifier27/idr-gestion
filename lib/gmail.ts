@@ -4,7 +4,14 @@ import { getDb } from "@/lib/db";
 import { gmailConexion } from "@/lib/db/schema";
 import { asegurarTablasGmail } from "@/lib/db/asegurar-gmail";
 
-const REDIRECT_URI = "https://crm-atm.vercel.app/api/gmail/callback";
+// La vuelta de Google tiene que caer en la misma dirección por la que entró
+// el usuario (idrgestion.com.ar, www.idrgestion.com.ar o crm-atm.vercel.app):
+// la sesión del CRM es por dirección, y si vuelve a otra el callback no la ve.
+// Cada una tiene que estar cargada como URI de redireccionamiento en el
+// cliente OAuth de Google Cloud.
+function redirectUri(origen: string) {
+  return `${origen}/api/gmail/callback`;
+}
 const SCOPE = "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly";
 
 function credenciales() {
@@ -14,11 +21,11 @@ function credenciales() {
   return { clientId, clientSecret };
 }
 
-export function urlAutorizacion(): string {
+export function urlAutorizacion(origen: string): string {
   const { clientId } = credenciales();
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: redirectUri(origen),
     response_type: "code",
     scope: SCOPE,
     access_type: "offline",
@@ -27,7 +34,7 @@ export function urlAutorizacion(): string {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-export async function intercambiarCodigo(code: string): Promise<{ refreshToken: string; email: string }> {
+export async function intercambiarCodigo(code: string, origen: string): Promise<{ refreshToken: string; email: string }> {
   const { clientId, clientSecret } = credenciales();
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -36,7 +43,7 @@ export async function intercambiarCodigo(code: string): Promise<{ refreshToken: 
       code,
       client_id: clientId,
       client_secret: clientSecret,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri(origen),
       grant_type: "authorization_code",
     }),
   });

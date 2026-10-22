@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { refreshToken, email } = await intercambiarCodigo(code);
+    const { refreshToken, email } = await intercambiarCodigo(code, req.nextUrl.origin);
     await asegurarTablasGmail();
     const db = getDb();
     // Reconectar la misma casilla renueva el permiso de la fila que ya
