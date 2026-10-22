@@ -19,6 +19,10 @@ function diasRestantes(fechaLimite: string | null): number | null {
   return Math.ceil(diff / 86400000);
 }
 
+function normalizarBusqueda(t: string) {
+  return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9ñ]+/g, " ").trim();
+}
+
 function esPendiente(r: SiniestroRow) { return !["facturado", "cerrado"].includes(r.estado); }
 function esVencido(r: SiniestroRow) { const d = diasRestantes(r.fechaLimite); return d !== null && d < 0; }
 function esSinInforme(r: SiniestroRow) { return !r.informe; }
@@ -152,14 +156,18 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
     else if (etapaContacto) out = out.filter(r => r.etapaContacto === etapaContacto);
     if (resultado) out = out.filter(r => r.resultado === resultado);
 
-    if (busqueda.trim()) {
-      const q = busqueda.trim().toLowerCase();
-      out = out.filter(r =>
-        (r.asegurado ?? "").toLowerCase().includes(q) ||
-        (r.dni ?? "").toLowerCase().includes(q) ||
-        (r.nroSiniestro ?? "").toLowerCase().includes(q) ||
-        (r.numeroGestion ?? "").toLowerCase().includes(q)
-      );
+    // Busca por palabras sueltas, en cualquier orden y sin importar tildes
+    // ni mayúsculas: "agustina ramirez" encuentra "AGUSTINA GISELLE RAMÍREZ".
+    // Cada palabra tiene que aparecer en alguno de los datos del caso.
+    const palabras = normalizarBusqueda(busqueda).split(" ").filter(Boolean);
+    if (palabras.length) {
+      out = out.filter(r => {
+        const texto = normalizarBusqueda([
+          r.asegurado, r.denunciante, r.dni, r.nroSiniestro, r.numeroGestion,
+          r.telContacto, r.celContacto, r.operador, r.domicilio, r.tipo,
+        ].filter(Boolean).join(" "));
+        return palabras.every(p => texto.includes(p));
+      });
     }
     // Lo más urgente primero, siempre — no solo en la pestaña "Hoy".
     return [...out].sort((a, b) => prioridad(b, esAdmin) - prioridad(a, esAdmin));
@@ -289,7 +297,7 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
             type="text"
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
-            placeholder="Buscar por asegurado, DNI o N° siniestro..."
+            placeholder="Buscar por nombre, DNI, teléfono o N° siniestro..."
             className="min-w-[220px] flex-1 rounded-md border border-line bg-white px-3 py-1.5 text-sm text-ink shadow-sm transition placeholder:text-slate/60 focus:border-ink/40 focus:outline-none"
           />
           <Select value={operador} onChange={setOperador} placeholder="Operador" opciones={operadores.map(o => ({ value: o, label: o }))} />
