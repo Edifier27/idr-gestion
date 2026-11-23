@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { APP_URL } from "@/lib/app-url";
 import { eq, and, isNull, ne } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros, usuarios, bitacora } from "@/lib/db/schema";
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest) {
         `N° Siniestro: ${s.nroSiniestro ?? "—"}`,
         `Entrevista: ${s.fechaEntrevista ? new Date(s.fechaEntrevista).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" }) : "—"}`,
         "",
-        `Entrá a cargarlo: https://idrgestion.com.ar/siniestros/${s.id}`,
+        `Entrá a cargarlo: ${APP_URL}/siniestros/${s.id}`,
         "",
         "— IDR Gestión",
       ].join("\n");

@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { APP_URL } from "@/lib/app-url";
 import { getDb } from "@/lib/db";
 import { usuarios, bitacora, type SiniestroRow } from "@/lib/db/schema";
 import { enviarMail } from "@/lib/gmail";
@@ -29,7 +30,7 @@ export async function avisarAsignacion(caso: SiniestroRow, operador: string, con
       `Tipo: ${caso.tipo ?? "—"}`,
       `Compañía: ${caso.compania ?? "—"}`,
       "",
-      `Entrá a verlo: https://idrgestion.com.ar/siniestros/${caso.id}`,
+      `Entrá a verlo: ${APP_URL}/siniestros/${caso.id}`,
       "",
       "— IDR Gestión",
     ].join("\n");
