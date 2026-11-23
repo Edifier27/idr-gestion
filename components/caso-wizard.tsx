@@ -58,12 +58,13 @@ function aInputLocal(fecha: string | Date | null): string {
 // pegado en la misma fila apretada que el DNI o la fecha de ocurrencia, y
 // costaba distinguir "esto lo puedo tocar" de "esto es solo para leer".
 export function CasoWizard({
-  siniestroId, dni, poliza, denunciante, domicilio, fechaOcurrencia, lugarTxt,
+  siniestroId, tipo, dni, poliza, denunciante, domicilio, fechaOcurrencia, lugarTxt,
   telContacto, celContacto, emailContacto, fechaLimite, relatoDenuncia,
   etapaContacto, fechaEntrevista, motivoContacto, derivadoAdmin, descargoInicial, informeInicial,
   archivosIniciales, notas, nombreOperador, yaClosed,
 }: {
   siniestroId: string;
+  tipo?: string | null;
   dni: string | null; poliza: string | null; denunciante: string | null; domicilio: string | null;
   fechaOcurrencia: string | null; lugarTxt: string; telContacto: string | null; celContacto: string | null;
   emailContacto: string | null; fechaLimite: string | null; relatoDenuncia: string | null;
@@ -396,7 +397,7 @@ export function CasoWizard({
             <h3 className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate">
               Evidencia {cantArchivos === 0 && <span className="rounded-full bg-fraude/10 px-1.5 py-0.5 text-[10px] font-bold normal-case text-fraude">Obligatorio subir al menos 1</span>}
             </h3>
-            <EvidenciaPanel siniestroId={siniestroId} archivosIniciales={archivosIniciales} onArchivosChange={a => setCantArchivos(a.length)} />
+            <EvidenciaPanel siniestroId={siniestroId} tipo={tipo} archivosIniciales={archivosIniciales} onArchivosChange={a => setCantArchivos(a.length)} />
           </div>
           <div>
             <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate">Informe técnico-legal</h3>

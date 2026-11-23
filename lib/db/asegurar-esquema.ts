@@ -13,6 +13,7 @@ import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 import { asegurarColumnaRecordatorioPlazo } from "@/lib/db/asegurar-recordatorio-plazo";
 import { asegurarColumnaZonaUsuario } from "@/lib/db/asegurar-zona-usuario";
 import { asegurarTablaReporteProblema } from "@/lib/db/asegurar-reporte-problema";
+import { asegurarTablaLecturaDenuncia } from "@/lib/db/asegurar-lectura-denuncia";
 
 // Aplica todos los cambios de esquema pendientes (columnas o tablas nuevas).
 // Idempotente. Lo usan /api/migrar y la importación de planillas (que inserta
@@ -33,4 +34,5 @@ export async function asegurarEsquema() {
   await asegurarColumnaRecordatorioPlazo();
   await asegurarColumnaZonaUsuario();
   await asegurarTablaReporteProblema();
+  await asegurarTablaLecturaDenuncia();
 }

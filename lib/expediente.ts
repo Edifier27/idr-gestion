@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { siniestros, evidencia, bitacora, type SiniestroRow } from "@/lib/db/schema";
 import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { expedientePDF, type ArchivoConBytes } from "@/lib/pdf";
+import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
 
 // Arma el PDF de expediente completo de un caso (carátula + cotejo + evidencia
 // documental). Lo comparten el botón "Expediente PDF" (api/expediente-pdf) y
@@ -27,6 +28,7 @@ export async function construirExpedientePDF(siniestroId: string): Promise<{ sin
     }
   }));
 
-  const bytes = await expedientePDF(s, archivos, notas);
+  const lectura = await leerLecturaDenuncia(siniestroId);
+  const bytes = await expedientePDF(s, archivos, notas, lectura);
   return { siniestro: s, bytes };
 }

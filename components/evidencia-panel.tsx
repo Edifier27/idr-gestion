@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
-import { CATEGORIAS_EVIDENCIA, ORDEN_CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia } from "@/lib/categorias-evidencia";
+import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ordenCategorias, ramoDeTipo, type Ramo } from "@/lib/categorias-evidencia";
 import { confirmar, notificar } from "@/components/notificaciones";
 import { SelectShell } from "@/components/select-shell";
 import { selectCampo } from "@/lib/ui";
@@ -27,39 +27,46 @@ const CATEGORIAS = [{ value: "", label: "🤖 Que la IA la sugiera" }, ...CATEGO
 // qué lógica correr sin esperar al drop.
 const MIME_ARCHIVO = "application/x-idr-evidencia-id";
 
-function etiquetaCategoria(cat?: string | null): string | null {
-  return cat ? etiquetaCategoriaEvidencia(cat) : null;
+function etiquetaCategoria(cat: string | null | undefined, ramo: Ramo | null): string | null {
+  return cat ? etiquetaCategoriaEvidencia(cat, ramo) : null;
 }
 
-// Un botón de cámara por tipo de documento/foto, en vez de un único "+"
-// genérico + un desplegable para elegir la categoría antes de subir — Dario
-// pidió esto explícitamente: que el operador toque directo "DNI" o "Cédula"
-// y la cámara se abra ya con esa categoría cargada, sin un paso intermedio.
-// Curado a mano (no las 13 categorías): quedan afuera geolocalización/
-// llamadas/mensajes (son capturas de pantalla que se importan de la
-// galería, no algo que se fotografía) y "Otro" (ambiguo) — esas siguen
-// disponibles en "Más opciones" más abajo, con el desplegable de siempre.
-const CAPTURA_RAPIDA: { value: string; emoji: string; corta: string }[] = [
-  { value: "foto_siniestro", emoji: "🚗", corta: "Siniestro" },
-  { value: "foto_lugar", emoji: "📍", corta: "Lugar" },
-  { value: "dni", emoji: "🪪", corta: "DNI" },
-  { value: "registro_conducir", emoji: "🚘", corta: "Registro" },
-  { value: "cedula_vehiculo", emoji: "📇", corta: "Cédula" },
-  { value: "denuncia", emoji: "📃", corta: "Denuncia" },
-  { value: "ampliacion", emoji: "✍️", corta: "Ampliación" },
-  { value: "desiste", emoji: "📝", corta: "Desistimiento" },
-  { value: "fotos", emoji: "🖼️", corta: "Otra foto" },
-];
+const ICONOS: Record<string, { emoji: string; corta: string }> = {
+  denuncia: { emoji: "📃", corta: "Denuncia" },
+  ampliacion: { emoji: "✍️", corta: "Ampliación" },
+  foto_lugar: { emoji: "📍", corta: "Lugar" },
+  foto_siniestro: { emoji: "🚗", corta: "Inspección" },
+  dni: { emoji: "🪪", corta: "DNI aseg." },
+  dni_conductor: { emoji: "🪪", corta: "DNI cond." },
+  registro_conducir: { emoji: "🚘", corta: "Registro" },
+  cedula_vehiculo: { emoji: "📇", corta: "Cédula" },
+  geolocalizacion: { emoji: "🗺️", corta: "Geo" },
+  llamadas: { emoji: "📞", corta: "Llamadas" },
+  mensajes: { emoji: "💬", corta: "Chats" },
+  palabras_clave: { emoji: "🔎", corta: "Palabras clave" },
+  foto_momento: { emoji: "📸", corta: "Momento" },
+  foto_previa: { emoji: "🕓", corta: "Foto previa" },
+  llave: { emoji: "🔑", corta: "Llaves" },
+  vtv: { emoji: "✅", corta: "VTV" },
+  recibo_sueldo: { emoji: "💵", corta: "Recibo" },
+};
 
-// onArchivosChange (opcional): avisa hacia afuera cada vez que cambia la
-// lista (subida o borrado) — lo usa el carrusel del operador para saber si
-// ya hay al menos una prueba cargada antes de dejar avanzar a "Informe".
-export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChange }: {
+// Cuadraditos de carga rápida: los del orden del expediente para el ramo del
+// caso (denuncia, lugar, inspección, documentación y las pruebas digitales
+// que corresponden), más "Otra foto" al final.
+function capturaRapida(ramo: Ramo | null): { value: string; emoji: string; corta: string }[] {
+  const lista = ordenCategorias(ramo).filter(v => ICONOS[v]).map(v => ({ value: v, ...ICONOS[v] }));
+  return [...lista, { value: "fotos", emoji: "🖼️", corta: "Otra foto" }];
+}
+
+export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivosChange }: {
   siniestroId: string;
+  tipo?: string | null;
   archivosIniciales: Archivo[];
   onArchivosChange?: (archivos: Archivo[]) => void;
 }) {
   const [archivos, setArchivos] = useState(archivosIniciales);
+  const ramo = ramoDeTipo(tipo);
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categoria, setCategoria] = useState("");
@@ -251,7 +258,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
       {arrastrando && (
         <p className="rounded-md border border-dashed border-azul/40 bg-azul/5 px-3 py-1.5 text-center text-xs font-medium text-azul">
           {categoriaSobrevolada
-            ? `📥 Soltar como "${CAPTURA_RAPIDA.find(c => c.value === categoriaSobrevolada)?.corta}"`
+            ? `📥 Soltar como "${(ICONOS[categoriaSobrevolada]?.corta ?? etiquetaCategoria(categoriaSobrevolada, ramo))}"`
             : "📥 Soltá sobre un tipo para clasificarlo, o acá para dejarlo sin categoría"}
         </p>
       )}
@@ -264,7 +271,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
           (multiple). En desktop abre el selector de archivos, y cada
           cuadradito acepta además arrastrar-y-soltar archivos encima. */}
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-        {CAPTURA_RAPIDA.map(c => (
+        {capturaRapida(ramo).map(c => (
           <label
             key={c.value}
             {...handlersTile(c.value)}
@@ -334,7 +341,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
       ) : (
         <div className="space-y-4">
           <p className="text-[11px] text-slate">📦 Arrastrá una tarjeta a otro grupo para recategorizarla.</p>
-          {agruparPorCategoria(archivos).map(grupo => (
+          {agruparPorCategoria(archivos, ramo).map(grupo => (
             <div
               key={grupo.categoria ?? "sin-categoria"}
               {...handlersGrupo(grupo.categoria)}
@@ -343,7 +350,7 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
               }`}
             >
               <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate">
-                {etiquetaCategoria(grupo.categoria) ?? "Sin categoría"} <span className="text-slate/50">({grupo.archivos.length})</span>
+                {etiquetaCategoria(grupo.categoria, ramo) ?? "Sin categoría"} <span className="text-slate/50">({grupo.archivos.length})</span>
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {grupo.archivos.map(f => <TarjetaArchivo key={f.id} f={f} onBorrar={borrar} />)}
@@ -361,13 +368,14 @@ export function EvidenciaPanel({ siniestroId, archivosIniciales, onArchivosChang
 // evidencia es exactamente el orden en el que le va a llegar al admin. Lo
 // sin categorizar (todavía sin clasificar por IA, o clasificación fallida)
 // queda al final, aparte.
-function agruparPorCategoria(archivos: Archivo[]): { categoria: string | null; archivos: Archivo[] }[] {
+function agruparPorCategoria(archivos: Archivo[], ramo: Ramo | null): { categoria: string | null; archivos: Archivo[] }[] {
+  const orden = ordenCategorias(ramo);
   const grupos: { categoria: string | null; archivos: Archivo[] }[] = [];
-  for (const cat of ORDEN_CATEGORIAS_EVIDENCIA) {
+  for (const cat of orden) {
     const delGrupo = archivos.filter(a => a.categoria === cat);
     if (delGrupo.length > 0) grupos.push({ categoria: cat, archivos: delGrupo });
   }
-  const sinCategoria = archivos.filter(a => !a.categoria || !(ORDEN_CATEGORIAS_EVIDENCIA as readonly string[]).includes(a.categoria));
+  const sinCategoria = archivos.filter(a => !a.categoria || !orden.includes(a.categoria));
   if (sinCategoria.length > 0) grupos.push({ categoria: null, archivos: sinCategoria });
   return grupos;
 }

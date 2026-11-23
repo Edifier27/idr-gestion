@@ -9,6 +9,8 @@ import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
 import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 import { DatosCasoPanel } from "@/components/datos-caso-panel";
+import { LecturaDenunciaPanel } from "@/components/lectura-denuncia-panel";
+import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
 import { BitacoraPanel } from "@/components/bitacora-panel";
 import { EstadoBadge } from "@/components/estado-badge";
 import { ResultadoBadge } from "@/components/resultado-badge";
@@ -62,6 +64,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
   const esAdmin = session.user.rol === "admin";
   const verFacturacion = puedeVerFacturacion(session);
   const verInformeFinal = puedeVerInformeFinal(session);
+  const lecturaDenuncia = await leerLecturaDenuncia(s.id);
   await asegurarColumnasComunicacion();
   const notas = await db.select().from(bitacora)
     .where(eq(bitacora.siniestroId, params.id))
@@ -137,6 +140,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
       {!esAdmin ? (
         <CasoWizard
           siniestroId={s.id}
+          tipo={s.tipo}
           dni={s.dni}
           poliza={s.poliza}
           denunciante={s.denunciante}
@@ -273,7 +277,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         {/* Evidencia */}
         <div className="md:col-span-2">
           <Bloque id="evidencia" titulo="Evidencia" accento="ok">
-            <EvidenciaPanel siniestroId={s.id} archivosIniciales={archivos} />
+            <EvidenciaPanel siniestroId={s.id} tipo={s.tipo} archivosIniciales={archivos} />
           </Bloque>
         </div>
 
@@ -290,13 +294,15 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               titulo="Relato de la denuncia"
               numero={1}
               accento="slate"
-              extra={<span className="rounded-full bg-slate/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate">Según la aseguradora</span>}
+              extra={<span className="rounded-full bg-slate/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate">Ampliación + denuncia</span>}
             >
+              <LecturaDenunciaPanel siniestroId={s.id} lecturaInicial={lecturaDenuncia} />
               <TextoPanel
+                key={s.relatoDenuncia ?? ""}
                 siniestroId={s.id}
                 campo="relato_denuncia"
                 valorInicial={s.relatoDenuncia}
-                placeholder="Qué dice la denuncia que pasó: si no se extrajo solo del PDF, cargalo a mano acá…"
+                placeholder="Ampliación del asegurado (cronológica) + denuncia policial del día del hecho. Subí la denuncia y la ampliación en Evidencia y tocá “Leer denuncia y ampliación”…"
                 etiquetaGuardar="Guardar relato"
               />
             </Bloque>

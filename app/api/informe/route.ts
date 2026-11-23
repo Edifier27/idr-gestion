@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros, bitacora } from "@/lib/db/schema";
 import { generarInforme } from "@/lib/informe";
+import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
 import { sesionRequerida, puedeVerCaso } from "@/lib/acceso";
 
 export const runtime = "nodejs";
@@ -24,7 +25,8 @@ export async function POST(req: NextRequest) {
     const notas = await db.select().from(bitacora).where(eq(bitacora.siniestroId, siniestroId));
     const textoNotas = notas.map((n) => `[${n.tipo}] ${n.nota}`);
 
-    const informeTexto = await generarInforme(s, textoNotas);
+    const lectura = await leerLecturaDenuncia(s.id);
+    const informeTexto = await generarInforme(s, textoNotas, lectura);
     const [updated] = await db.update(siniestros)
       .set({ informe: informeTexto, actualizadoEn: new Date() })
       .where(eq(siniestros.id, siniestroId))

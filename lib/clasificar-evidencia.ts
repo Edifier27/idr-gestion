@@ -7,18 +7,25 @@ const PROMPT = `Mirá este archivo, subido como evidencia de un siniestro de seg
 cuál de estas categorías corresponde. Respondé SOLO con el valor exacto (una palabra, en
 minúsculas, sin explicación ni puntuación):
 
-- dni: DNI o cédula de identidad del asegurado
+- denuncia: denuncia policial o administrativa (acta, constancia, exposición, denuncia de choque o incendio)
+- ampliacion: declaración manuscrita o firmada del asegurado ampliando el relato del hecho
+- foto_lugar: foto del domicilio o del lugar del hecho (la escena, la calle, la fachada — no el vehículo)
+- foto_siniestro: inspección del vehículo: fotos del vehículo o bien siniestrado, sus daños, su patente
+- dni: DNI del asegurado
+- dni_conductor: DNI de otra persona que manejaba (el conductor, si no es el asegurado)
 - registro_conducir: registro/licencia de conducir
 - cedula_vehiculo: cédula verde o azul del vehículo
-- denuncia: denuncia policial o ciudadana (acta, constancia, exposición)
-- ampliacion: declaración manuscrita o firmada del asegurado ampliando el relato del hecho
-- desiste: documento de desistimiento del siniestro, firmado
-- geolocalizacion: captura de mapa o ubicación GPS
+- geolocalizacion: captura de mapa, ubicación GPS o historial de ubicaciones
 - llamadas: captura de registro/historial de llamadas telefónicas
-- mensajes: captura de chats o conversaciones (WhatsApp u otra app de mensajería)
-- foto_siniestro: foto del vehículo o bien siniestrado (el objeto asegurado en sí: la moto, el auto, sus daños, su patente)
-- foto_lugar: foto del lugar del hecho (la escena, la calle, el domicilio, el punto de encuentro — no el vehículo)
-- fotos: cualquier otra foto que no sea del vehículo ni del lugar (capturas de pantalla sueltas, etc.)
+- mensajes: captura de chats o conversaciones sobre el hecho (WhatsApp u otra app)
+- palabras_clave: captura de una búsqueda dentro de WhatsApp (filtro por palabra clave, resultados de búsqueda)
+- foto_momento: foto tomada en el momento del hecho (el choque, el incendio, el vidrio roto recién)
+- foto_previa: foto del vehículo de antes del hecho (sano, en uso normal)
+- llave: foto de las llaves del vehículo
+- vtv: oblea, certificado o comprobante de VTV
+- recibo_sueldo: recibo de sueldo
+- desiste: documento de desistimiento del siniestro, firmado
+- fotos: cualquier otra foto que no encaje en las anteriores
 - otro: si no encaja claramente en ninguna de las anteriores
 
 Respondé solo con uno de estos valores: ${VALORES.join(", ")}`;

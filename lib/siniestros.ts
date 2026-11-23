@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
-import { siniestros } from "@/lib/db/schema";
+import { siniestros, datoExtra } from "@/lib/db/schema";
+import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
 import { calcularFacturacion } from "@/lib/facturacion";
 import type { CaratulaExtraida } from "@/lib/types";
 import { normalizarTipo } from "@/lib/tipos-siniestro";
@@ -34,7 +35,10 @@ export async function crearSiniestro(datos: CaratulaExtraida, operador: string, 
       fechaOcurrencia: datos.fecha_ocurrencia ?? null,
       horaOcurrencia: datos.hora_ocurrencia ?? null,
       fechaDenuncia: datos.fecha_denuncia ?? null,
-      relatoDenuncia: datos.relato_denuncia ?? null,
+      // El "Relato de la denuncia" es la ampliación del asegurado + la
+      // denuncia policial (lo arma la IA al leerlas, lib/leer-denuncia.ts);
+      // lo que dice la carátula queda como dato adicional, abajo.
+      relatoDenuncia: null,
       lugarSiniestro: datos.lugar_siniestro ?? null,
       operador,
       kmTotal,
@@ -42,5 +46,13 @@ export async function crearSiniestro(datos: CaratulaExtraida, operador: string, 
       gmailMensajeId: gmailMensajeId ?? null,
     })
     .returning();
+  if (datos.relato_denuncia?.trim()) {
+    try {
+      await asegurarTablaDatoExtra();
+      await db.insert(datoExtra).values({ siniestroId: row.id, etiqueta: "Observaciones de la aseguradora", valor: datos.relato_denuncia.trim() });
+    } catch {
+      // no bloquea el alta del caso
+    }
+  }
   return row;
 }
