@@ -4,6 +4,7 @@ import { getDb, dbConfigurada } from "@/lib/db";
 import { usuarios } from "@/lib/db/schema";
 import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 import { asegurarColumnaZonaUsuario } from "@/lib/db/asegurar-zona-usuario";
+import { asegurarTablasWhatsapp } from "@/lib/db/asegurar-whatsapp";
 import { sql } from "drizzle-orm";
 import { UsuariosPanel } from "@/components/usuarios-panel";
 
@@ -22,13 +23,18 @@ export default async function AdminUsuarios() {
 
   // La zona va por SQL directo (no está en el schema de Drizzle para que el
   // login no dependa de que la columna exista).
-  let zonas: Record<string, string | null> = {};
+  const zonas: Record<string, string | null> = {};
+  const telefonos: Record<string, string | null> = {};
   if (dbConfigurada()) {
     await asegurarColumnaZonaUsuario();
-    const res = await getDb().execute(sql`SELECT id, zona FROM usuarios`);
-    zonas = Object.fromEntries((res.rows as { id: string; zona: string | null }[]).map(r => [r.id, r.zona]));
+    await asegurarTablasWhatsapp();
+    const res = await getDb().execute(sql`SELECT id, zona, telefono FROM usuarios`);
+    for (const r of res.rows as { id: string; zona: string | null; telefono: string | null }[]) {
+      zonas[r.id] = r.zona;
+      telefonos[r.id] = r.telefono;
+    }
   }
-  const listaConZona = lista.map(u => ({ ...u, zona: zonas[u.id] ?? null }));
+  const listaConZona = lista.map(u => ({ ...u, zona: zonas[u.id] ?? null, telefono: telefonos[u.id] ?? null }));
 
   // Se deriva de la propia lista de usuarios ya cargada arriba (no de los
   // siniestros): así un operador recién creado, sin casos todavía, ya

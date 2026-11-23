@@ -23,6 +23,7 @@ const NAV = [
   { href: "/panel?quick=cerrados", label: "Cerrados", icon: IconArchive, soloAdmin: false, quick: "cerrados", enBarraInferior: true },
   { href: "/admin/ranking", label: "Ranking", icon: IconTrophy, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: true },
   { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
+  { href: "/whatsapp", label: "WhatsApp", icon: IconChat, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/admin/importar-planilla", label: "Importar planilla", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
@@ -237,6 +238,9 @@ function IconOperadores() {
 }
 function IconTabla() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1.5" y="2" width="13" height="12" rx="1.3" stroke="currentColor" strokeWidth="1.4"/><path d="M1.5 6h13M1.5 10h13M6 6v8" stroke="currentColor" strokeWidth="1.4"/></svg>;
+}
+function IconChat() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><path d="M2 13.5l1-3A5.8 5.8 0 012.2 8 5.8 5.8 0 118 13.8a5.9 5.9 0 01-2.6-.6L2 13.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>;
 }
 function IconArchive() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1.5" y="2" width="13" height="3.2" rx="0.8" stroke="currentColor" strokeWidth="1.4"/><path d="M2.3 5.2v7.3a1.5 1.5 0 001.5 1.5h8.4a1.5 1.5 0 001.5-1.5V5.2" stroke="currentColor" strokeWidth="1.4"/><path d="M6.2 8.3h3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>;

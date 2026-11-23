@@ -7,6 +7,7 @@ import { usuarios } from "@/lib/db/schema";
 import { asegurarColumnaGmailConexionUsuario } from "@/lib/db/asegurar-usuario-gmail-conexion";
 import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 import { asegurarColumnaZonaUsuario } from "@/lib/db/asegurar-zona-usuario";
+import { asegurarTablasWhatsapp } from "@/lib/db/asegurar-whatsapp";
 import { sql } from "drizzle-orm";
 
 export const runtime = "nodejs";
@@ -36,8 +37,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const zona = typeof body?.zona === "string" ? body.zona.trim() || null : undefined;
+  const telefono = typeof body?.telefono === "string" ? body.telefono.replace(/[^\d+]/g, "") || null : undefined;
 
-  if (Object.keys(patch).length === 0 && zona === undefined) return NextResponse.json({ error: "Nada para actualizar." }, { status: 400 });
+  if (Object.keys(patch).length === 0 && zona === undefined && telefono === undefined) return NextResponse.json({ error: "Nada para actualizar." }, { status: 400 });
 
   // No permitir que el admin se desactive a si mismo por error y se quede afuera.
   if (params.id === session.user.id && patch.activo === false) {
@@ -52,10 +54,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     await asegurarColumnaZonaUsuario();
     await db.execute(sql`UPDATE usuarios SET zona = ${zona} WHERE id = ${params.id}`);
   }
+  // WhatsApp del operador (CRMgestion): con esto la bandeja sabe de quién es cada chat.
+  if (telefono !== undefined) {
+    await asegurarTablasWhatsapp();
+    await db.execute(sql`UPDATE usuarios SET telefono = ${telefono} WHERE id = ${params.id}`);
+  }
   const columnas = { id: usuarios.id, username: usuarios.username, nombre: usuarios.nombre, rol: usuarios.rol, operador: usuarios.operador, email: usuarios.email, activo: usuarios.activo, gmailConexionId: usuarios.gmailConexionId };
   const [row] = Object.keys(patch).length > 0
     ? await db.update(usuarios).set(patch).where(eq(usuarios.id, params.id)).returning(columnas)
     : await db.select(columnas).from(usuarios).where(eq(usuarios.id, params.id));
   if (!row) return NextResponse.json({ error: "No existe." }, { status: 404 });
-  return NextResponse.json({ usuario: zona !== undefined ? { ...row, zona } : row });
+  return NextResponse.json({ usuario: { ...row, ...(zona !== undefined ? { zona } : {}), ...(telefono !== undefined ? { telefono } : {}) } });
 }

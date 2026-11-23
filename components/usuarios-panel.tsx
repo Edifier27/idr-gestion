@@ -14,6 +14,7 @@ type Usuario = {
   operador: string | null;
   email: string | null;
   zona?: string | null;
+  telefono?: string | null;
   activo: boolean;
   creadoEn: Date | string;
 };
@@ -89,6 +90,20 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
     if (!res.ok) { notificar.error(data.error ?? "No se pudo guardar la zona."); return; }
     setLista(l => l.map(x => x.id === u.id ? { ...x, zona: data.usuario.zona } : x));
     notificar.ok("Zona actualizada.");
+  }
+
+  async function cambiarTelefono(u: Usuario) {
+    const nuevo = await pedirTexto(`WhatsApp de ${u.nombre || u.username} (con código de área, ej. 11 2345-6789)`, { placeholder: u.telefono ?? "11 2345-6789" });
+    if (nuevo === null) return;
+    const res = await fetch(`/api/usuarios/${u.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telefono: nuevo.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) { notificar.error(data.error ?? "No se pudo guardar el WhatsApp."); return; }
+    setLista(l => l.map(x => x.id === u.id ? { ...x, telefono: data.usuario.telefono } : x));
+    notificar.ok("WhatsApp actualizado.");
   }
 
   async function resetPassword(u: Usuario) {
@@ -183,6 +198,9 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
                     {u.rol === "vendedor" && u.zona && (
                       <p className="truncate text-xs text-slate">📍 {u.zona}</p>
                     )}
+                    {u.rol === "vendedor" && (
+                      <p className="truncate text-xs text-slate">{u.telefono ? `💬 WhatsApp ${u.telefono}` : "Sin WhatsApp cargado — sus mensajes no se reconocen"}</p>
+                    )}
                   </div>
                   <span className={`${badge} ${u.activo ? "bg-ok/15 text-ok" : "bg-fraude/15 text-fraude"}`}>
                     <span className={badgeDot} />
@@ -204,6 +222,11 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
                   {u.rol === "vendedor" && (
                     <button onClick={() => cambiarZona(u)} className={boton.ghost}>
                       {u.zona ? "Cambiar zona" : "Cargar zona"}
+                    </button>
+                  )}
+                  {u.rol === "vendedor" && (
+                    <button onClick={() => cambiarTelefono(u)} className={boton.ghost}>
+                      {u.telefono ? "Cambiar WhatsApp" : "Cargar WhatsApp"}
                     </button>
                   )}
                 </div>
