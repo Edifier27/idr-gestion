@@ -5,8 +5,36 @@ import { esPdf } from "@/lib/adjuntos";
 import { boton, campo, tarjeta } from "@/lib/ui";
 import { confirmar } from "@/components/notificaciones";
 
-type CasoImportado = { id: string; etiqueta: string } | null;
-type Mensaje = { id: string; asunto: string; de: string; fecha: string; snippet: string; noLeido: boolean; casoImportado?: CasoImportado };
+type CasoImportado = { id: string; etiqueta: string; subidoEn?: string; operador?: string | null; automatico?: boolean } | null;
+type LecturaAuto = { resultado: string; detalle: string | null; en: string } | null;
+type Mensaje = { id: string; asunto: string; de: string; fecha: string; snippet: string; noLeido: boolean; casoImportado?: CasoImportado; lecturaAuto?: LecturaAuto };
+
+// "el 23/11/2026 a las 14:05"
+function diaYHora(iso?: string) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `el ${d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" })} a las ${d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+// Globo debajo de cada mail: a qué legajo se subió, cuándo y cómo.
+function GloboSubido({ caso, auto }: { caso?: CasoImportado; auto?: LecturaAuto }) {
+  if (caso) {
+    return (
+      <div className="relative mt-2 ml-2 inline-block max-w-full rounded-lg bg-ok/10 px-2.5 py-1.5 text-[11.5px] leading-snug text-ink ring-1 ring-ok/25 before:absolute before:-top-1.5 before:left-4 before:h-3 before:w-3 before:rotate-45 before:bg-[inherit] before:content-['']">
+        <span className="relative">✅ Caso subido al legajo <b>{caso.etiqueta}</b> {diaYHora(caso.subidoEn)}{caso.automatico ? " · automático" : ""}{caso.operador ? ` · ${caso.operador}` : " · sin operador"}</span>
+      </div>
+    );
+  }
+  if (auto) {
+    const texto = auto.resultado === "duplicado" ? "Ya estaba en el CRM" : auto.resultado === "error" ? "No se pudo leer" : "La IA lo revisó: no es un caso";
+    return (
+      <div className="mt-2 ml-2 inline-block max-w-full rounded-lg bg-paper px-2.5 py-1 text-[11px] text-slate ring-1 ring-line" title={auto.detalle ?? ""}>
+        {auto.resultado === "error" ? "⚠️" : "👁️"} {texto} · {diaYHora(auto.en)}
+      </div>
+    );
+  }
+  return null;
+}
 type Adjunto = { attachmentId: string; nombre: string; tipo: string; tamano: number };
 type MensajeCompleto = Mensaje & { cuerpo: string; adjuntos: Adjunto[] };
 
@@ -120,7 +148,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
       setImportado({ id: data.siniestro.id, archivos: data.archivosImportados });
       setMostrarImportar(false);
       // Refleja en la lista que este mail ya quedó importado, sin recargar todo.
-      setMensajes(lista => lista?.map(m => m.id === abierto.id ? { ...m, casoImportado: { id: data.siniestro.id, etiqueta: data.siniestro.numeroGestion ?? data.siniestro.nroSiniestro ?? "sin número" } } : m) ?? lista);
+      setMensajes(lista => lista?.map(m => m.id === abierto.id ? { ...m, casoImportado: { id: data.siniestro.id, etiqueta: data.siniestro.numeroGestion ?? data.siniestro.nroSiniestro ?? "sin número", subidoEn: data.siniestro.creadoEn, operador: data.siniestro.operador } } : m) ?? lista);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al importar el caso.");
     } finally {
@@ -190,7 +218,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
             ) : mensajes?.find(m => m.id === abierto.id)?.casoImportado ? (
               <div className="mt-3 rounded-lg border border-line bg-paper p-3 text-sm shadow-sm">
                 <p className="font-medium text-ink">
-                  📋 Este mail ya se usó para crear el caso {mensajes.find(m => m.id === abierto.id)?.casoImportado?.etiqueta}.
+                  📋 Caso subido al legajo {mensajes.find(m => m.id === abierto.id)?.casoImportado?.etiqueta} {diaYHora(mensajes.find(m => m.id === abierto.id)?.casoImportado?.subidoEn)}{mensajes.find(m => m.id === abierto.id)?.casoImportado?.automatico ? " (lectura automática del mail)" : ""}.
                 </p>
                 <a href={`/siniestros/${mensajes.find(m => m.id === abierto.id)?.casoImportado?.id}`} className="mt-1 inline-block text-xs font-medium text-ink underline underline-offset-2">
                   Ver el caso →
@@ -292,6 +320,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
                       </span>
                     )}
                   </div>
+                  <GloboSubido caso={m.casoImportado} auto={m.lecturaAuto} />
                 </div>
               </button>
             );

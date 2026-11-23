@@ -412,9 +412,9 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
                     </div>
                   )}
                   <div className={`wa-envoltura ${m.direccion} ${primera ? "primera" : ""} ${vistos.current && !vistos.current.has(m.id) ? "recien" : ""}`}>
-                    <div className={`wa-burbuja ${m.direccion} ${primera ? "cola" : ""} ${busquedaChat && m.texto && normalizar(m.texto).includes(normalizar(busquedaChat)) ? "resaltada" : ""}`}>
+                    <div className={`wa-burbuja ${m.direccion} ${primera ? "cola" : ""} ${m.autor === "Perito IA" ? "perito" : ""} ${busquedaChat && m.texto && normalizar(m.texto).includes(normalizar(busquedaChat)) ? "resaltada" : ""}`}>
                       {m.direccion === "saliente" && primera && m.autor && (
-                        <span className={`wa-autor ${m.autor === "Asistente IDR" ? "ia" : ""}`}>{m.autor === "Asistente IDR" ? "🤖 Asistente IDR" : m.autor === miNombre ? "Vos" : m.autor}</span>
+                        <span className={`wa-autor ${m.autor === "Asistente IDR" || m.autor === "Perito IA" ? "ia" : ""}`}>{m.autor === "Asistente IDR" ? "🤖 Asistente IDR" : m.autor === "Perito IA" ? "🕵️ Perito IA" : m.autor === miNombre ? "Vos" : m.autor}</span>
                       )}
                       <Contenido m={m} onFoto={() => setVisor(fotos.findIndex(f => f.id === m.id))} />
                       {m.texto && <span className="wa-texto">{m.texto}</span>}

@@ -38,11 +38,11 @@ async function conversacionDe(telefono: string, nombre: string | null, resumen: 
   return (res.rows as { id: string; operador: string | null }[])[0];
 }
 
-export async function procesarEntrante(e: EntranteBase) {
+export async function procesarEntrante(e: EntranteBase): Promise<string | null> {
   await asegurarTablasWhatsapp();
   const db = getDb();
   const ya = await db.execute(sql`SELECT 1 FROM wa_mensaje WHERE wa_id = ${e.waId}`);
-  if (ya.rows.length) return; // Meta reintenta: cada mensaje se procesa una sola vez
+  if (ya.rows.length) return null; // Meta reintenta: cada mensaje se procesa una sola vez
 
   const resumen = e.texto?.slice(0, 120) || (e.archivo ? `📎 ${e.archivo.nombre}` : `(${e.tipo})`);
   const conv = await conversacionDe(e.telefono, e.nombre, resumen);
@@ -61,7 +61,7 @@ export async function procesarEntrante(e: EntranteBase) {
     ON CONFLICT (wa_id) DO NOTHING RETURNING id`);
   if (transcripcion) await db.execute(sql`UPDATE wa_conversacion SET ultimo_texto = ${`🎤 ${transcripcion.slice(0, 110)}`} WHERE id = ${conv.id}`);
   const mensajeId = (ins.rows as { id: string }[])[0]?.id;
-  if (!mensajeId) return;
+  if (!mensajeId) return null;
 
   // Respuesta a un botón "¿De qué caso es?": asig:<mensaje>:<caso>
   if (e.botonId?.startsWith("asig:")) {
@@ -70,7 +70,7 @@ export async function procesarEntrante(e: EntranteBase) {
     const categoria = (cat.rows as { categoria: string | null }[])[0]?.categoria ?? null;
     await guardarEnCaso(mensajeOrigen, siniestroId, categoria, `WhatsApp · ${conv.operador ?? e.telefono}`);
     await responder(conv.id, e.telefono, "✓ Listo, guardado.");
-    return;
+    return conv.id;
   }
 
   if (e.archivo && mediaUrl) {
@@ -81,6 +81,7 @@ export async function procesarEntrante(e: EntranteBase) {
   } else if (!conv.operador) {
     await responder(conv.id, e.telefono, "Hola. Este número todavía no está vinculado a un operador de IDR: avisale al administrador.");
   }
+  return conv.id;
 }
 
 type MensajeMeta = {
@@ -96,7 +97,9 @@ type MensajeMeta = {
 
 const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "application/pdf": "pdf", "audio/ogg": "ogg", "video/mp4": "mp4" };
 
-export async function procesarEvento(body: unknown) {
+// Devuelve las conversaciones que recibieron mensajes (para la guía del Perito IA).
+export async function procesarEvento(body: unknown): Promise<string[]> {
+  const conversaciones = new Set<string>();
   const entradas = (body as { entry?: { changes?: { value?: { messages?: MensajeMeta[]; contacts?: { wa_id: string; profile?: { name?: string } }[]; statuses?: { id: string; status: string }[] } }[] }[] }).entry ?? [];
   for (const entrada of entradas) {
     for (const cambio of entrada.changes ?? []) {
@@ -117,13 +120,15 @@ export async function procesarEvento(body: unknown) {
             archivo = { buffer: bajado.buffer, mime, nombre: nombreArchivo };
           }
         }
-        await procesarEntrante({
+        const convId = await procesarEntrante({
           waId: m.id, telefono: m.from, nombre, tipo: m.type,
           texto: m.text?.body ?? m.image?.caption ?? m.document?.caption ?? m.video?.caption ?? m.interactive?.button_reply?.title ?? m.button?.text ?? null,
           archivo,
           botonId: m.interactive?.button_reply?.id ?? m.button?.payload ?? null,
         });
+        if (convId) conversaciones.add(convId);
       }
     }
   }
+  return Array.from(conversaciones);
 }

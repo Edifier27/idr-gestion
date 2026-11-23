@@ -280,3 +280,18 @@ export async function obtenerAdjunto(mensajeId: string, attachmentId: string, co
   const base64 = (data.data as string).replace(/-/g, "+").replace(/_/g, "/");
   return Buffer.from(base64, "base64");
 }
+
+/** Ids de los mails de la bandeja de entrada recibidos después de `desde` (más nuevos primero). */
+export async function listarIdsDesde(desde: Date, conexionId?: string, max = 20): Promise<{ id: string; fecha: number }[]> {
+  const accessToken = await accessTokenActivo(conexionId);
+  const q = encodeURIComponent(`in:inbox after:${Math.floor(desde.getTime() / 1000)}`);
+  const res = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${q}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message ?? "No se pudo listar los mensajes.");
+  const ids: string[] = (data.messages ?? []).map((m: { id: string }) => m.id);
+  return Promise.all(ids.map(async id => {
+    const r = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${id}?format=minimal`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const d = await r.json().catch(() => ({}));
+    return { id, fecha: Number(d.internalDate ?? 0) };
+  }));
+}

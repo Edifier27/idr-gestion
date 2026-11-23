@@ -5,6 +5,8 @@ import { listarMensajes } from "@/lib/gmail";
 import { getDb } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import { asegurarColumnaGmailMensajeId } from "@/lib/db/asegurar-gmail-mensaje-id";
+import { asegurarTablasMailAuto } from "@/lib/mail-auto";
+import { sql } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,14 +28,31 @@ export async function GET() {
     await asegurarColumnaGmailMensajeId();
     const ids = mensajesGmail.map(m => m.id);
     const importados = ids.length > 0
-      ? await getDb().select({ mensajeId: siniestros.gmailMensajeId, id: siniestros.id, numeroGestion: siniestros.numeroGestion, nroSiniestro: siniestros.nroSiniestro })
+      ? await getDb().select({ mensajeId: siniestros.gmailMensajeId, id: siniestros.id, numeroGestion: siniestros.numeroGestion, nroSiniestro: siniestros.nroSiniestro, creadoEn: siniestros.creadoEn, operador: siniestros.operador })
           .from(siniestros).where(inArray(siniestros.gmailMensajeId, ids))
       : [];
     const porMensajeId = new Map(importados.map(i => [i.mensajeId, i]));
+    // Lo que revisó la lectura automática (subido solo, duplicado o "no es un caso").
+    const auto = new Map<string, { resultado: string; detalle: string | null; procesado_en: string }>();
+    if (ids.length) {
+      try {
+        await asegurarTablasMailAuto();
+        const r = await getDb().execute(sql`SELECT mensaje_id, resultado, detalle, procesado_en FROM mail_auto WHERE mensaje_id = ANY(${ids}::text[])`);
+        for (const x of r.rows as { mensaje_id: string; resultado: string; detalle: string | null; procesado_en: string }[]) auto.set(x.mensaje_id, x);
+      } catch { /* sin lectura automática */ }
+    }
 
     const mensajes = mensajesGmail.map(m => {
       const caso = porMensajeId.get(m.id);
-      return { ...m, casoImportado: caso ? { id: caso.id, etiqueta: caso.numeroGestion ?? caso.nroSiniestro ?? "sin número" } : null };
+      const a = auto.get(m.id);
+      return {
+        ...m,
+        casoImportado: caso ? {
+          id: caso.id, etiqueta: caso.numeroGestion ?? caso.nroSiniestro ?? "sin número",
+          subidoEn: new Date(caso.creadoEn).toISOString(), operador: caso.operador, automatico: a?.resultado === "importado",
+        } : null,
+        lecturaAuto: a && a.resultado !== "importado" ? { resultado: a.resultado, detalle: a.detalle, en: new Date(a.procesado_en).toISOString() } : null,
+      };
     });
 
     return NextResponse.json({ mensajes });

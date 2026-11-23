@@ -5,6 +5,7 @@ import { waitUntil } from "@vercel/functions";
 import { getDb } from "@/lib/db";
 import { asegurarTablasWhatsapp } from "@/lib/db/asegurar-whatsapp";
 import { procesarEvento } from "@/lib/whatsapp/procesar";
+import { guiarTrasPausa } from "@/lib/whatsapp/guia";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,8 +48,10 @@ export async function POST(req: NextRequest) {
 
   waitUntil((async () => {
     try {
-      await procesarEvento(body);
+      const conversaciones = await procesarEvento(body);
       await getDb().execute(sql`UPDATE wa_evento SET procesado_en = now() WHERE id = ${eventoId}`);
+      // El Perito IA espera a que el operador termine la tanda y lo guía.
+      await Promise.all(conversaciones.map(c => guiarTrasPausa(c).catch(() => {})));
     } catch (e) {
       await getDb().execute(sql`UPDATE wa_evento SET error = ${String(e instanceof Error ? e.message : e)} WHERE id = ${eventoId}`);
     }

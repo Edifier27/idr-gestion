@@ -257,3 +257,5 @@
 }
 .wa-periodos { padding-bottom: 6px; border-bottom: 1px solid var(--wa-linea); }
 .wa-periodos .wa-chip { font-size: 12.5px; padding: 5px 10px; }
+.wa-burbuja.perito { background: #FFF8E1; border-left: 3px solid #E0A800; }
+.wa-burbuja.perito .wa-texto { white-space: pre-wrap; }
