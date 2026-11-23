@@ -1,0 +1,412 @@
+<title>Perito Digital IDR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: una columna de lectura (~68ch) con bandas de ancho completo para el marco y las pantallas de ejemplo. Paleta del CRM IDR: azul tinta + amarillo. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #142033;
+  --muted: #586274;
+  --line: #dde1e8;
+  --accent: #e9b824;
+  --accent-ink: #142033;
+  --navy: #1c2c47;
+  --ok: #2f7d5b;
+  --warn: #b7791f;
+  --bad: #b23a3a;
+  --chat-bg: #e9e4da;
+  --chat-in: #ffffff;
+  --chat-out: #d6efe4;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1520; --surface: #172030; --ink: #e8ecf2; --muted: #a2adbd; --line: #2a3546;
+    --accent: #f0c443; --accent-ink: #142033; --navy: #0b111b; --ok: #5cbf92; --warn: #e3a948; --bad: #e57373;
+    --chat-bg: #1b222c; --chat-in: #243042; --chat-out: #1f4a3a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1520; --surface: #172030; --ink: #e8ecf2; --muted: #a2adbd; --line: #2a3546;
+  --accent: #f0c443; --accent-ink: #142033; --navy: #0b111b; --ok: #5cbf92; --warn: #e3a948; --bad: #e57373;
+  --chat-bg: #1b222c; --chat-in: #243042; --chat-out: #1f4a3a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.read { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 3.1rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 700; margin-bottom: 0.6rem; }
+h3 { font-size: 1.1rem; font-weight: 700; }
+p { margin: 0 0 0.9rem; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+a { color: inherit; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+
+header.hero { background: var(--navy); color: #f2f4f8; margin-top: calc(-1 * env(safe-area-inset-top, 0px)); padding-top: calc(env(safe-area-inset-top, 0px) + 3rem); padding-bottom: 2.6rem; }
+header.hero .eyebrow { color: #aeb8c8; }
+header.hero h1 { color: #ffffff; margin: 0.5rem 0 1rem; }
+header.hero .lead { font-size: 1.1rem; max-width: 62ch; color: #d9dee8; }
+.sello { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent); color: var(--accent-ink); font-weight: 600; padding: 0.35rem 0.8rem; border-radius: 4px; font-size: 0.9rem; margin-top: 0.4rem; }
+
+section { padding-block: 2.6rem; border-bottom: 1px solid var(--line); }
+section:last-of-type { border-bottom: 0; }
+
+.grid { display: grid; gap: 1rem; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1.1rem 1.2rem; min-width: 0; }
+.card h3 { margin-bottom: 0.4rem; }
+.card p:last-child, .card ul:last-child { margin-bottom: 0; }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); }
+ul { padding-left: 1.2rem; margin: 0 0 0.9rem; }
+li { margin-bottom: 0.25rem; }
+
+/* Marco: cuatro capas en fila, con el flujo de izquierda a derecha */
+.capas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; counter-reset: capa; }
+.capa { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--navy); border-radius: 4px; padding: 1rem; min-width: 0; position: relative; }
+.capa .n { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+.capa h3 { margin: 0.2rem 0 0.5rem; }
+.capa ul { font-size: 0.92rem; }
+.capa.ia { border-top-color: var(--accent); }
+@media (max-width: 860px) { .capas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .capas { grid-template-columns: 1fr; } }
+
+/* Regla de asignación foto → caso */
+.reglas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; }
+.regla { border-radius: 4px; padding: 0.9rem 1rem; background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--ok); min-width: 0; }
+.regla.media { border-left-color: var(--warn); }
+.regla.baja { border-left-color: var(--bad); }
+.regla b { font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.04em; }
+@media (max-width: 760px) { .reglas { grid-template-columns: 1fr; } }
+
+/* Checklists por ramo */
+.tabla-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 0.9rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.8rem; border-bottom: 1px solid var(--line); }
+th { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+td:first-child { font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+
+/* Pantallas de ejemplo */
+.pantallas { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+@media (max-width: 820px) { .pantallas { grid-template-columns: 1fr; } }
+.marco { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); box-shadow: 0 8px 24px rgba(20, 32, 51, 0.08); min-width: 0; }
+.marco .barra { background: var(--navy); color: #eef1f6; padding: 0.6rem 0.9rem; font-size: 0.85rem; display: flex; justify-content: space-between; gap: 0.5rem; }
+.marco .barra span:last-child { color: #aeb8c8; font-family: var(--font-mono); font-size: 0.72rem; }
+.chat { background: var(--chat-bg); padding: 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.88rem; }
+.burbuja { max-width: 86%; padding: 0.5rem 0.7rem; border-radius: 8px; background: var(--chat-in); color: var(--ink); box-shadow: 0 1px 1px rgba(0,0,0,0.06); }
+.burbuja.yo { align-self: flex-end; background: var(--chat-out); }
+.burbuja .hora { display: block; text-align: right; font-size: 0.68rem; color: var(--muted); margin-top: 0.15rem; }
+.foto { height: 92px; border-radius: 6px; margin-bottom: 0.35rem; background: repeating-linear-gradient(135deg, #8a95a6 0 10px, #9aa4b3 10px 20px); display: flex; align-items: flex-end; padding: 0.35rem; color: #fff; font-family: var(--font-mono); font-size: 0.7rem; }
+.botones { display: grid; gap: 0.3rem; margin-top: 0.45rem; }
+.botones span { display: block; text-align: center; padding: 0.4rem; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--navy); font-weight: 600; font-size: 0.82rem; }
+:root[data-theme="dark"] .botones span { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .botones span { color: var(--accent); } }
+
+.crm { padding: 1rem 1.1rem; display: grid; gap: 0.9rem; }
+.crm .cab { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+.crm .cab h3 { font-size: 1.05rem; }
+.semaforo { display: flex; gap: 0.6rem; align-items: center; padding: 0.7rem 0.9rem; border-radius: 6px; background: color-mix(in srgb, var(--warn) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line)); }
+.semaforo .luz { width: 14px; height: 14px; border-radius: 50%; background: var(--warn); flex: none; }
+.semaforo b { font-family: var(--font-display); }
+.indicadores { display: grid; gap: 0.4rem; font-size: 0.88rem; }
+.ind { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 0.5rem; align-items: start; padding: 0.45rem 0.55rem; border-radius: 4px; background: var(--bg); }
+.ind .m { font-weight: 700; }
+.ind .m.b { color: var(--bad); } .ind .m.w { color: var(--warn); } .ind .m.g { color: var(--ok); }
+.ind .ver { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.progreso { display: grid; gap: 0.3rem; font-size: 0.82rem; }
+.barra-p { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.barra-p i { display: block; height: 100%; width: 64%; background: var(--navy); }
+:root[data-theme="dark"] .barra-p i { background: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .barra-p i { background: var(--accent); } }
+.faltan { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.faltan span { font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 99px; border: 1px dashed var(--bad); color: var(--bad); }
+.nota { font-size: 0.8rem; color: var(--muted); }
+
+.sinasignar { padding: 0.9rem 1.1rem; display: grid; gap: 0.5rem; font-size: 0.88rem; }
+.fila-sa { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 0.7rem; align-items: center; padding: 0.5rem; border: 1px solid var(--line); border-radius: 6px; }
+.fila-sa .foto { height: 48px; margin: 0; }
+.buscador { border: 1px solid var(--line); border-radius: 4px; padding: 0.3rem 0.5rem; color: var(--muted); font-size: 0.8rem; margin-top: 0.3rem; }
+
+.etapas { display: grid; gap: 0.8rem; }
+.etapa { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 1rem; padding: 1rem 1.1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.etapa .cuando { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.etapa h3 { margin-bottom: 0.3rem; }
+@media (max-width: 560px) { .etapa { grid-template-columns: 1fr; gap: 0.3rem; } }
+
+.decisiones { counter-reset: d; list-style: none; padding: 0; display: grid; gap: 0.6rem; }
+.decisiones li { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.8rem 1rem 0.8rem 3rem; position: relative; }
+.decisiones li::before { counter-increment: d; content: counter(d); position: absolute; left: 1rem; top: 0.8rem; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 0.8rem; display: grid; place-items: center; }
+.fuentes { font-size: 0.85rem; columns: 2 280px; column-gap: 2rem; }
+.fuentes li { break-inside: avoid; }
+footer { padding-block: 2rem 3rem; color: var(--muted); font-size: 0.85rem; }
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">IDR Gestión · propuesta · 23 de noviembre de 2026</div>
+    <h1>Perito Digital IDR</h1>
+    <p class="lead">Los operadores mandan las pruebas por WhatsApp, la IA las ordena en el caso que corresponde y, con todo lo que hay en la carpeta, le arma al administrador un dictamen: si lo relevado sostiene o contradice lo denunciado, y por qué.</p>
+    <span class="sello">Se puede armar. Se apoya en lo que ya tienen IDR y AsesorCRM.</span>
+  </div>
+</header>
+
+<main>
+<section>
+  <div class="wrap read">
+    <div class="eyebrow">La respuesta corta</div>
+    <h2>Sí, y conviene hacerlo en tres etapas</h2>
+    <p>El CRM de IDR ya recibe el caso por mail, lee la carátula, guarda evidencia por categoría y desde hoy lee la denuncia policial y la ampliación. AsesorCRM ya tiene resuelta la parte difícil de WhatsApp: el número oficial de Meta, la recepción de fotos, audios y documentos, y una IA que conversa. Lo que falta es el puente entre las dos cosas y un "perito" que razone con checklists por ramo.</p>
+    <p><b>No recomiendo fusionar las dos aplicaciones.</b> Son negocios distintos (vender prepagas y liquidar siniestros), con datos sensibles distintos. Lo que conviene es llevar el motor de WhatsApp de AsesorCRM al CRM de IDR, con su propio número, y que el resto siga separado.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="read">
+      <div class="eyebrow">Qué existe hoy en el mercado</div>
+      <h2>Nadie hace exactamente esto para un estudio liquidador</h2>
+      <p>Investigué las plataformas que usan las aseguradoras y las herramientas de campo. Sirven de referencia, pero apuntan a otro tamaño de empresa o a otra parte del proceso.</p>
+    </div>
+    <div class="grid g3">
+      <div class="card">
+        <span class="tag">Aseguradoras grandes</span>
+        <h3>Shift Technology, FRISS</h3>
+        <p>Detección de fraude con datos masivos de la compañía: puntaje por siniestro, redes de fraude, documentos adulterados. Shift trabaja con aseguradoras de autos en España y el Reino Unido; FRISS presentó en Buenos Aires. Son para la aseguradora, no para el estudio que investiga en la calle.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Apps de campo</span>
+        <h3>Comtrac, Yoursiu, Kriyam</h3>
+        <p>Aplicaciones para que el investigador cargue fotos, entrevistas y ubicación. Obligan al operador a usar otra app. Una aseguradora de India reemplazó el papel con un portal y una app con evidencia geolocalizada.</p>
+      </div>
+      <div class="card">
+        <span class="tag">WhatsApp en siniestros</span>
+        <h3>Infobip, Qiscus</h3>
+        <p>Usan la API oficial de WhatsApp para que el asegurado denuncie y mande fotos. Ninguno ordena la evidencia de un operador en el caso correcto ni dictamina.</p>
+      </div>
+    </div>
+    <div class="read" style="margin-top:1.2rem">
+      <p><b>Lo que sí marca la cancha en Argentina:</b> la Resolución 38477/2014 de la SSN obliga a las aseguradoras a tener un manual antifraude con indicadores de alerta y a documentar la investigación hecha y los indicadores considerados. El dictamen que propongo sigue esa lógica: cada conclusión queda atada a un indicador y a la prueba que lo respalda, que es lo que la aseguradora necesita para sostener un rechazo.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="read">
+      <div class="eyebrow">El marco</div>
+      <h2>Cuatro capas, de la foto al dictamen</h2>
+      <p>Cada capa hace una sola cosa. Si mañana cambia la aseguradora o el canal, se toca una capa y el resto sigue igual.</p>
+    </div>
+    <div class="capas">
+      <div class="capa">
+        <div class="n">Capa 1</div>
+        <h3>Entrada</h3>
+        <ul>
+          <li>Mail de la aseguradora con la carátula (ya funciona).</li>
+          <li>WhatsApp del operador: fotos, PDF, audios y texto (motor de AsesorCRM, número propio de IDR).</li>
+          <li>Carga desde el CRM, como hoy.</li>
+          <li>Cada archivo se guarda antes de procesarlo, con fecha, remitente y huella digital.</li>
+        </ul>
+      </div>
+      <div class="capa">
+        <div class="n">Capa 2</div>
+        <h3>¿De qué caso es?</h3>
+        <ul>
+          <li>Candidatos: solo los casos abiertos de ese operador (2 o 3 por día).</li>
+          <li>Pistas: nombre, DNI, patente o N° de siniestro en el texto o dentro de la imagen; dirección; de qué caso se venía hablando.</li>
+          <li>Categoría de la prueba con la clasificación que ya existe.</li>
+        </ul>
+      </div>
+      <div class="capa ia">
+        <div class="n">Capa 3</div>
+        <h3>Perito IA</h3>
+        <ul>
+          <li>Lee todo: carátula, denuncia, ampliación, descargo, pruebas, audios transcriptos.</li>
+          <li>Aplica el checklist del ramo e indica qué falta.</li>
+          <li>Marca indicadores, cada uno con la prueba que lo respalda.</li>
+          <li>Propone conclusión. Decide siempre el administrador.</li>
+        </ul>
+      </div>
+      <div class="capa">
+        <div class="n">Capa 4</div>
+        <h3>Memoria</h3>
+        <ul>
+          <li>Manuales y checklists por ramo.</li>
+          <li>Casos cerrados: resultado final y qué indicadores pesaron.</li>
+          <li>Correcciones del admin al dictamen: lo que la IA aprende.</li>
+          <li>Mismo esquema de "aprendizajes" que ya usa AsesorCRM.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="read" style="margin-top:2rem">
+      <h3 style="margin-bottom:0.6rem">Cómo decide de qué caso es una foto</h3>
+      <p>La IA nunca adivina en silencio. Según qué tan segura esté, hace una de tres cosas:</p>
+    </div>
+    <div class="reglas">
+      <div class="regla"><b>SEGURA</b><p style="margin:0.3rem 0 0">El texto o la imagen nombran el caso (DNI, patente, apellido) o el operador viene hablando de uno solo. Se archiva y responde "Guardado en Pérez · Geolocalización".</p></div>
+      <div class="regla media"><b>DUDA</b><p style="margin:0.3rem 0 0">Hay dos o tres casos posibles. Pregunta en el mismo WhatsApp con botones: "¿De qué caso es esta foto?". El operador toca uno.</p></div>
+      <div class="regla baja"><b>NO SABE</b><p style="margin:0.3rem 0 0">Nada coincide o el operador no contesta en 2 horas. Va a la bandeja "Sin asignar" del CRM, donde el admin la ubica con un buscador.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="read">
+      <div class="eyebrow">Cómo se vería</div>
+      <h2>El operador sigue en WhatsApp; el admin ve el dictamen</h2>
+      <p>Pantallas de ejemplo con datos inventados.</p>
+    </div>
+    <div class="pantallas">
+      <div class="marco" aria-label="Ejemplo de chat de WhatsApp de una operadora con el asistente de IDR">
+        <div class="barra"><span>IDR Pruebas</span><span>Lucía · 3 casos hoy</span></div>
+        <div class="chat">
+          <div class="burbuja yo">Te mando lo de Gómez, el robo de la moto en Lanús<span class="hora">10:42</span></div>
+          <div class="burbuja yo"><div class="foto">captura_ubicacion.jpg</div><span class="hora">10:42</span></div>
+          <div class="burbuja">Guardado en <b>Gómez · 568029</b> → Geolocalización ✓<br>Para robo total faltan: llaves, foto previa, VTV.<span class="hora">10:42</span></div>
+          <div class="burbuja yo"><div class="foto">IMG_2231.jpg</div><span class="hora">11:15</span></div>
+          <div class="burbuja">¿De qué caso es esta foto?
+            <div class="botones"><span>Gómez · robo total</span><span>Ramírez · robo parcial</span><span>Otro caso</span></div>
+            <span class="hora">11:15</span></div>
+          <div class="burbuja yo">Ramírez · robo parcial<span class="hora">11:16</span></div>
+          <div class="burbuja">Listo, guardada en <b>Ramírez</b> → Fotos del momento del hecho ✓<span class="hora">11:16</span></div>
+        </div>
+      </div>
+
+      <div class="grid" style="gap:1.2rem">
+        <div class="marco" aria-label="Ejemplo del dictamen de la IA en el caso del CRM">
+          <div class="barra"><span>CRM IDR · Caso 568029</span><span>Robo total · moto</span></div>
+          <div class="crm">
+            <div class="cab"><h3>Dictamen del Perito IA</h3><span class="nota">borrador · decide el administrador</span></div>
+            <div class="semaforo"><span class="luz"></span><div><b>Indicios a verificar</b><br><span class="nota">2 contradicciones, 1 indicador fuerte, 3 pruebas faltantes</span></div></div>
+            <div class="indicadores">
+              <div class="ind"><span class="m b">✕</span><span>La denuncia dice 08/10 15:30; la ampliación dice 05/10 por la tarde.</span><span class="ver">denuncia · ampliación</span></div>
+              <div class="ind"><span class="m b">✕</span><span>La geolocalización del celular ubica al asegurado en Barracas a la hora del hecho, no en Lomas.</span><span class="ver">geo_1.jpg</span></div>
+              <div class="ind"><span class="m w">!</span><span>Póliza contratada 19 días antes del robo.</span><span class="ver">carátula</span></div>
+              <div class="ind"><span class="m g">✓</span><span>Domicilio y DNI coinciden en denuncia, carátula y DNI.</span><span class="ver">dni.jpg</span></div>
+            </div>
+            <div class="progreso">
+              <span>Checklist robo total: 9 de 14 pruebas</span>
+              <div class="barra-p"><i></i></div>
+              <div class="faltan"><span>Llaves del vehículo</span><span>Foto previa</span><span>VTV</span><span>Recibo de sueldo</span><span>Palabras clave</span></div>
+            </div>
+            <p class="nota" style="margin:0">Cada punto abre la prueba. Si el admin corrige la conclusión, la corrección queda en la memoria.</p>
+          </div>
+        </div>
+
+        <div class="marco" aria-label="Ejemplo de bandeja de pruebas sin asignar">
+          <div class="barra"><span>Sin asignar</span><span>2 archivos</span></div>
+          <div class="sinasignar">
+            <div class="fila-sa"><div class="foto"></div><div><b>Manuel · 14:02</b> · "esta es la del techo"<div class="buscador">Buscar caso por nombre, DNI o N°…</div></div></div>
+            <div class="fila-sa"><div class="foto"></div><div><b>Carlos · 16:40</b> · sin texto · no respondió la pregunta<div class="buscador">Buscar caso por nombre, DNI o N°…</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="read">
+      <div class="eyebrow">Lo que el perito revisa en cada ramo</div>
+      <h2>Checklists de arranque</h2>
+      <p>Arman la base de la memoria. Juntan tu Word (el orden de pruebas de cada ramo) con lo que encontré en guías de investigación de aseguradoras, del NICB (EE. UU.), de la norma de incendios NFPA 921 y de la prensa argentina. Son indicadores para mirar con más cuidado: <b>ninguno prueba fraude por sí solo</b>. Ana puede ajustarlos cuando mande el orden por ramo.</p>
+    </div>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>Ramo</th><th>Pruebas que pide</th><th>Indicadores que mira la IA</th></tr></thead>
+        <tbody>
+          <tr><td>Robo total</td><td>Denuncia policial y en el Registro Automotor, ampliación, geolocalización, llamadas, conversaciones, palabras clave, foto previa, llaves, VTV, recibo de sueldo</td><td>Tiene todas las llaves en su poder · póliza muy reciente · la denuncia y la ampliación no coinciden en fecha, hora o recorrido · la geolocalización no lo ubica donde dice · deudas o ingresos que no cierran con el vehículo · el vehículo no está a su nombre</td></tr>
+          <tr><td>Robo parcial y ruedas</td><td>Geolocalización, llamadas, conversaciones, palabras clave, fotos del momento del hecho, inspección</td><td>Ruedas, el rubro con más fraude según el sector (se habla de 3 o 4 de cada 10 casos) · fotos del momento sin fecha o de otro lugar · repuestos ya cambiados antes de la inspección · varias denuncias parecidas</td></tr>
+          <tr><td>Cristales</td><td>Geolocalización, llamadas, conversaciones, palabras clave, fotos del momento, inspección</td><td>Daño viejo (bordes sucios, óxido) · la foto no coincide con el lugar denunciado · reclamos repetidos</td></tr>
+          <tr><td>Choque (RC)</td><td>Geolocalización, conversación entre las partes, fotos del momento, foto previa, inspección</td><td>Daños que no se corresponden con la mecánica relatada · las partes se conocen · daños previos en la foto previa · testigos que no aparecen</td></tr>
+          <tr><td>Incendio</td><td>Denuncia administrativa o de bomberos, geolocalización, llamadas, conversaciones, palabras clave, fotos del momento, VTV</td><td>El patrón de quemado no coincide con cómo dicen que empezó · lugar apartado y sin testigos, de noche · bidones o restos de acelerante · historial de fallas mecánicas · deuda o intento de venta previo</td></tr>
+          <tr><td>Destrucción total</td><td>Igual que choque, más inspección completa</td><td>Igual que choque · valor del vehículo frente a la suma asegurada</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="read">
+      <div class="eyebrow">Cómo aprende</div>
+      <h2>La memoria del perito</h2>
+      <p>La IA no "aprende" sola entre una charla y otra: hay que guardarle lo que importa. Propongo tres cajones, todos consultables desde el caso:</p>
+    </div>
+    <div class="grid g3">
+      <div class="card"><h3>Manuales</h3><p>Checklists e indicadores por ramo, editables por el admin. Cada vez que Ana o vos agregan una técnica, la IA la usa desde el caso siguiente.</p></div>
+      <div class="card"><h3>Casos cerrados</h3><p>Al cerrar un caso queda el ramo, el resultado (sin fraude, rechazo, desiste) y qué indicadores pesaron. Ante un caso nuevo, la IA busca los cerrados más parecidos y los cita.</p></div>
+      <div class="card"><h3>Correcciones</h3><p>Cuando el admin cambia la conclusión o marca un indicador como equivocado, se guarda el porqué. Es lo que más rápido profesionaliza al perito.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="read">
+      <div class="eyebrow">Plan</div>
+      <h2>Tres etapas, cada una usable sola</h2>
+    </div>
+    <div class="etapas">
+      <div class="etapa"><div class="cuando">Etapa 1</div><div><h3>WhatsApp al caso</h3><p style="margin:0">Número de WhatsApp de IDR en Meta, recepción de archivos, la regla segura / duda / no sabe, bandeja "Sin asignar" y respuesta al operador con lo que falta. Los operadores ya pueden dejar de entrar al CRM para cargar pruebas.</p></div></div>
+      <div class="etapa"><div class="cuando">Etapa 2</div><div><h3>Perito IA</h3><p style="margin:0">Checklist por ramo en cada caso, transcripción de audios, lectura de todas las pruebas y dictamen con semáforo e indicadores atados a su prueba. Se suma al informe final.</p></div></div>
+      <div class="etapa"><div class="cuando">Etapa 3</div><div><h3>Memoria</h3><p style="margin:0">Manuales editables, casos cerrados parecidos y correcciones del admin, consultados en cada dictamen.</p></div></div>
+    </div>
+    <div class="read" style="margin-top:1.4rem">
+      <h3 style="margin-bottom:0.5rem">Cuidados que hay que tener</h3>
+      <ul>
+        <li><b>Datos personales (Ley 25.326):</b> DNI, chats y ubicación de terceros. Acceso solo para el equipo y el aviso a los operadores de que el número queda registrado.</li>
+        <li><b>Valor como prueba:</b> una captura por WhatsApp sirve para investigar, pero no es una pericia forense. Por eso cada archivo guarda la huella digital, la fecha y quién lo mandó, sin que nadie lo pueda modificar después.</li>
+        <li><b>WhatsApp de Meta:</b> hace falta un número que no esté usado en la app común. Los mensajes que inicia IDR fuera de las 24 horas van con plantillas aprobadas.</li>
+        <li><b>Decisión humana:</b> el dictamen es un borrador. La aseguradora recibe lo que firma el administrador.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap read">
+    <div class="eyebrow">Para arrancar</div>
+    <h2>Lo que necesito que decidas</h2>
+    <ol class="decisiones">
+      <li>¿Qué número de WhatsApp usa IDR? Tiene que ser uno nuevo o uno que no esté en la app común.</li>
+      <li>¿El dictamen lo ven solo los administradores, o también el operador en su caso?</li>
+      <li>¿Arrancamos por la etapa 1 (WhatsApp al caso) o preferís primero el perito sobre los casos que ya están cargados?</li>
+      <li>Que Ana mande el orden de pruebas por ramo para ajustar los checklists.</li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Fuentes</div>
+    <ul class="fuentes">
+      <li><a href="https://www.argentina.gob.ar/normativa/nacional/norma-232554/texto">SSN, Resolución 38477/2014 (manual antifraude)</a></li>
+      <li><a href="https://www.shift-technology.com/hubfs/2026%20Website%20Refresh/2026%20Solutions%20Spec%20Sheets/Shift%20Fraude%20-%20ES.pdf?hsLang=es">Shift Technology, Shift Fraude</a></li>
+      <li><a href="https://www.capterra.es/software/168551/friss">FRISS en Capterra</a></li>
+      <li><a href="https://nicb.org/sites/default/files/2024-05/NICB-GA-VehicleTheftToolkit2024.pdf">NICB, Vehicle Theft Toolkit 2024</a></li>
+      <li><a href="https://www.mymarylandauto.com/site/blog/case-study-the-case-of-the-disappearing-suv/">Maryland Auto, caso del SUV desaparecido</a></li>
+      <li><a href="https://www.sedgwick.com/case-study-stopping-an-auto-theft-ring-in-its-tracks/">Sedgwick, caso de banda de robo de autos</a></li>
+      <li><a href="https://rimkus.com/article/vehicle-fire-investigation/">Rimkus, investigación de incendios de vehículos (NFPA 921)</a></li>
+      <li><a href="https://depts.washington.edu/vehfire/arson/riskfactors.html">Universidad de Washington, factores de riesgo de incendio intencional</a></li>
+      <li><a href="https://www.lacapital.com.ar/la-ciudad/robo-neumaticos-crece-el-fraude-y-empresas-seguro-apelan-detectives-privados-n10164047.html">La Capital, fraude en robo de neumáticos</a></li>
+      <li><a href="https://argentina.gob.ar/sites/default/files/ssn_2021_siniestro_casco.pdf">SSN, siniestros de casco</a></li>
+      <li><a href="https://joget.com/customer-stories/leading-insurer-claims-investigation-portal/">Joget, portal de investigación de siniestros</a></li>
+      <li><a href="https://apps.apple.com/au/app/comtrac-frontline/id6468774057">Comtrac Frontline</a></li>
+      <li><a href="https://www.infobip.com/developers/blog/streamline-insurance-claims-process-with-infobip-and-whatsapp">Infobip, siniestros por WhatsApp</a></li>
+      <li><a href="https://truescreen.io/articles/insurance-field-inspection-app-certified-evidence/">TrueScreen, evidencia certificada en inspecciones</a></li>
+    </ul>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">Propuesta para IDR Gestión. Las cifras de fraude por ramo son estimaciones del sector citadas en prensa, no datos oficiales.</div></footer>
