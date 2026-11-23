@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { RUBROS, rubroDeTipo } from "@/lib/tipos-siniestro";
 import { useSearchParams } from "next/navigation";
 import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
@@ -73,6 +74,7 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
   const [mostrarResumen, setMostrarResumen] = useState(false);
   const [operador, setOperador] = useState("");
   const [compania, setCompania] = useState("");
+  const [rubro, setRubro] = useState("");
   const [etapaContacto, setEtapaContacto] = useState("");
   const [resultado, setResultado] = useState("");
   const [busqueda, setBusqueda] = useState("");
@@ -152,6 +154,7 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
 
     if (operador) out = out.filter(r => claveOperador(r) === operador);
     if (compania) out = out.filter(r => r.compania === compania);
+    if (rubro) out = out.filter(r => String(rubroDeTipo(r.tipo) ?? "") === rubro);
     if (etapaContacto === "recibido") out = out.filter(r => !r.etapaContacto);
     else if (etapaContacto) out = out.filter(r => r.etapaContacto === etapaContacto);
     if (resultado) out = out.filter(r => r.resultado === resultado);
@@ -171,7 +174,7 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
     }
     // Lo más urgente primero, siempre — no solo en la pestaña "Hoy".
     return [...out].sort((a, b) => prioridad(b, esAdmin) - prioridad(a, esAdmin));
-  }, [rows, quick, operador, compania, etapaContacto, resultado, busqueda, esAdmin]);
+  }, [rows, quick, operador, compania, rubro, etapaContacto, resultado, busqueda, esAdmin]);
 
   // El resumen (por operador + resultados) queda un click abajo por default:
   // si algo ahí adentro está activo como filtro, lo mostramos igual para que
@@ -301,6 +304,7 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
             className="min-w-[220px] flex-1 rounded-md border border-line bg-white px-3 py-1.5 text-sm text-ink shadow-sm transition placeholder:text-slate/60 focus:border-ink/40 focus:outline-none"
           />
           <Select value={operador} onChange={setOperador} placeholder="Operador" opciones={operadores.map(o => ({ value: o, label: o }))} />
+          <Select value={rubro} onChange={setRubro} placeholder="Rubro" opciones={RUBROS.map(r => ({ value: String(r.rubro), label: `${r.rubro} · ${r.nombre}` }))} />
           <Select value={compania} onChange={setCompania} placeholder="Compañía" opciones={companias.map(c => ({ value: c, label: c }))} />
         </div>
       </div>

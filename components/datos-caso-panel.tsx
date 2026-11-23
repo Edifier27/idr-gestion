@@ -7,7 +7,7 @@ import { notificar, confirmar } from "@/components/notificaciones";
 import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
 import { MapaEmbed } from "@/components/mapa-embed";
 import { IconWhatsApp } from "@/components/icon-whatsapp";
-import { TIPOS_SINIESTRO } from "@/lib/tipos-siniestro";
+import { TIPOS_SINIESTRO, RUBROS } from "@/lib/tipos-siniestro";
 
 type DatoExtra = { id: string; etiqueta: string; valor: string };
 
@@ -109,7 +109,11 @@ export function DatosCasoPanel({ siniestroId, tipo, dni, poliza, denunciante, do
             <select value={form.tipo} onChange={e => set("tipo", e.target.value)}
               className="min-w-0 rounded bg-transparent px-1 text-right text-ink outline-none transition focus:bg-white focus:shadow-sm">
               <option value="">—</option>
-              {TIPOS_SINIESTRO.map(t => <option key={t.codigo} value={t.nombre}>{t.codigo} · {t.nombre}</option>)}
+              {RUBROS.map(r => (
+                <optgroup key={r.rubro} label={`${r.rubro} · ${r.nombre}`}>
+                  {TIPOS_SINIESTRO.filter(t => t.rubro === r.rubro).map(t => <option key={t.codigo} value={t.nombre}>{t.codigo} · {t.nombre}</option>)}
+                </optgroup>
+              ))}
               {form.tipo && !TIPOS_SINIESTRO.some(t => t.nombre === form.tipo) && <option value={form.tipo}>{form.tipo}</option>}
             </select>
           </div>

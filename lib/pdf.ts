@@ -166,6 +166,29 @@ function parrafo(c: Cursor, texto: string, size = 10) {
   c.y -= 8;
 }
 
+// Texto del informe final: las líneas en MAYÚSCULAS (títulos de sección) van
+// en negrita; el resto como párrafo.
+function textoInforme(c: Cursor, texto: string) {
+  for (const linea of texto.split(/\r?\n/)) {
+    const t = linea.trim();
+    if (!t) { c.y -= 5; continue; }
+    const letras = t.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]/g, "");
+    const esTitulo = letras.length > 3 && letras === letras.toUpperCase() && t.length < 160;
+    if (esTitulo) {
+      espacio(c, 40);
+      for (const l of envolverTexto(sanear(t), c.bold, 10.5, ANCHO_UTIL)) {
+        espacio(c, 15);
+        c.page.drawText(l, { x: MARGEN, y: c.y, size: 10.5, font: c.bold, color: INK });
+        c.y -= 15;
+      }
+      c.y -= 3;
+    } else {
+      parrafo(c, t, 10);
+      c.y += 4;
+    }
+  }
+}
+
 /** Dos pares campo/valor en la misma fila, para que la ficha resumen no ocupe tanto alto. */
 function filaDoble(c: Cursor, a: [string, string | null], b?: [string, string | null]) {
   espacio(c, 15);
@@ -346,7 +369,7 @@ async function bloqueDireccion(c: Cursor, titulo: string, direccion: string | nu
  * derechas, en el orden en que se subieron; los PDF adjuntos se copian
  * página a página; el resto (Word, HEIC, etc.) queda listado.
  */
-export async function expedientePDF(s: SiniestroRow, archivosSinOrden: ArchivoConBytes[], notas: BitacoraRow[] = [], lectura: LecturaDenuncia | null = null): Promise<Uint8Array> {
+export async function expedientePDF(s: SiniestroRow, archivosSinOrden: ArchivoConBytes[], notas: BitacoraRow[] = [], lectura: LecturaDenuncia | null = null, conInformeFinal = false): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -380,30 +403,41 @@ export async function expedientePDF(s: SiniestroRow, archivosSinOrden: ArchivoCo
   let n = 0;
   const titulo = (t: string) => tituloSeccion(c, `${++n}. ${t.toUpperCase()}`);
 
+  // Con informe final (versión para la aseguradora, como el informe modelo
+  // de Dario): va el informe y después las pruebas, sin las notas internas
+  // (cotejo, bitácora, descargo en borrador).
+  const informeFinal = conInformeFinal ? s.informeFinal?.trim() : null;
+  if (informeFinal) {
+    titulo("Informe de investigación");
+    textoInforme(c, informeFinal);
+  }
+
   // --- 1. Denuncia policial (y ampliación) ---
-  if (tiene(archivosDe("denuncia")) || lectura?.denuncia) {
+  if (tiene(archivosDe("denuncia")) || (lectura?.denuncia && !informeFinal)) {
     titulo("Denuncia policial");
-    if (lectura?.denuncia) parrafo(c, lectura.denuncia);
+    if (lectura?.denuncia && !informeFinal) parrafo(c, lectura.denuncia);
     for (const cat of archivosDe("denuncia")) await volcarGrupo(c, cat, archivos, ramo);
   }
 
-  // --- 2. Siniestro: relato, descargo y cotejo ---
-  titulo("Siniestro");
-  subtitulo(c, "Relato de la denuncia (ampliación del asegurado + denuncia del día del hecho)");
-  parrafo(c, s.relatoDenuncia?.trim() || " ");
-  if (lectura && lectura.cotejo.some(x => x.coincide === false)) {
-    subtitulo(c, "Denuncia vs. datos del siniestro");
-    for (const x of lectura.cotejo.filter(y => y.coincide === false)) {
-      parrafo(c, `${x.dato}: siniestro "${x.siniestro ?? "—"}" / denuncia "${x.denuncia ?? "—"}"${x.nota ? ` (${x.nota})` : ""}`, 9);
+  // --- 2. Siniestro: relato, descargo y cotejo (versión de trabajo) ---
+  if (!informeFinal) {
+    titulo("Siniestro");
+    subtitulo(c, "Relato de la denuncia (ampliación del asegurado + denuncia del día del hecho)");
+    parrafo(c, s.relatoDenuncia?.trim() || " ");
+    if (lectura && lectura.cotejo.some(x => x.coincide === false)) {
+      subtitulo(c, "Denuncia vs. datos del siniestro");
+      for (const x of lectura.cotejo.filter(y => y.coincide === false)) {
+        parrafo(c, `${x.dato}: siniestro "${x.siniestro ?? "—"}" / denuncia "${x.denuncia ?? "—"}"${x.nota ? ` (${x.nota})` : ""}`, 9);
+      }
     }
-  }
-  subtitulo(c, "Descargo del operador");
-  parrafo(c, s.descargo?.trim() || "A completar.");
-  subtitulo(c, "Cotejo denuncias / ampliación / relevado (informe técnico-legal)");
-  parrafo(c, s.informe?.trim() || "Todavía no se generó el informe con IA.");
-  if (notas.length > 0) {
-    subtitulo(c, "Bitácora de gestiones");
-    for (const nota of notas) parrafo(c, `${new Date(nota.fecha).toLocaleString("es-AR")} · ${nota.tipo}: ${nota.nota}`, 9);
+    subtitulo(c, "Descargo del operador");
+    parrafo(c, s.descargo?.trim() || "A completar.");
+    subtitulo(c, "Cotejo denuncias / ampliación / relevado (informe técnico-legal)");
+    parrafo(c, s.informe?.trim() || "Todavía no se generó el informe con IA.");
+    if (notas.length > 0) {
+      subtitulo(c, "Bitácora de gestiones");
+      for (const nota of notas) parrafo(c, `${new Date(nota.fecha).toLocaleString("es-AR")} · ${nota.tipo}: ${nota.nota}`, 9);
+    }
   }
 
   // --- 3. Domicilio del asegurado y lugar del hecho, con mapa ---

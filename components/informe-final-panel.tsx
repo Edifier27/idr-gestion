@@ -64,7 +64,7 @@ export function InformeFinalPanel({ siniestroId, informeInicial }: { siniestroId
           disabled={generando || borrando}
           className={boton.primario}
         >
-          {generando ? "Generando…" : informeInicial ? "Regenerar resolución final" : "Generar resolución final"}
+          {generando ? "Mirando las pruebas y redactando… (puede tardar 1-2 min)" : informeInicial ? "Regenerar informe de investigación" : "Generar informe de investigación con IA"}
         </button>
         {informeInicial && (
           <button
@@ -87,7 +87,7 @@ export function InformeFinalPanel({ siniestroId, informeInicial }: { siniestroId
         </div>
       ) : (
         <p className="text-sm text-slate">
-          Todavía no generaste tu resolución final. Es independiente del informe que arma el operador — esta versión no la ve nadie más que vos.
+          Todavía no generaste el informe de investigación. La IA mira cada foto y documento del caso, los perita y redacta el informe con el formato del que se manda a la aseguradora (como el del siniestro 571673). Es un borrador: revisalo y corregilo antes de mandarlo. El operador no lo ve.
         </p>
       )}
     </div>

@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import { construirExpedientePDF } from "@/lib/expediente";
-import { sesionRequerida, puedeVerCaso } from "@/lib/acceso";
+import { sesionRequerida, puedeVerCaso, puedeVerInformeFinal } from "@/lib/acceso";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   if (!s) return NextResponse.json({ error: "No encontrado." }, { status: 404 });
   if (!puedeVerCaso(session, s.operador)) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
 
-  const resultado = await construirExpedientePDF(id);
+  const resultado = await construirExpedientePDF(id, puedeVerInformeFinal(session));
   if (!resultado) return NextResponse.json({ error: "No encontrado." }, { status: 404 });
 
   return new NextResponse(Buffer.from(resultado.bytes), {

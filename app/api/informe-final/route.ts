@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros, bitacora } from "@/lib/db/schema";
-import { generarInforme } from "@/lib/informe";
+import { generarInformeFinal } from "@/lib/informe-final";
+import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
 import { sesionRequerida, puedeVerCaso, puedeVerInformeFinal } from "@/lib/acceso";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300; // mira todas las pruebas: puede tardar
 
 // POST /api/informe-final  { siniestroId } -> genera la resolución final con IA
 // (solo admin: es la versión privada, el operador no la ve — ver puedeVerInformeFinal).
@@ -25,7 +26,8 @@ export async function POST(req: NextRequest) {
     const notas = await db.select().from(bitacora).where(eq(bitacora.siniestroId, siniestroId));
     const textoNotas = notas.map((n) => `[${n.tipo}] ${n.nota}`);
 
-    const informeTexto = await generarInforme(s, textoNotas);
+    const lectura = await leerLecturaDenuncia(s.id);
+    const informeTexto = await generarInformeFinal(s, textoNotas, lectura);
     const [updated] = await db.update(siniestros)
       .set({ informeFinal: informeTexto, actualizadoEn: new Date() })
       .where(eq(siniestros.id, siniestroId))

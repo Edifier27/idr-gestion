@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (adjuntarExpediente) {
-      const expediente = await construirExpedientePDF(siniestroId);
+      const expediente = await construirExpedientePDF(siniestroId, true); // el mail lo manda solo el admin
       if (expediente) {
         adjuntos.push({
           nombre: `expediente-${expediente.siniestro.nroSiniestro ?? siniestroId}.pdf`,

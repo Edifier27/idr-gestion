@@ -9,7 +9,8 @@ import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
 // documental). Lo comparten el botón "Expediente PDF" (api/expediente-pdf) y
 // el botón "Adjuntar expediente" del mail (api/mail/enviar), para no repetir
 // dos veces la lógica de traer evidencia + bitácora + bajar los archivos.
-export async function construirExpedientePDF(siniestroId: string): Promise<{ siniestro: SiniestroRow; bytes: Uint8Array } | null> {
+// conInformeFinal: solo para el admin (el informe final no lo ve el operador).
+export async function construirExpedientePDF(siniestroId: string, conInformeFinal = false): Promise<{ siniestro: SiniestroRow; bytes: Uint8Array } | null> {
   const db = getDb();
   const [s] = await db.select().from(siniestros).where(eq(siniestros.id, siniestroId));
   if (!s) return null;
@@ -29,6 +30,6 @@ export async function construirExpedientePDF(siniestroId: string): Promise<{ sin
   }));
 
   const lectura = await leerLecturaDenuncia(siniestroId);
-  const bytes = await expedientePDF(s, archivos, notas, lectura);
+  const bytes = await expedientePDF(s, archivos, notas, lectura, conInformeFinal);
   return { siniestro: s, bytes };
 }
