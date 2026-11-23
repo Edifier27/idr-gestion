@@ -4,39 +4,50 @@ import { sql } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { asegurarTablasWhatsapp } from "@/lib/db/asegurar-whatsapp";
+import { asegurarTablaEvidencia } from "@/lib/db/asegurar-evidencia";
 import { modoPrueba } from "@/lib/whatsapp/meta";
-import { BandejaWhatsapp, type Conversacion, type Mensaje, type CasoOpcion, type OperadorTel } from "@/components/bandeja-whatsapp";
+import { etiquetaCategoriaEvidencia, ramoDeTipo, seccionesExpediente } from "@/lib/categorias-evidencia";
+import { etiquetaEtapaContacto } from "@/lib/etapa-contacto";
+import { rubroDeTipo } from "@/lib/tipos-siniestro";
+import { BandejaWhatsapp, type Conversacion, type Mensaje, type CasoOpcion, type OperadorTel, type CasoHerramientas } from "@/components/bandeja-whatsapp";
+import "./whatsapp.css";
 
 export const metadata: Metadata = { title: "WhatsApp · CRMgestion" };
 export const dynamic = "force-dynamic";
 
-// Bandeja de WhatsApp (solo admin): un chat por operador, las pruebas que
-// mandó con el caso donde quedaron y lo que falta ubicar ("Sin asignar").
+const NINGUNO = "00000000-0000-0000-0000-000000000000";
+
+// Bandeja de WhatsApp (solo admin), con la misma experiencia que WhatsApp
+// Web / AsesorCRM: chats por operador a la izquierda, la conversación en el
+// centro y, a la derecha, las herramientas para ubicar cada prueba en su caso.
 export default async function WhatsappPage({ searchParams }: { searchParams: { c?: string; vista?: string } }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.rol !== "admin") redirect("/panel");
   if (!dbConfigurada()) return <main className="p-8 text-slate">Falta la base de datos.</main>;
   await asegurarTablasWhatsapp();
+  await asegurarTablaEvidencia();
   const db = getDb();
 
   const convs = (await db.execute(sql`
     SELECT c.id, c.telefono, c.nombre, c.operador, c.ultimo_en, c.ultimo_texto, c.no_leidos, c.ventana_hasta,
-           u.nombre AS nombre_operador,
-           (SELECT count(*)::int FROM wa_mensaje m WHERE m.conversacion_id = c.id AND m.asignacion IN ('sin_asignar', 'pregunta')) AS pendientes
+           u.nombre AS nombre_operador, u.zona AS zona_operador,
+           (SELECT count(*)::int FROM wa_mensaje m WHERE m.conversacion_id = c.id AND m.asignacion IN ('sin_asignar', 'pregunta')) AS pendientes,
+           (SELECT m.direccion FROM wa_mensaje m WHERE m.conversacion_id = c.id ORDER BY m.creado_en DESC LIMIT 1) AS ultima_direccion,
+           (SELECT m.estado FROM wa_mensaje m WHERE m.conversacion_id = c.id ORDER BY m.creado_en DESC LIMIT 1) AS ultimo_estado
     FROM wa_conversacion c LEFT JOIN usuarios u ON u.operador = c.operador AND u.rol = 'vendedor'
     ORDER BY c.ultimo_en DESC`)).rows as Conversacion[];
 
   const vistaSin = searchParams.vista === "sin";
-  const seleccionada = vistaSin ? null : convs.find(c => c.id === searchParams.c) ?? convs[0] ?? null;
+  const seleccionada = vistaSin ? null : convs.find(c => c.id === searchParams.c) ?? null;
   const mensajes = (await db.execute(vistaSin
-    ? sql`SELECT m.*, s.nro_siniestro AS caso_nro, COALESCE(s.asegurado, s.denunciante) AS caso_nombre, c.operador AS conv_operador
+    ? sql`SELECT m.*, s.nro_siniestro AS caso_nro, COALESCE(s.asegurado, s.denunciante) AS caso_nombre, s.tipo AS caso_tipo, c.operador AS conv_operador
           FROM wa_mensaje m JOIN wa_conversacion c ON c.id = m.conversacion_id LEFT JOIN siniestros s ON s.id = m.siniestro_id
           WHERE m.asignacion IN ('sin_asignar', 'pregunta') ORDER BY m.creado_en DESC LIMIT 200`
-    : sql`SELECT m.*, s.nro_siniestro AS caso_nro, COALESCE(s.asegurado, s.denunciante) AS caso_nombre, NULL AS conv_operador
+    : sql`SELECT m.*, s.nro_siniestro AS caso_nro, COALESCE(s.asegurado, s.denunciante) AS caso_nombre, s.tipo AS caso_tipo, NULL AS conv_operador
           FROM wa_mensaje m LEFT JOIN siniestros s ON s.id = m.siniestro_id
-          WHERE m.conversacion_id = ${seleccionada?.id ?? "00000000-0000-0000-0000-000000000000"}
-          ORDER BY m.creado_en ASC LIMIT 300`)).rows as Mensaje[];
+          WHERE m.conversacion_id = ${seleccionada?.id ?? NINGUNO}
+          ORDER BY m.creado_en ASC LIMIT 400`)).rows as Mensaje[];
 
   const casos = (await db.execute(sql`
     SELECT id, nro_siniestro AS nro, COALESCE(asegurado, denunciante) AS asegurado, operador, tipo
@@ -44,18 +55,36 @@ export default async function WhatsappPage({ searchParams }: { searchParams: { c
   const operadores = (await db.execute(sql`
     SELECT operador, nombre, telefono FROM usuarios WHERE rol = 'vendedor' AND activo = true AND operador IS NOT NULL ORDER BY nombre`)).rows as OperadorTel[];
 
+  // Panel de herramientas: los casos abiertos del operador de este chat, con
+  // las pruebas que pide su ramo, las que ya están y las que mandó por acá.
+  let herramientas: CasoHerramientas[] = [];
+  if (seleccionada?.operador) {
+    const propios = (await db.execute(sql`
+      SELECT id, nro_siniestro AS nro, COALESCE(asegurado, denunciante) AS asegurado, dni, tipo, domicilio,
+             lugar_siniestro->>'calle1' AS lugar, etapa_contacto AS etapa, fecha_entrevista, tel_contacto AS telefono, creado_en
+      FROM siniestros WHERE operador = ${seleccionada.operador} AND estado <> 'cerrado' ORDER BY creado_en DESC`)).rows as {
+        id: string; nro: string | null; asegurado: string | null; dni: string | null; tipo: string | null; domicilio: string | null;
+        lugar: string | null; etapa: string | null; fecha_entrevista: string | null; telefono: string | null; creado_en: string;
+      }[];
+    const ids = propios.map(p => p.id);
+    const cats = ids.length ? (await db.execute(sql`SELECT siniestro_id, categoria FROM evidencia WHERE siniestro_id = ANY(${ids}::uuid[])`)).rows as { siniestro_id: string; categoria: string | null }[] : [];
+    const porWa = ids.length ? (await db.execute(sql`SELECT siniestro_id, count(*)::int AS n FROM wa_mensaje WHERE conversacion_id = ${seleccionada.id} AND siniestro_id = ANY(${ids}::uuid[]) GROUP BY siniestro_id`)).rows as { siniestro_id: string; n: number }[] : [];
+    herramientas = propios.map(p => {
+      const ramo = ramoDeTipo(p.tipo);
+      const pedidas = seccionesExpediente(ramo).filter(x => x.id !== "otros" && x.id !== "lugar").flatMap(x => x.categorias);
+      const tiene = new Set(cats.filter(c => c.siniestro_id === p.id && c.categoria).map(c => c.categoria as string));
+      const faltan = pedidas.filter(c => !tiene.has(c));
+      return {
+        id: p.id, nro: p.nro, asegurado: p.asegurado, dni: p.dni, tipo: p.tipo, rubro: rubroDeTipo(p.tipo), domicilio: p.domicilio, lugar: p.lugar,
+        telefono: p.telefono, etapa: etiquetaEtapaContacto(p.etapa), entrevista: p.fecha_entrevista ? new Date(p.fecha_entrevista).toISOString() : null,
+        pedidas: pedidas.length, tiene: pedidas.length - faltan.length, faltan: faltan.map(c => etiquetaCategoriaEvidencia(c, ramo)),
+        porWhatsapp: porWa.find(x => x.siniestro_id === p.id)?.n ?? 0,
+      };
+    });
+  }
+
   return (
-    <main className="mx-auto max-w-[1600px] px-4 py-6 md:px-8 md:py-8">
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-amber">CRMgestion</p>
-          <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-ink">WhatsApp</h1>
-          <p className="text-sm text-slate">Lo que mandan los operadores: la IA ubica cada prueba en su caso. Lo que no pudo ubicar queda en Sin asignar.</p>
-        </div>
-        {modoPrueba() && (
-          <span className="rounded-full border border-amber/40 bg-amber/10 px-3 py-1 text-xs font-semibold text-amber">Modo prueba: número de WhatsApp sin conectar, no sale nada a Meta</span>
-        )}
-      </header>
+    <main className="wa-pagina">
       <BandejaWhatsapp
         conversaciones={convs}
         seleccionadaId={seleccionada?.id ?? null}
@@ -63,6 +92,9 @@ export default async function WhatsappPage({ searchParams }: { searchParams: { c
         mensajes={mensajes}
         casos={casos}
         operadores={operadores}
+        herramientas={herramientas}
+        modoPrueba={modoPrueba()}
+        miNombre={session.user.name ?? "Admin"}
       />
     </main>
   );

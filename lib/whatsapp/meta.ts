@@ -52,3 +52,15 @@ export function claveTelefono(t: string | null | undefined): string {
   const d = (t ?? "").replace(/\D/g, "");
   return d.slice(-10);
 }
+
+// Foto, video, audio o documento por link público (el archivo ya está en el
+// almacenamiento del CRM).
+export const enviarMedia = (to: string, tipo: "image" | "video" | "audio" | "document", link: string, caption?: string | null, nombre?: string | null) =>
+  enviar(to, {
+    type: tipo,
+    [tipo]: {
+      link,
+      ...(caption && tipo !== "audio" ? { caption } : {}),
+      ...(tipo === "document" && nombre ? { filename: nombre } : {}),
+    },
+  });

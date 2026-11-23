@@ -1,55 +1,127 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { boton, campo, colorPorTexto, selectCampo } from "@/lib/ui";
+import { colorPorTexto } from "@/lib/ui";
 import { notificar } from "@/components/notificaciones";
-import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia } from "@/lib/categorias-evidencia";
+import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ramoDeTipo } from "@/lib/categorias-evidencia";
 
 export type Conversacion = {
-  id: string; telefono: string; nombre: string | null; operador: string | null; nombre_operador: string | null;
+  id: string; telefono: string; nombre: string | null; operador: string | null; nombre_operador: string | null; zona_operador: string | null;
   ultimo_en: string; ultimo_texto: string | null; no_leidos: number; ventana_hasta: string | null; pendientes: number;
+  ultima_direccion: string | null; ultimo_estado: string | null;
 };
 export type Mensaje = {
   id: string; conversacion_id: string; direccion: "entrante" | "saliente"; tipo: string; texto: string | null;
   media_url: string | null; media_mime: string | null; media_nombre: string | null; estado: string | null;
   siniestro_id: string | null; categoria: string | null; asignacion: string | null; asignacion_nota: string | null;
-  autor: string | null; creado_en: string; caso_nro: string | null; caso_nombre: string | null; conv_operador: string | null;
+  autor: string | null; creado_en: string; caso_nro: string | null; caso_nombre: string | null; caso_tipo: string | null; conv_operador: string | null;
 };
 export type CasoOpcion = { id: string; nro: string | null; asegurado: string | null; operador: string | null; tipo: string | null };
 export type OperadorTel = { operador: string; nombre: string; telefono: string | null };
+export type CasoHerramientas = {
+  id: string; nro: string | null; asegurado: string | null; dni: string | null; tipo: string | null; rubro: number | null;
+  domicilio: string | null; lugar: string | null; telefono: string | null; etapa: string; entrevista: string | null;
+  pedidas: number; tiene: number; faltan: string[]; porWhatsapp: number;
+};
 
-function hora(iso: string) {
-  const d = new Date(iso);
-  const hoy = new Date().toDateString() === d.toDateString();
-  return hoy ? d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
-}
+const EMOJIS = ["👍", "🙏", "✅", "👌", "😊", "🙂", "😉", "👏", "🤝", "📸", "📄", "📍", "🚗", "🏍️", "🔑", "🔥", "⏰", "📞", "❓", "❗", "⚠️", "💪", "🙌", "😅", "🤔", "👀", "📎", "🗂️", "✍️", "🆗", "➡️", "⬆️"];
 
 function normalizar(x: string) {
   return x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 }
+function horaCorta(iso: string) {
+  return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+}
+function horaLista(iso: string) {
+  const d = new Date(iso);
+  const hoy = new Date();
+  if (d.toDateString() === hoy.toDateString()) return horaCorta(iso);
+  const ayer = new Date(hoy.getTime() - 86_400_000);
+  if (d.toDateString() === ayer.toDateString()) return "Ayer";
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+function etiquetaDia(iso: string) {
+  const d = new Date(iso);
+  const hoy = new Date();
+  if (d.toDateString() === hoy.toDateString()) return "Hoy";
+  const ayer = new Date(hoy.getTime() - 86_400_000);
+  if (d.toDateString() === ayer.toDateString()) return "Ayer";
+  if (hoy.getTime() - d.getTime() < 6 * 86_400_000) return d.toLocaleDateString("es-AR", { weekday: "long" });
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+function nombreConv(c: Conversacion) {
+  return c.nombre_operador ?? c.nombre ?? `+${c.telefono}`;
+}
+function Tilde({ estado }: { estado: string | null }) {
+  if (estado === "failed") return <span className="wa-tilde error" title="No se pudo entregar">⚠</span>;
+  if (estado === "read") return <span className="wa-tilde leido" title="Leído">✓✓</span>;
+  if (estado === "delivered") return <span className="wa-tilde" title="Entregado">✓✓</span>;
+  return <span className="wa-tilde" title="Enviado">✓</span>;
+}
 
-export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mensajes, casos, operadores }: {
+export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mensajes, casos, operadores, herramientas, modoPrueba, miNombre }: {
   conversaciones: Conversacion[]; seleccionadaId: string | null; vistaSin: boolean; mensajes: Mensaje[];
-  casos: CasoOpcion[]; operadores: OperadorTel[];
+  casos: CasoOpcion[]; operadores: OperadorTel[]; herramientas: CasoHerramientas[]; modoPrueba: boolean; miNombre: string;
 }) {
   const router = useRouter();
   const sel = conversaciones.find(c => c.id === seleccionadaId) ?? null;
   const totalPendientes = conversaciones.reduce((a, c) => a + c.pendientes, 0);
-  const [texto, setTexto] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const [simulando, setSimulando] = useState(false);
-  const finRef = useRef<HTMLDivElement>(null);
 
-  // Nuevos mensajes: se vuelve a pedir la pantalla cada 8 segundos.
+  // --- Lista ---
+  const [filtro, setFiltro] = useState<"todos" | "noleidos" | "pendientes" | "sinop">("todos");
+  const [busquedaLista, setBusquedaLista] = useState("");
+  const lista = useMemo(() => {
+    const p = normalizar(busquedaLista).split(/\s+/).filter(Boolean);
+    return conversaciones.filter(c =>
+      (filtro !== "noleidos" || c.no_leidos > 0) &&
+      (filtro !== "pendientes" || c.pendientes > 0) &&
+      (filtro !== "sinop" || !c.operador) &&
+      p.every(x => normalizar(`${nombreConv(c)} ${c.telefono} ${c.operador ?? ""} ${c.ultimo_texto ?? ""}`).includes(x)));
+  }, [conversaciones, filtro, busquedaLista]);
+
+  // --- Conversación ---
+  const [buscandoChat, setBuscandoChat] = useState(false);
+  const [busquedaChat, setBusquedaChat] = useState("");
+  const [casoFiltro, setCasoFiltro] = useState<string | null>(null);
+  const [panel, setPanel] = useState(true);
+  // En pantallas chicas el panel de casos tapa el chat: arranca cerrado.
+  useEffect(() => { if (window.innerWidth < 1280) setPanel(false); }, []);
+  const [visor, setVisor] = useState<number | null>(null);
+  const contRef = useRef<HTMLDivElement>(null);
+  const pegadoAbajo = useRef(true);
+  const [verAbajo, setVerAbajo] = useState(false);
+
+  useEffect(() => { setCasoFiltro(null); setBusquedaChat(""); setBuscandoChat(false); }, [seleccionadaId, vistaSin]);
+
+  const visibles = useMemo(() => {
+    const p = normalizar(busquedaChat).split(/\s+/).filter(Boolean);
+    return mensajes.filter(m =>
+      (!casoFiltro || m.siniestro_id === casoFiltro) &&
+      p.every(x => normalizar(`${m.texto ?? ""} ${m.media_nombre ?? ""} ${m.caso_nombre ?? ""} ${m.caso_nro ?? ""}`).includes(x)));
+  }, [mensajes, casoFiltro, busquedaChat]);
+  const fotos = useMemo(() => visibles.filter(m => m.media_url && m.media_mime?.startsWith("image/")), [visibles]);
+
+  // Nuevos mensajes: se vuelve a pedir la pantalla cada 5 segundos.
   useEffect(() => {
-    const t = setInterval(() => router.refresh(), 8000);
+    const t = setInterval(() => router.refresh(), 5000);
     return () => clearInterval(t);
   }, [router]);
 
+  // Siempre anclado abajo, salvo que se esté leyendo más arriba.
   useEffect(() => {
-    finRef.current?.scrollIntoView({ block: "end" });
-  }, [mensajes.length, seleccionadaId]);
+    const el = contRef.current;
+    if (el && pegadoAbajo.current) el.scrollTop = el.scrollHeight;
+  }, [visibles.length, seleccionadaId]);
+
+  function alDesplazar() {
+    const el = contRef.current;
+    if (!el) return;
+    const abajo = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    pegadoAbajo.current = abajo;
+    if (abajo === verAbajo) setVerAbajo(!abajo);
+  }
 
   useEffect(() => {
     if (sel && sel.no_leidos > 0) {
@@ -57,9 +129,48 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
     }
   }, [sel?.id, sel?.no_leidos]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // --- Escribir ---
   const ventanaAbierta = !!sel?.ventana_hasta && new Date(sel.ventana_hasta).getTime() > Date.now();
+  const [texto, setTexto] = useState("");
+  const [popup, setPopup] = useState<"adjuntar" | "emojis" | "rapidas" | null>(null);
+  const [archivos, setArchivos] = useState<File[]>([]);
+  const [previaIdx, setPreviaIdx] = useState(0);
+  const [epigrafe, setEpigrafe] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const campoRef = useRef<HTMLTextAreaElement>(null);
+  const fotoRef = useRef<HTMLInputElement>(null);
+  const docRef = useRef<HTMLInputElement>(null);
 
-  async function enviar() {
+  useEffect(() => {
+    const el = campoRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [texto]);
+
+  const rapidas = useMemo(() => {
+    const base = [
+      "¿De qué caso es esta foto? Decime el apellido o el N° de siniestro.",
+      "Mandame la denuncia policial y la ampliación firmada, por favor.",
+      "¿Cómo te fue en la entrevista? Contame lo principal.",
+      "Recibido, gracias 👍",
+      "Las fotos tienen que verse completas y derechas: DNI, registro y cédula de los dos lados.",
+    ];
+    const porCaso = herramientas.filter(h => h.faltan.length).slice(0, 4).map(h => textoFaltantes(h));
+    return [...porCaso, ...base];
+  }, [herramientas]);
+
+  function textoFaltantes(h: CasoHerramientas) {
+    return `Para ${h.asegurado ?? "el caso"} (#${h.nro ?? "s/n"}) faltan: ${h.faltan.join(", ")}. ¿Me las mandás?`;
+  }
+
+  function insertar(t: string, reemplazar = false) {
+    setTexto(prev => (reemplazar || !prev ? t : `${prev}${prev.endsWith(" ") ? "" : " "}${t}`));
+    setPopup(null);
+    setTimeout(() => campoRef.current?.focus(), 0);
+  }
+
+  async function enviarTexto() {
     if (!sel || !texto.trim()) return;
     setEnviando(true);
     try {
@@ -67,6 +178,7 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "No se pudo enviar.");
       setTexto("");
+      pegadoAbajo.current = true;
       router.refresh();
     } catch (e) {
       notificar.error(e instanceof Error ? e.message : "No se pudo enviar.");
@@ -75,147 +187,366 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
     }
   }
 
+  function elegirArchivos(lista: FileList | null) {
+    const nuevos = Array.from(lista ?? []);
+    if (!nuevos.length) return;
+    setArchivos(nuevos);
+    setPreviaIdx(0);
+    setEpigrafe(texto);
+    setPopup(null);
+  }
+
+  async function enviarArchivos() {
+    if (!sel || !archivos.length) return;
+    setEnviando(true);
+    try {
+      for (let i = 0; i < archivos.length; i++) {
+        const fd = new FormData();
+        fd.append("conversacionId", sel.id);
+        fd.append("archivo", archivos[i]);
+        if (i === 0 && epigrafe.trim()) fd.append("texto", epigrafe.trim());
+        const res = await fetch("/api/whatsapp/enviar-archivo", { method: "POST", body: fd });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.error ?? `No se pudo enviar ${archivos[i].name}.`);
+      }
+      setArchivos([]);
+      setEpigrafe("");
+      setTexto("");
+      pegadoAbajo.current = true;
+      router.refresh();
+    } catch (e) {
+      notificar.error(e instanceof Error ? e.message : "No se pudo enviar.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  const urlsPrevia = useMemo(() => archivos.map(f => (f.type.startsWith("image/") ? URL.createObjectURL(f) : null)), [archivos]);
+  useEffect(() => () => urlsPrevia.forEach(u => u && URL.revokeObjectURL(u)), [urlsPrevia]);
+
+  const hayChat = !!sel || vistaSin;
+  const conPanel = !!sel && panel;
+  const casoElegido = herramientas.find(h => h.id === casoFiltro) ?? null;
+
   return (
-    <div className="grid min-h-[70vh] gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="flex flex-col overflow-hidden rounded-xl border border-line bg-white shadow-sm">
-        <a href="/whatsapp?vista=sin" className={`flex items-center justify-between border-b border-line px-4 py-3 text-sm font-semibold ${vistaSin ? "bg-amber/10 text-amber" : "text-ink hover:bg-paper"}`}>
-          <span>📥 Sin asignar</span>
-          <span className={`rounded-full px-2 py-0.5 text-xs ${totalPendientes ? "bg-amber text-paper" : "bg-paper text-slate"}`}>{totalPendientes}</span>
-        </a>
-        <div className="flex-1 divide-y divide-line overflow-y-auto">
-          {conversaciones.length === 0 && <p className="p-4 text-sm text-slate">Todavía no llegó ningún WhatsApp. Probá con el simulador de abajo.</p>}
-          {conversaciones.map(c => {
-            const nombre = c.nombre_operador ?? c.nombre ?? c.telefono;
-            const activo = !vistaSin && c.id === seleccionadaId;
+    <div className={`wa-app ${conPanel ? "con-panel" : ""} ${hayChat ? "hay-chat" : ""}`}>
+      {/* ---------------- Lista de chats ---------------- */}
+      <aside className="wa-lista">
+        <div className="wa-lista-cab">
+          <div className="wa-fila"><h1>Chats</h1>{modoPrueba && <span className="wa-prueba">Modo prueba</span>}</div>
+          <label className="wa-buscador">
+            <span aria-hidden>🔍</span>
+            <input value={busquedaLista} onChange={e => setBusquedaLista(e.target.value)} placeholder="Buscar un chat o un operador" />
+          </label>
+          <div className="wa-chips">
+            {([["todos", "Todos"], ["noleidos", "No leídos"], ["pendientes", "Con pruebas por ubicar"], ["sinop", "Sin operador"]] as const).map(([k, t]) => (
+              <button key={k} className={`wa-chip ${filtro === k ? "activo" : ""}`} onClick={() => setFiltro(k)}>{t}</button>
+            ))}
+          </div>
+        </div>
+        <Link href="/whatsapp?vista=sin" className={`wa-sinasignar ${vistaSin ? "activo" : ""}`}>
+          <span className="icono">📥</span>
+          <span style={{ flex: 1 }}>
+            <span className="wa-chat-nombre">Sin asignar</span><br />
+            <span className="wa-chat-ultimo">Pruebas que falta ubicar en un caso</span>
+          </span>
+          {totalPendientes > 0 && <span className="wa-contador ambar" style={{ marginRight: 2 }}>{totalPendientes}</span>}
+        </Link>
+        <div className="wa-chats">
+          {lista.length === 0 && <p style={{ padding: 16, color: "var(--wa-suave)" }}>{conversaciones.length ? "Ningún chat coincide." : "Todavía no llegó ningún WhatsApp. Probá con el simulador de abajo."}</p>}
+          {lista.map(c => {
+            const nombre = nombreConv(c);
             return (
-              <a key={c.id} href={`/whatsapp?c=${c.id}`} className={`flex gap-3 px-4 py-3 transition ${activo ? "bg-azul/5" : "hover:bg-paper"}`}>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: colorPorTexto(c.operador ?? c.telefono) }}>{nombre.trim()[0]?.toUpperCase()}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-sm font-semibold text-ink">{nombre}</span>
-                    <span className="shrink-0 text-[11px] text-slate">{hora(c.ultimo_en)}</span>
+              <Link key={c.id} href={`/whatsapp?c=${c.id}`} className={`wa-chat ${!vistaSin && c.id === seleccionadaId ? "activo" : ""}`}>
+                <span className="wa-avatar" style={{ background: colorPorTexto(c.operador ?? c.telefono) }}>{nombre.replace("+", "").trim()[0]?.toUpperCase()}</span>
+                <span className="wa-chat-cuerpo">
+                  <span className="wa-fila">
+                    <span className="wa-chat-nombre">{nombre}</span>
+                    <span className={`wa-chat-hora ${c.no_leidos ? "nueva" : ""}`}>{horaLista(c.ultimo_en)}</span>
                   </span>
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-xs text-slate">{c.operador ? "" : "⚠️ Sin operador · "}{c.ultimo_texto ?? ""}</span>
-                    <span className="flex shrink-0 gap-1">
-                      {c.pendientes > 0 && <span className="rounded-full bg-amber/15 px-1.5 text-[10px] font-bold text-amber">{c.pendientes}</span>}
-                      {c.no_leidos > 0 && <span className="rounded-full bg-ok px-1.5 text-[10px] font-bold text-white">{c.no_leidos}</span>}
+                  <span className="wa-fila">
+                    <span className="wa-chat-ultimo">
+                      {c.ultima_direccion === "saliente" && <Tilde estado={c.ultimo_estado} />}
+                      {!c.operador && "⚠️ "}{c.ultimo_texto ?? ""}
+                    </span>
+                    <span style={{ display: "flex", gap: 4, flex: "none" }}>
+                      {c.pendientes > 0 && <span className="wa-contador ambar" title="Pruebas por ubicar">{c.pendientes}</span>}
+                      {c.no_leidos > 0 && <span className="wa-contador">{c.no_leidos}</span>}
                     </span>
                   </span>
                 </span>
-              </a>
+              </Link>
             );
           })}
         </div>
-        <Simulador operadores={operadores} ocupado={simulando} setOcupado={setSimulando} onListo={() => router.refresh()} />
+        <Simulador operadores={operadores} onListo={() => router.refresh()} />
       </aside>
 
-      <section className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-white shadow-sm">
-        {vistaSin ? (
-          <>
-            <div className="border-b border-line px-4 py-3">
-              <h2 className="font-semibold text-ink">Sin asignar</h2>
-              <p className="text-xs text-slate">Pruebas que la IA no pudo ubicar o que esperan respuesta del operador. Elegí el caso y la categoría.</p>
-            </div>
-            <div className="flex-1 space-y-3 overflow-y-auto bg-paper/50 p-4">
-              {mensajes.length === 0 && <p className="text-sm text-slate">No hay nada pendiente. 🎉</p>}
-              {mensajes.map(m => (
-                <div key={m.id} className="rounded-lg border border-line bg-white p-3">
-                  <p className="mb-2 text-xs text-slate">{m.conv_operador ?? "Sin operador"} · {new Date(m.creado_en).toLocaleString("es-AR")}{m.texto ? ` · "${m.texto}"` : ""}</p>
-                  <Adjunto m={m} />
-                  <Asignador m={m} casos={casos} operador={m.conv_operador} onListo={() => router.refresh()} />
+      {/* ---------------- Conversación ---------------- */}
+      {vistaSin ? (
+        <section className="wa-conv">
+          <div className="wa-conv-cab">
+            <Link href="/whatsapp" className="wa-icono-btn wa-volver" aria-label="Volver">←</Link>
+            <span className="wa-avatar chico" style={{ background: "#F2C230" }}>📥</span>
+            <div className="datos"><div className="nombre">Sin asignar</div><div className="sub">Elegí el caso y la categoría de cada prueba</div></div>
+          </div>
+          <div className="wa-mensajes">
+            {mensajes.length === 0 && <div className="wa-aviso-sistema">No hay nada pendiente 🎉</div>}
+            {mensajes.map(m => (
+              <div key={m.id} className="wa-envoltura primera">
+                <div className="wa-burbuja entrante cola">
+                  <span className="wa-autor">{m.conv_operador ?? "Sin operador"} · {new Date(m.creado_en).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                  <Contenido m={m} onFoto={() => window.open(m.media_url ?? "", "_blank")} />
+                  {m.texto && <span className="wa-texto">{m.texto}</span>}
+                  <Asignacion m={m} casos={casos} operador={m.conv_operador} abiertoInicial onListo={() => router.refresh()} />
                 </div>
-              ))}
-            </div>
-          </>
-        ) : !sel ? (
-          <div className="flex flex-1 items-center justify-center p-8 text-sm text-slate">Elegí un chat.</div>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">
-              <div>
-                <h2 className="font-semibold text-ink">{sel.nombre_operador ?? sel.nombre ?? sel.telefono}</h2>
-                <p className="text-xs text-slate">+{sel.telefono}{sel.operador ? ` · Operador ${sel.operador}` : " · número sin vincular: cargalo en Usuarios"}</p>
               </div>
-              <span className={`text-xs ${ventanaAbierta ? "text-ok" : "text-slate"}`}>{ventanaAbierta ? "Ventana de 24 h abierta" : "Ventana de 24 h cerrada"}</span>
+            ))}
+          </div>
+        </section>
+      ) : !sel ? (
+        <section className="wa-vacio">
+          <div style={{ fontSize: 56 }}>💬</div>
+          <h2>WhatsApp de CRMgestion</h2>
+          <p style={{ maxWidth: 440 }}>Elegí un chat de la izquierda. Las fotos y documentos que mandan los operadores se guardan solos en la evidencia de cada caso; lo que la IA no puede ubicar queda en Sin asignar.</p>
+        </section>
+      ) : (
+        <section className="wa-conv">
+          <div className="wa-conv-cab">
+            <Link href="/whatsapp" className="wa-icono-btn wa-volver" aria-label="Volver">←</Link>
+            <span className="wa-avatar chico" style={{ background: colorPorTexto(sel.operador ?? sel.telefono) }}>{nombreConv(sel).replace("+", "").trim()[0]?.toUpperCase()}</span>
+            <div className="datos">
+              <div className="nombre">{nombreConv(sel)}</div>
+              <div className="sub">
+                {sel.operador ? `Operador ${sel.operador}${sel.zona_operador ? ` · ${sel.zona_operador}` : ""}` : "Número sin vincular a un operador (cargalo en Usuarios)"} · +{sel.telefono}
+              </div>
             </div>
-            <div className="flex-1 space-y-2 overflow-y-auto bg-[#EDE8E0] p-4 dark:bg-paper">
-              {mensajes.map(m => (
-                <div key={m.id} className={`flex ${m.direccion === "saliente" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm shadow-sm ${m.direccion === "saliente" ? "bg-[#D7F0E8] text-ink" : "bg-white text-ink"}`}>
-                    {m.direccion === "saliente" && m.autor && <p className="mb-0.5 text-[10px] font-semibold text-slate">{m.autor}</p>}
-                    {m.media_url && <Adjunto m={m} />}
-                    {m.texto && <p className="whitespace-pre-wrap break-words">{m.texto}</p>}
-                    {m.media_url && <EstadoAsignacion m={m} />}
-                    {m.media_url && (m.asignacion === "sin_asignar" || m.asignacion === "pregunta") && (
-                      <Asignador m={m} casos={casos} operador={sel.operador} onListo={() => router.refresh()} />
-                    )}
-                    <p className="mt-0.5 text-right text-[10px] text-slate">{new Date(m.creado_en).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}{m.direccion === "saliente" && m.estado ? ` · ${m.estado}` : ""}</p>
+            <button className={`wa-icono-btn ${buscandoChat ? "activo" : ""}`} onClick={() => setBuscandoChat(b => !b)} title="Buscar en el chat">🔍</button>
+            <button className={`wa-icono-btn ${panel ? "activo" : ""}`} onClick={() => setPanel(p => !p)} title="Casos del operador">🗂️</button>
+          </div>
+          {buscandoChat && (
+            <div className="wa-busqueda-chat">
+              <input autoFocus value={busquedaChat} onChange={e => setBusquedaChat(e.target.value)} placeholder="Buscar mensajes, archivos o casos…" />
+              <span style={{ fontSize: 12, color: "var(--wa-suave)" }}>{busquedaChat ? `${visibles.length} resultados` : ""}</span>
+            </div>
+          )}
+          {casoElegido && (
+            <div className="wa-filtro-caso">
+              <span>Mostrando lo de {casoElegido.asegurado ?? "el caso"} #{casoElegido.nro ?? "s/n"} ({visibles.length})</span>
+              <button onClick={() => setCasoFiltro(null)}>Ver todo ✕</button>
+            </div>
+          )}
+          <div className="wa-mensajes" ref={contRef} onScroll={alDesplazar}>
+            {visibles.length === 0 && <div className="wa-aviso-sistema">{mensajes.length ? "Nada coincide con el filtro." : "Todavía no hay mensajes."}</div>}
+            {visibles.map((m, i) => {
+              const ant = visibles[i - 1];
+              const nuevoDia = !ant || new Date(ant.creado_en).toDateString() !== new Date(m.creado_en).toDateString();
+              const primera = nuevoDia || ant.direccion !== m.direccion || new Date(m.creado_en).getTime() - new Date(ant.creado_en).getTime() > 5 * 60_000 || ant.autor !== m.autor;
+              const esFoto = !!m.media_url && !!m.media_mime?.startsWith("image/") && !m.texto && m.asignacion === null;
+              return (
+                <Fragment key={m.id}>
+                  {nuevoDia && <div className="wa-dia">{etiquetaDia(m.creado_en)}</div>}
+                  <div className={`wa-envoltura ${m.direccion} ${primera ? "primera" : ""}`}>
+                    <div className={`wa-burbuja ${m.direccion} ${primera ? "cola" : ""} ${busquedaChat && m.texto && normalizar(m.texto).includes(normalizar(busquedaChat)) ? "resaltada" : ""}`}>
+                      {m.direccion === "saliente" && primera && m.autor && (
+                        <span className={`wa-autor ${m.autor === "Asistente IDR" ? "ia" : ""}`}>{m.autor === "Asistente IDR" ? "🤖 Asistente IDR" : m.autor === miNombre ? "Vos" : m.autor}</span>
+                      )}
+                      <Contenido m={m} onFoto={() => setVisor(fotos.findIndex(f => f.id === m.id))} />
+                      {m.texto && <span className="wa-texto">{m.texto}</span>}
+                      <span className={`wa-meta ${esFoto ? "sobre-foto" : ""}`}>
+                        {horaCorta(m.creado_en)}
+                        {m.direccion === "saliente" && <Tilde estado={m.estado} />}
+                      </span>
+                      {m.direccion === "entrante" && m.media_url && (
+                        <div style={{ clear: "both" }}>
+                          <Asignacion m={m} casos={casos} operador={sel.operador} onListo={() => router.refresh()} onVerCaso={id => setCasoFiltro(id)} />
+                        </div>
+                      )}
+                    </div>
                   </div>
+                </Fragment>
+              );
+            })}
+          </div>
+          {verAbajo && <button className="wa-abajo" onClick={() => { const el = contRef.current; if (el) el.scrollTop = el.scrollHeight; }} aria-label="Ir al último mensaje">↓</button>}
+
+          {ventanaAbierta ? (
+            <div className="wa-barra-escribir">
+              {popup === "adjuntar" && (
+                <div className="wa-popup adjuntar">
+                  <button onClick={() => fotoRef.current?.click()}><span className="circ" style={{ background: "#BF59CF" }}>🖼️</span>Fotos y videos</button>
+                  <button onClick={() => docRef.current?.click()}><span className="circ" style={{ background: "#7F66FF" }}>📄</span>Documento</button>
                 </div>
-              ))}
-              <div ref={finRef} />
+              )}
+              {popup === "emojis" && (
+                <div className="wa-popup emojis">{EMOJIS.map(e => <button key={e} onClick={() => insertar(e)}>{e}</button>)}</div>
+              )}
+              {popup === "rapidas" && (
+                <div className="wa-popup rapidas">
+                  {rapidas.map(r => <button key={r} onClick={() => insertar(r, true)}>{r}</button>)}
+                </div>
+              )}
+              <input ref={fotoRef} type="file" accept="image/*,video/*" multiple hidden onChange={e => { elegirArchivos(e.target.files); e.target.value = ""; }} />
+              <input ref={docRef} type="file" multiple hidden onChange={e => { elegirArchivos(e.target.files); e.target.value = ""; }} />
+              <button className="wa-icono-btn" onClick={() => setPopup(p => (p === "emojis" ? null : "emojis"))} title="Emojis">😊</button>
+              <button className="wa-icono-btn" onClick={() => setPopup(p => (p === "adjuntar" ? null : "adjuntar"))} title="Adjuntar">📎</button>
+              <button className="wa-icono-btn" onClick={() => setPopup(p => (p === "rapidas" ? null : "rapidas"))} title="Respuestas rápidas">⚡</button>
+              <div className="wa-campo">
+                <textarea
+                  ref={campoRef}
+                  rows={1}
+                  value={texto}
+                  onChange={e => { setTexto(e.target.value); if (e.target.value === "/") setPopup("rapidas"); }}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviarTexto(); } if (e.key === "Escape") setPopup(null); }}
+                  onPaste={e => { const fs = e.clipboardData.files; if (fs.length) { e.preventDefault(); elegirArchivos(fs); } }}
+                  placeholder="Escribí un mensaje"
+                />
+              </div>
+              <button className="wa-enviar" onClick={enviarTexto} disabled={enviando || !texto.trim()} aria-label="Enviar">➤</button>
             </div>
-            <div className="flex gap-2 border-t border-line p-3">
-              <textarea
-                value={texto}
-                onChange={e => setTexto(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); } }}
-                rows={1}
-                disabled={!ventanaAbierta}
-                placeholder={ventanaAbierta ? "Escribile al operador…" : "Pasaron más de 24 h: WhatsApp no deja escribir hasta que el operador vuelva a escribir"}
-                className={`min-w-0 flex-1 resize-none ${campo}`}
-              />
-              <button onClick={enviar} disabled={enviando || !texto.trim() || !ventanaAbierta} className={boton.primario}>{enviando ? "…" : "Enviar"}</button>
+          ) : (
+            <div className="wa-cerrada">Pasaron más de 24 h desde el último mensaje del operador: WhatsApp no deja escribirle hasta que vuelva a escribir.</div>
+          )}
+
+          {archivos.length > 0 && (
+            <div className="wa-previa">
+              <div className="wa-previa-cab">
+                <button className="wa-icono-btn" onClick={() => setArchivos([])} aria-label="Cancelar">✕</button>
+                <span style={{ flex: 1 }}>{archivos[previaIdx]?.name}</span>
+              </div>
+              <div className="wa-previa-cuerpo">
+                {urlsPrevia[previaIdx]
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={urlsPrevia[previaIdx] ?? ""} alt="Vista previa" />
+                  : <div className="wa-doc" style={{ background: "#fff" }}><span className="ico otro">{(archivos[previaIdx]?.name.split(".").pop() ?? "").toUpperCase().slice(0, 4)}</span><span><span className="nom">{archivos[previaIdx]?.name}</span><br /><span className="det">{Math.ceil((archivos[previaIdx]?.size ?? 0) / 1024)} KB</span></span></div>}
+              </div>
+              <div className="wa-barra-escribir" style={{ background: "transparent", justifyContent: "center" }}>
+                <div className="wa-campo" style={{ maxWidth: 640 }}>
+                  <textarea rows={1} value={epigrafe} onChange={e => setEpigrafe(e.target.value)} placeholder="Agregá un comentario…" />
+                </div>
+                <button className="wa-enviar" onClick={enviarArchivos} disabled={enviando} aria-label="Enviar">{enviando ? "…" : "➤"}</button>
+              </div>
+              <div className="wa-previa-miniaturas">
+                {archivos.map((f, i) => (
+                  <button key={i} className={i === previaIdx ? "activo" : ""} onClick={() => setPreviaIdx(i)}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {urlsPrevia[i] ? <img src={urlsPrevia[i] ?? ""} alt={f.name} /> : f.name.split(".").pop()?.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
-          </>
-        )}
-      </section>
+          )}
+        </section>
+      )}
+
+      {/* ---------------- Panel de herramientas ---------------- */}
+      {conPanel && sel && (
+        <Herramientas
+          sel={sel}
+          herramientas={herramientas}
+          mensajes={mensajes}
+          casoFiltro={casoFiltro}
+          onCerrar={() => setPanel(false)}
+          onFiltrar={id => { setCasoFiltro(id); pegadoAbajo.current = true; }}
+          onPedir={h => insertar(textoFaltantes(h), true)}
+          onFoto={id => { setCasoFiltro(null); setTimeout(() => setVisor(mensajes.filter(m => m.media_url && m.media_mime?.startsWith("image/")).findIndex(f => f.id === id)), 0); }}
+          ventanaAbierta={ventanaAbierta}
+        />
+      )}
+
+      {visor !== null && fotos[visor] && (
+        <div className="wa-visor" onClick={() => setVisor(null)}>
+          <div className="wa-visor-cab" onClick={e => e.stopPropagation()}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600 }}>{fotos[visor].media_nombre}</div>
+              <div style={{ fontSize: 12, color: "var(--wa-suave)" }}>
+                {new Date(fotos[visor].creado_en).toLocaleString("es-AR")}
+                {fotos[visor].caso_nro ? ` · ${fotos[visor].caso_nombre ?? ""} #${fotos[visor].caso_nro}` : ""}
+                {fotos[visor].categoria ? ` · ${etiquetaCategoriaEvidencia(fotos[visor].categoria, ramoDeTipo(fotos[visor].caso_tipo))}` : ""}
+              </div>
+            </div>
+            <a className="wa-icono-btn" href={fotos[visor].media_url ?? ""} target="_blank" rel="noreferrer" title="Abrir original">⤓</a>
+            <button className="wa-icono-btn" onClick={() => setVisor(null)} aria-label="Cerrar">✕</button>
+          </div>
+          <div className="wa-visor-cuerpo">
+            {visor > 0 && <button className="wa-visor-nav" style={{ left: 8 }} onClick={e => { e.stopPropagation(); setVisor(visor - 1); }} aria-label="Anterior">‹</button>}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={fotos[visor].media_url ?? ""} alt={fotos[visor].media_nombre ?? "foto"} onClick={e => e.stopPropagation()} />
+            {visor < fotos.length - 1 && <button className="wa-visor-nav" style={{ right: 8 }} onClick={e => { e.stopPropagation(); setVisor(visor + 1); }} aria-label="Siguiente">›</button>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function Adjunto({ m }: { m: Mensaje }) {
+function Contenido({ m, onFoto }: { m: Mensaje; onFoto: () => void }) {
   if (!m.media_url) return null;
   if (m.media_mime?.startsWith("image/")) {
     return (
-      <a href={m.media_url} target="_blank" rel="noreferrer" className="mb-1 block">
+      <button type="button" className="wa-foto" onClick={onFoto} style={{ border: 0, padding: 0 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={m.media_url} alt={m.media_nombre ?? "foto"} className="max-h-60 rounded-md object-contain" />
-      </a>
+        <img src={m.media_url} alt={m.media_nombre ?? "foto"} loading="lazy" />
+      </button>
     );
   }
+  if (m.media_mime?.startsWith("audio/")) return <audio controls preload="none" src={m.media_url} />;
+  if (m.media_mime?.startsWith("video/")) return <video controls preload="none" src={m.media_url} style={{ maxWidth: 330 }} />;
+  const ext = (m.media_nombre?.split(".").pop() ?? "").toUpperCase().slice(0, 4);
   return (
-    <a href={m.media_url} target="_blank" rel="noreferrer" className="mb-1 flex items-center gap-2 rounded-md border border-line bg-paper px-2 py-1.5 text-xs text-ink hover:underline">
-      📎 {m.media_nombre ?? "archivo"}
+    <a className="wa-doc" href={m.media_url} target="_blank" rel="noreferrer">
+      <span className={`ico ${ext === "PDF" ? "" : "otro"}`}>{ext || "DOC"}</span>
+      <span style={{ minWidth: 0 }}><span className="nom" style={{ display: "block" }}>{m.media_nombre ?? "documento"}</span><span className="det">{ext || "Archivo"}</span></span>
     </a>
   );
 }
 
-function EstadoAsignacion({ m }: { m: Mensaje }) {
-  if (m.asignacion === "asignado") {
-    return (
-      <a href={`/siniestros/${m.siniestro_id}`} className="mt-1 inline-block rounded-full bg-ok/10 px-2 py-0.5 text-[11px] font-semibold text-ok hover:underline" title={m.asignacion_nota ?? undefined}>
-        ✓ {m.caso_nombre ?? "Caso"} #{m.caso_nro ?? "s/n"}{m.categoria ? ` · ${etiquetaCategoriaEvidencia(m.categoria)}` : ""}
-      </a>
-    );
+function Asignacion({ m, casos, operador, abiertoInicial = false, onListo, onVerCaso }: {
+  m: Mensaje; casos: CasoOpcion[]; operador: string | null; abiertoInicial?: boolean; onListo: () => void; onVerCaso?: (id: string) => void;
+}) {
+  const [menu, setMenu] = useState(false);
+  const [editando, setEditando] = useState(abiertoInicial || m.asignacion === "sin_asignar" || m.asignacion === "pregunta");
+  const ramo = ramoDeTipo(m.caso_tipo);
+
+  if (!editando) {
+    if (m.asignacion === "asignado") {
+      return (
+        <span style={{ position: "relative", display: "inline-block" }}>
+          <button className="wa-caso ok" onClick={() => setMenu(v => !v)} title={m.asignacion_nota ?? undefined}>
+            ✓ {m.caso_nombre ?? "Caso"} #{m.caso_nro ?? "s/n"}{m.categoria ? ` · ${etiquetaCategoriaEvidencia(m.categoria, ramo)}` : ""} ▾
+          </button>
+          {menu && (
+            <div className="wa-menu" onMouseLeave={() => setMenu(false)}>
+              <a href={`/siniestros/${m.siniestro_id}`}>Abrir el caso ↗</a>
+              {onVerCaso && m.siniestro_id && <button onClick={() => { onVerCaso(m.siniestro_id as string); setMenu(false); }}>Ver todo lo de este caso en el chat</button>}
+              <button onClick={() => { setEditando(true); setMenu(false); }}>Mover a otro caso o cambiar categoría</button>
+            </div>
+          )}
+        </span>
+      );
+    }
+    if (m.asignacion === "pendiente") return <span className="wa-caso pendiente">La IA lo está ubicando…</span>;
+    return null;
   }
-  if (m.asignacion === "pregunta") return <p className="mt-1 text-[11px] font-semibold text-amber" title={m.asignacion_nota ?? undefined}>❓ Se le preguntó al operador de qué caso es</p>;
-  if (m.asignacion === "sin_asignar") return <p className="mt-1 text-[11px] font-semibold text-fraude">Sin asignar{m.asignacion_nota ? ` · ${m.asignacion_nota}` : ""}</p>;
-  if (m.asignacion === "pendiente") return <p className="mt-1 text-[11px] text-slate">La IA lo está ubicando…</p>;
-  return null;
+  return (
+    <>
+      {m.asignacion === "pregunta" && <span className="wa-caso pregunta" title={m.asignacion_nota ?? undefined}>❓ Se le preguntó al operador de qué caso es</span>}
+      {m.asignacion === "sin_asignar" && <span className="wa-caso sin" title={m.asignacion_nota ?? undefined}>Sin asignar{m.asignacion_nota ? ` · ${m.asignacion_nota}` : ""}</span>}
+      <Asignador m={m} casos={casos} operador={operador} onListo={onListo} onCancelar={m.asignacion === "asignado" ? () => setEditando(false) : undefined} />
+    </>
+  );
 }
 
-function Asignador({ m, casos, operador, onListo }: { m: Mensaje; casos: CasoOpcion[]; operador: string | null; onListo: () => void }) {
+function Asignador({ m, casos, operador, onListo, onCancelar }: { m: Mensaje; casos: CasoOpcion[]; operador: string | null; onListo: () => void; onCancelar?: () => void }) {
   const [busqueda, setBusqueda] = useState("");
-  const [caso, setCaso] = useState("");
+  const [caso, setCaso] = useState(m.siniestro_id ?? "");
   const [categoria, setCategoria] = useState(m.categoria ?? "");
   const [guardando, setGuardando] = useState(false);
-  // Primero los casos de ese operador; con búsqueda, todos.
+  // Primero los casos del operador; buscando, todos.
   const opciones = useMemo(() => {
-    const palabras = normalizar(busqueda).split(/\s+/).filter(Boolean);
-    const base = palabras.length ? casos : casos.filter(c => !operador || c.operador === operador);
-    return base.filter(c => palabras.every(p => normalizar(`${c.nro ?? ""} ${c.asegurado ?? ""} ${c.operador ?? ""}`).includes(p))).slice(0, 30);
+    const p = normalizar(busqueda).split(/\s+/).filter(Boolean);
+    const base = p.length ? casos : casos.filter(c => !operador || c.operador === operador);
+    return base.filter(c => p.every(x => normalizar(`${c.nro ?? ""} ${c.asegurado ?? ""} ${c.operador ?? ""}`).includes(x))).slice(0, 40);
   }, [busqueda, casos, operador]);
 
   async function guardar() {
@@ -226,6 +557,7 @@ function Asignador({ m, casos, operador, onListo }: { m: Mensaje; casos: CasoOpc
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "No se pudo asignar.");
       notificar.ok("Guardado en la evidencia del caso.");
+      onCancelar?.();
       onListo();
     } catch (e) {
       notificar.error(e instanceof Error ? e.message : "No se pudo asignar.");
@@ -235,29 +567,128 @@ function Asignador({ m, casos, operador, onListo }: { m: Mensaje; casos: CasoOpc
   }
 
   return (
-    <div className="mt-2 space-y-1.5 rounded-md border border-line bg-paper/60 p-2">
-      <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar caso por apellido o N°…" className={`w-full text-xs ${campo}`} />
-      <div className="flex flex-wrap gap-1.5">
-        <select value={caso} onChange={e => setCaso(e.target.value)} className={`min-w-0 flex-1 text-xs ${selectCampo}`} aria-label="Caso">
+    <div className="wa-asignador">
+      <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar caso por apellido o N°…" />
+      <div className="fila">
+        <select value={caso} onChange={e => setCaso(e.target.value)} aria-label="Caso">
           <option value="">Elegí el caso…</option>
-          {opciones.map(c => <option key={c.id} value={c.id}>#{c.nro ?? "s/n"} · {c.asegurado ?? "—"}{c.operador ? ` · ${c.operador}` : ""}</option>)}
+          {opciones.map(c => <option key={c.id} value={c.id}>#{c.nro ?? "s/n"} · {c.asegurado ?? "—"}{c.operador && c.operador !== operador ? ` · ${c.operador}` : ""}</option>)}
         </select>
-        <select value={categoria} onChange={e => setCategoria(e.target.value)} className={`text-xs ${selectCampo}`} aria-label="Categoría">
+      </div>
+      <div className="fila">
+        <select value={categoria} onChange={e => setCategoria(e.target.value)} aria-label="Categoría">
           <option value="">Sin categoría</option>
           {CATEGORIAS_EVIDENCIA.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
-        <button onClick={guardar} disabled={!caso || guardando} className={`text-xs ${boton.primario}`}>{guardando ? "…" : "Guardar"}</button>
+        {onCancelar && <button className="wa-btn gris" onClick={onCancelar}>Cancelar</button>}
+        <button className="wa-btn" onClick={guardar} disabled={!caso || guardando}>{guardando ? "…" : "Guardar"}</button>
       </div>
     </div>
   );
 }
 
-function Simulador({ operadores, ocupado, setOcupado, onListo }: { operadores: OperadorTel[]; ocupado: boolean; setOcupado: (v: boolean) => void; onListo: () => void }) {
+function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFiltrar, onPedir, onFoto, ventanaAbierta }: {
+  sel: Conversacion; herramientas: CasoHerramientas[]; mensajes: Mensaje[]; casoFiltro: string | null;
+  onCerrar: () => void; onFiltrar: (id: string | null) => void; onPedir: (h: CasoHerramientas) => void; onFoto: (id: string) => void; ventanaAbierta: boolean;
+}) {
+  const [pestana, setPestana] = useState<"casos" | "pruebas">("casos");
+  const media = mensajes.filter(m => m.media_url && m.direccion === "entrante");
+  const grupos = useMemo(() => {
+    const sinUbicar = media.filter(m => m.asignacion !== "asignado");
+    const porCaso = new Map<string, Mensaje[]>();
+    for (const m of media.filter(x => x.asignacion === "asignado" && x.siniestro_id)) {
+      porCaso.set(m.siniestro_id as string, [...(porCaso.get(m.siniestro_id as string) ?? []), m]);
+    }
+    return { sinUbicar, porCaso: Array.from(porCaso.entries()) };
+  }, [media]);
+
+  return (
+    <aside className="wa-panel">
+      <div className="wa-panel-cab">
+        <button className="wa-icono-btn" onClick={onCerrar} aria-label="Cerrar panel">✕</button>
+        <h2>Casos de {sel.nombre_operador ?? sel.operador ?? "este número"}</h2>
+      </div>
+      <div className="wa-pestanas">
+        <button className={pestana === "casos" ? "activo" : ""} onClick={() => setPestana("casos")}>Casos ({herramientas.length})</button>
+        <button className={pestana === "pruebas" ? "activo" : ""} onClick={() => setPestana("pruebas")}>Pruebas recibidas ({media.length})</button>
+      </div>
+      <div className="wa-panel-cuerpo">
+        {pestana === "casos" ? (
+          !sel.operador ? (
+            <p style={{ color: "var(--wa-suave)", fontSize: 13 }}>Este número no está vinculado a ningún operador. Cargá su WhatsApp en Usuarios para ver sus casos acá.</p>
+          ) : herramientas.length === 0 ? (
+            <p style={{ color: "var(--wa-suave)", fontSize: 13 }}>No tiene casos abiertos.</p>
+          ) : herramientas.map(h => (
+            <div key={h.id} className={`wa-tarjeta ${casoFiltro === h.id ? "elegida" : ""}`}>
+              <div className="tit"><span className="nro">#{h.nro ?? "s/n"}</span><span style={{ fontSize: 12, color: "var(--wa-suave)" }}>{h.etapa}</span></div>
+              <div className="nom">{h.asegurado ?? "—"}</div>
+              <div className="det">
+                {h.rubro ? `${h.rubro} · ` : ""}{h.tipo ?? "Sin tipo"}{h.dni ? ` · DNI ${h.dni}` : ""}<br />
+                {h.domicilio ? <>🏠 {h.domicilio}<br /></> : null}
+                {h.lugar ? <>📍 {h.lugar}<br /></> : null}
+                {h.entrevista ? <>📅 Entrevista {new Date(h.entrevista).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}<br /></> : null}
+                📎 {h.porWhatsapp} prueba{h.porWhatsapp === 1 ? "" : "s"} por WhatsApp
+              </div>
+              <div>
+                <div className="wa-fila" style={{ fontSize: 12, marginBottom: 3 }}><span>Pruebas del ramo</span><span>{h.tiene}/{h.pedidas}</span></div>
+                <div className="wa-barra-progreso"><i style={{ width: `${h.pedidas ? (h.tiene / h.pedidas) * 100 : 0}%` }} /></div>
+              </div>
+              {h.faltan.length > 0 && <div className="wa-faltan">{h.faltan.map(f => <span key={f}>{f}</span>)}</div>}
+              <div className="wa-acciones">
+                <button onClick={() => onFiltrar(casoFiltro === h.id ? null : h.id)}>{casoFiltro === h.id ? "Ver todo el chat" : "Ver sus pruebas en el chat"}</button>
+                {h.faltan.length > 0 && ventanaAbierta && <button onClick={() => onPedir(h)}>Pedir lo que falta</button>}
+                <a href={`/siniestros/${h.id}`}>Abrir caso ↗</a>
+              </div>
+            </div>
+          ))
+        ) : (
+          <>
+            {grupos.sinUbicar.length > 0 && (
+              <>
+                <div className="wa-panel-sub">Por ubicar ({grupos.sinUbicar.length})</div>
+                <Galeria lista={grupos.sinUbicar} onFoto={onFoto} />
+              </>
+            )}
+            {grupos.porCaso.map(([id, lista]) => (
+              <Fragment key={id}>
+                <div className="wa-panel-sub">#{lista[0].caso_nro ?? "s/n"} · {lista[0].caso_nombre ?? "—"} ({lista.length})</div>
+                <Galeria lista={lista} onFoto={onFoto} />
+              </Fragment>
+            ))}
+            {media.length === 0 && <p style={{ color: "var(--wa-suave)", fontSize: 13 }}>Todavía no mandó archivos.</p>}
+          </>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function Galeria({ lista, onFoto }: { lista: Mensaje[]; onFoto: (id: string) => void }) {
+  return (
+    <div className="wa-galeria">
+      {lista.map(m => (
+        m.media_mime?.startsWith("image/") ? (
+          <button key={m.id} onClick={() => onFoto(m.id)} title={m.media_nombre ?? undefined}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={m.media_url ?? ""} alt={m.media_nombre ?? "foto"} loading="lazy" />
+            {m.categoria && <span className="marca">{etiquetaCategoriaEvidencia(m.categoria, ramoDeTipo(m.caso_tipo)).split(" ")[0]}</span>}
+          </button>
+        ) : (
+          <a key={m.id} href={m.media_url ?? ""} target="_blank" rel="noreferrer" style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--wa-barra)", borderRadius: 4, fontSize: 11, color: "var(--wa-suave)", textDecoration: "none", padding: 4, textAlign: "center", overflow: "hidden" }}>
+            📄 {m.media_nombre}
+          </a>
+        )
+      ))}
+    </div>
+  );
+}
+
+function Simulador({ operadores, onListo }: { operadores: OperadorTel[]; onListo: () => void }) {
   const conTel = operadores.filter(o => o.telefono);
   const [telefono, setTelefono] = useState(conTel[0]?.telefono ?? "");
   const [texto, setTexto] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
-  const [abierto, setAbierto] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
 
   async function mandar() {
     setOcupado(true);
@@ -280,27 +711,19 @@ function Simulador({ operadores, ocupado, setOcupado, onListo }: { operadores: O
   }
 
   return (
-    <div className="border-t border-line p-3">
-      <button onClick={() => setAbierto(a => !a)} className="w-full text-left text-xs font-semibold text-slate hover:text-ink">
-        🧪 Simular un WhatsApp de un operador {abierto ? "▲" : "▼"}
-      </button>
-      {abierto && (
-        <div className="mt-2 space-y-1.5">
-          {conTel.length === 0 ? (
-            <p className="text-xs text-slate">Cargale el WhatsApp a algún operador en Usuarios, o escribí un número.</p>
-          ) : (
-            <select value={telefono} onChange={e => setTelefono(e.target.value)} className={`w-full text-xs ${selectCampo}`} aria-label="Operador">
-              {conTel.map(o => <option key={o.operador} value={o.telefono ?? ""}>{o.nombre} ({o.operador})</option>)}
-            </select>
-          )}
-          <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="Teléfono (ej. 1123456789)" className={`w-full text-xs ${campo}`} />
-          <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={2} placeholder="Texto (ej. 'te mando lo de Gómez')" className={`w-full text-xs ${campo}`} />
-          <input type="file" accept="image/*,.pdf" onChange={e => setArchivo(e.target.files?.[0] ?? null)} className="w-full text-xs" />
-          <button onClick={mandar} disabled={ocupado || !telefono || (!texto.trim() && !archivo)} className={`w-full text-xs ${boton.secundario}`}>
-            {ocupado ? "Procesando (la IA está mirando el archivo)…" : "Mandar como el operador"}
-          </button>
-        </div>
+    <details className="wa-simulador">
+      <summary>🧪 Simular un WhatsApp de un operador</summary>
+      {conTel.length > 0 && (
+        <select value={telefono} onChange={e => setTelefono(e.target.value)} aria-label="Operador">
+          {conTel.map(o => <option key={o.operador} value={o.telefono ?? ""}>{o.nombre} ({o.operador})</option>)}
+        </select>
       )}
-    </div>
+      <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="Teléfono (ej. 1123456789)" />
+      <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={2} placeholder="Texto (ej. 'te mando lo de Gómez')" />
+      <input type="file" accept="image/*,.pdf" onChange={e => setArchivo(e.target.files?.[0] ?? null)} />
+      <button className="wa-btn" onClick={mandar} disabled={ocupado || !telefono || (!texto.trim() && !archivo)}>
+        {ocupado ? "Procesando (la IA está mirando el archivo)…" : "Mandar como el operador"}
+      </button>
+    </details>
   );
 }

@@ -118,6 +118,7 @@ async function registrarSaliente(conversacionId: string, waId: string, texto: st
     INSERT INTO wa_mensaje (conversacion_id, wa_id, direccion, tipo, texto, estado, autor)
     VALUES (${conversacionId}, ${waId}, 'saliente', 'texto', ${texto}, 'enviado', ${autor})
     ON CONFLICT (wa_id) DO NOTHING`);
+  await getDb().execute(sql`UPDATE wa_conversacion SET ultimo_en = now(), ultimo_texto = ${texto.slice(0, 120)} WHERE id = ${conversacionId}`);
 }
 
 export async function responder(conversacionId: string, telefono: string, texto: string, autor = "Asistente IDR") {
