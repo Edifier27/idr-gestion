@@ -154,7 +154,18 @@ export async function leerMailsNuevos() {
   const db = getDb();
   const resumen: Record<string, number> = { importado: 0, duplicado: 0, ignorado: 0, error: 0 };
   let cupo = POR_CORRIDA;
-  for (const c of await listarConexiones()) {
+  // Solo las casillas de casos (MAIL_AUTO_CASILLAS, separadas por coma): nunca
+  // se lee una casilla personal. Si una casilla se conectó varias veces, vale la última.
+  const permitidas = (process.env.MAIL_AUTO_CASILLAS ?? "").split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
+  if (!permitidas.length) return { ...resumen, sinCasillas: 1 };
+  const vistasEmail = new Set<string>();
+  const casillas = (await listarConexiones()).filter(c => {
+    const e = c.email.toLowerCase();
+    if (!permitidas.includes(e) || vistasEmail.has(e)) return false;
+    vistasEmail.add(e);
+    return true;
+  });
+  for (const c of casillas) {
     // La primera vez se marca el punto de partida: solo lo que llegue desde ahora.
     const est = (await db.execute(sql`
       INSERT INTO mail_auto_casilla (conexion_id) VALUES (${c.id}) ON CONFLICT (conexion_id) DO UPDATE SET conexion_id = EXCLUDED.conexion_id
