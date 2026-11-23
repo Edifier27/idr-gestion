@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { colorPorTexto } from "@/lib/ui";
 import { notificar } from "@/components/notificaciones";
 import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ramoDeTipo } from "@/lib/categorias-evidencia";
+import type { ResumenCaso } from "@/lib/resumen-caso";
 
 export type Conversacion = {
   id: string; telefono: string; nombre: string | null; operador: string | null; nombre_operador: string | null; zona_operador: string | null;
@@ -17,6 +18,7 @@ export type Mensaje = {
   media_url: string | null; media_mime: string | null; media_nombre: string | null; estado: string | null;
   siniestro_id: string | null; categoria: string | null; asignacion: string | null; asignacion_nota: string | null;
   autor: string | null; creado_en: string; caso_nro: string | null; caso_nombre: string | null; caso_tipo: string | null; conv_operador: string | null;
+  transcripcion?: string | null;
 };
 export type CasoOpcion = { id: string; nro: string | null; asegurado: string | null; operador: string | null; tipo: string | null };
 export type OperadorTel = { operador: string; nombre: string; telefono: string | null };
@@ -24,9 +26,18 @@ export type CasoHerramientas = {
   id: string; nro: string | null; asegurado: string | null; dni: string | null; tipo: string | null; rubro: number | null;
   domicilio: string | null; lugar: string | null; telefono: string | null; etapa: string; entrevista: string | null;
   pedidas: number; tiene: number; faltan: string[]; porWhatsapp: number;
+  resumen: ResumenCaso | null; resumenEn: string | null; resumenViejo: boolean;
 };
 
 const EMOJIS = ["👍", "🙏", "✅", "👌", "😊", "🙂", "😉", "👏", "🤝", "📸", "📄", "📍", "🚗", "🏍️", "🔑", "🔥", "⏰", "📞", "❓", "❗", "⚠️", "💪", "🙌", "😅", "🤔", "👀", "📎", "🗂️", "✍️", "🆗", "➡️", "⬆️"];
+
+// Color de cada caso (separadores, etiquetas y tarjetas): el ángulo dorado
+// reparte bien los tonos aunque los identificadores se parezcan.
+function colorCaso(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return `hsl(${Math.round((Math.abs(h) * 137.508) % 360)} 55% 38%)`;
+}
 
 function normalizar(x: string) {
   return x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -102,6 +113,18 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
       p.every(x => normalizar(`${m.texto ?? ""} ${m.media_nombre ?? ""} ${m.caso_nombre ?? ""} ${m.caso_nro ?? ""}`).includes(x)));
   }, [mensajes, casoFiltro, busquedaChat]);
   const fotos = useMemo(() => visibles.filter(m => m.media_url && m.media_mime?.startsWith("image/")), [visibles]);
+  // Segmentación en el chat: cuando las pruebas pasan a ser de otro caso, un
+  // separador con el color del caso (el mismo color que su etiqueta).
+  const separadores = useMemo(() => {
+    const mapa = new Map<string, { id: string; texto: string }>();
+    let ultimo: string | null = null;
+    for (const m of visibles) {
+      if (m.direccion !== "entrante" || !m.media_url || m.asignacion !== "asignado" || !m.siniestro_id) continue;
+      if (m.siniestro_id !== ultimo) mapa.set(m.id, { id: m.siniestro_id, texto: `${m.caso_nombre ?? "Caso"} #${m.caso_nro ?? "s/n"}` });
+      ultimo = m.siniestro_id;
+    }
+    return mapa;
+  }, [visibles]);
 
   // Nuevos mensajes: se vuelve a pedir la pantalla cada 5 segundos.
   useEffect(() => {
@@ -340,12 +363,18 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
             {visibles.length === 0 && <div className="wa-aviso-sistema">{mensajes.length ? "Nada coincide con el filtro." : "Todavía no hay mensajes."}</div>}
             {visibles.map((m, i) => {
               const ant = visibles[i - 1];
+              const separador = separadores.get(m.id);
               const nuevoDia = !ant || new Date(ant.creado_en).toDateString() !== new Date(m.creado_en).toDateString();
               const primera = nuevoDia || ant.direccion !== m.direccion || new Date(m.creado_en).getTime() - new Date(ant.creado_en).getTime() > 5 * 60_000 || ant.autor !== m.autor;
               const esFoto = !!m.media_url && !!m.media_mime?.startsWith("image/") && !m.texto && m.asignacion === null;
               return (
                 <Fragment key={m.id}>
                   {nuevoDia && <div className="wa-dia">{etiquetaDia(m.creado_en)}</div>}
+                  {separador && (
+                    <div className="wa-separador-caso" style={{ ["--color-caso" as string]: colorCaso(separador.id) }}>
+                      <span>🗂️ {separador.texto}</span>
+                    </div>
+                  )}
                   <div className={`wa-envoltura ${m.direccion} ${primera ? "primera" : ""}`}>
                     <div className={`wa-burbuja ${m.direccion} ${primera ? "cola" : ""} ${busquedaChat && m.texto && normalizar(m.texto).includes(normalizar(busquedaChat)) ? "resaltada" : ""}`}>
                       {m.direccion === "saliente" && primera && m.autor && (
@@ -449,6 +478,8 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
           onCerrar={() => setPanel(false)}
           onFiltrar={id => { setCasoFiltro(id); pegadoAbajo.current = true; }}
           onPedir={h => insertar(textoFaltantes(h), true)}
+          onTexto={t => insertar(t, true)}
+          onActualizado={() => router.refresh()}
           onFoto={id => { setCasoFiltro(null); setTimeout(() => setVisor(mensajes.filter(m => m.media_url && m.media_mime?.startsWith("image/")).findIndex(f => f.id === id)), 0); }}
           ventanaAbierta={ventanaAbierta}
         />
@@ -490,7 +521,14 @@ function Contenido({ m, onFoto }: { m: Mensaje; onFoto: () => void }) {
       </button>
     );
   }
-  if (m.media_mime?.startsWith("audio/")) return <audio controls preload="none" src={m.media_url} />;
+  if (m.media_mime?.startsWith("audio/")) {
+    return (
+      <>
+        <audio controls preload="none" src={m.media_url} />
+        {m.transcripcion && <span className="wa-transcripcion">🎤 {m.transcripcion}</span>}
+      </>
+    );
+  }
   if (m.media_mime?.startsWith("video/")) return <video controls preload="none" src={m.media_url} style={{ maxWidth: 330 }} />;
   const ext = (m.media_nombre?.split(".").pop() ?? "").toUpperCase().slice(0, 4);
   return (
@@ -512,7 +550,7 @@ function Asignacion({ m, casos, operador, abiertoInicial = false, onListo, onVer
     if (m.asignacion === "asignado") {
       return (
         <span style={{ position: "relative", display: "inline-block" }}>
-          <button className="wa-caso ok" onClick={() => setMenu(v => !v)} title={m.asignacion_nota ?? undefined}>
+          <button className="wa-caso ok" onClick={() => setMenu(v => !v)} title={m.asignacion_nota ?? undefined} style={{ ["--color-caso" as string]: m.siniestro_id ? colorCaso(m.siniestro_id) : undefined }}>
             ✓ {m.caso_nombre ?? "Caso"} #{m.caso_nro ?? "s/n"}{m.categoria ? ` · ${etiquetaCategoriaEvidencia(m.categoria, ramo)}` : ""} ▾
           </button>
           {menu && (
@@ -587,11 +625,28 @@ function Asignador({ m, casos, operador, onListo, onCancelar }: { m: Mensaje; ca
   );
 }
 
-function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFiltrar, onPedir, onFoto, ventanaAbierta }: {
+function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFiltrar, onPedir, onTexto, onActualizado, onFoto, ventanaAbierta }: {
   sel: Conversacion; herramientas: CasoHerramientas[]; mensajes: Mensaje[]; casoFiltro: string | null;
-  onCerrar: () => void; onFiltrar: (id: string | null) => void; onPedir: (h: CasoHerramientas) => void; onFoto: (id: string) => void; ventanaAbierta: boolean;
+  onCerrar: () => void; onFiltrar: (id: string | null) => void; onPedir: (h: CasoHerramientas) => void; onTexto: (t: string) => void;
+  onActualizado: () => void; onFoto: (id: string) => void; ventanaAbierta: boolean;
 }) {
   const [pestana, setPestana] = useState<"casos" | "pruebas">("casos");
+  const [segmento, setSegmento] = useState<string>("todos");
+  // Segmentos: prioridad y alerta que fijó la IA, y rubro.
+  const PESO = { alta: 0, media: 1, baja: 2 } as const;
+  const segmentos = useMemo(() => {
+    const rubros = Array.from(new Set(herramientas.map(h => h.rubro).filter((r): r is number => !!r))).sort();
+    return [
+      { k: "todos", t: `Todos (${herramientas.length})` },
+      { k: "prioridad", t: `Prioridad alta (${herramientas.filter(h => h.resumen?.segmento.prioridad === "alta").length})` },
+      { k: "alerta", t: `Alerta alta (${herramientas.filter(h => h.resumen?.segmento.alerta === "alta").length})` },
+      ...rubros.map(r => ({ k: `rubro-${r}`, t: `Rubro ${r} (${herramientas.filter(h => h.rubro === r).length})` })),
+    ];
+  }, [herramientas]);
+  const tarjetas = useMemo(() => herramientas
+    .filter(h => segmento === "todos" || (segmento === "prioridad" && h.resumen?.segmento.prioridad === "alta") || (segmento === "alerta" && h.resumen?.segmento.alerta === "alta") || (segmento.startsWith("rubro-") && String(h.rubro) === segmento.slice(6)))
+    .sort((a, b) => (PESO[a.resumen?.segmento.prioridad ?? "media"] - PESO[b.resumen?.segmento.prioridad ?? "media"]) || (PESO[a.resumen?.segmento.alerta ?? "media"] - PESO[b.resumen?.segmento.alerta ?? "media"])),
+    [herramientas, segmento]); // eslint-disable-line react-hooks/exhaustive-deps
   const media = mensajes.filter(m => m.media_url && m.direccion === "entrante");
   const grupos = useMemo(() => {
     const sinUbicar = media.filter(m => m.asignacion !== "asignado");
@@ -618,9 +673,19 @@ function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFil
             <p style={{ color: "var(--wa-suave)", fontSize: 13 }}>Este número no está vinculado a ningún operador. Cargá su WhatsApp en Usuarios para ver sus casos acá.</p>
           ) : herramientas.length === 0 ? (
             <p style={{ color: "var(--wa-suave)", fontSize: 13 }}>No tiene casos abiertos.</p>
-          ) : herramientas.map(h => (
-            <div key={h.id} className={`wa-tarjeta ${casoFiltro === h.id ? "elegida" : ""}`}>
+          ) : <>
+          <div className="wa-chips">
+            {segmentos.map(x => <button key={x.k} className={`wa-chip ${segmento === x.k ? "activo" : ""}`} onClick={() => setSegmento(x.k)}>{x.t}</button>)}
+          </div>
+          {tarjetas.map(h => (
+            <div key={h.id} className={`wa-tarjeta ${casoFiltro === h.id ? "elegida" : ""}`} style={{ borderLeft: `4px solid ${colorCaso(h.id)}` }}>
               <div className="tit"><span className="nro">#{h.nro ?? "s/n"}</span><span style={{ fontSize: 12, color: "var(--wa-suave)" }}>{h.etapa}</span></div>
+              <div className="wa-segmento">
+                {h.rubro && <span className="seg rubro">Rubro {h.rubro}</span>}
+                {h.resumen && <span className={`seg prio-${h.resumen.segmento.prioridad}`}>Prioridad {h.resumen.segmento.prioridad}</span>}
+                {h.resumen && <span className={`seg alerta-${h.resumen.segmento.alerta}`}>Alerta {h.resumen.segmento.alerta}</span>}
+                {h.resumen?.segmento.etiquetas.map(e => <span key={e} className="seg">{e}</span>)}
+              </div>
               <div className="nom">{h.asegurado ?? "—"}</div>
               <div className="det">
                 {h.rubro ? `${h.rubro} · ` : ""}{h.tipo ?? "Sin tipo"}{h.dni ? ` · DNI ${h.dni}` : ""}<br />
@@ -633,14 +698,16 @@ function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFil
                 <div className="wa-fila" style={{ fontSize: 12, marginBottom: 3 }}><span>Pruebas del ramo</span><span>{h.tiene}/{h.pedidas}</span></div>
                 <div className="wa-barra-progreso"><i style={{ width: `${h.pedidas ? (h.tiene / h.pedidas) * 100 : 0}%` }} /></div>
               </div>
-              {h.faltan.length > 0 && <div className="wa-faltan">{h.faltan.map(f => <span key={f}>{f}</span>)}</div>}
+              {!h.resumen && h.faltan.length > 0 && <div className="wa-faltan">{h.faltan.map(f => <span key={f}>{f}</span>)}</div>}
+              <ResumenIA h={h} onTexto={onTexto} ventanaAbierta={ventanaAbierta} onActualizado={onActualizado} />
               <div className="wa-acciones">
                 <button onClick={() => onFiltrar(casoFiltro === h.id ? null : h.id)}>{casoFiltro === h.id ? "Ver todo el chat" : "Ver sus pruebas en el chat"}</button>
                 {h.faltan.length > 0 && ventanaAbierta && <button onClick={() => onPedir(h)}>Pedir lo que falta</button>}
                 <a href={`/siniestros/${h.id}`}>Abrir caso ↗</a>
               </div>
             </div>
-          ))
+          ))}
+          </>
         ) : (
           <>
             {grupos.sinUbicar.length > 0 && (
@@ -720,10 +787,91 @@ function Simulador({ operadores, onListo }: { operadores: OperadorTel[]; onListo
       )}
       <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="Teléfono (ej. 1123456789)" />
       <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={2} placeholder="Texto (ej. 'te mando lo de Gómez')" />
-      <input type="file" accept="image/*,.pdf" onChange={e => setArchivo(e.target.files?.[0] ?? null)} />
+      <input type="file" accept="image/*,.pdf,audio/*" onChange={e => setArchivo(e.target.files?.[0] ?? null)} />
       <button className="wa-btn" onClick={mandar} disabled={ocupado || !telefono || (!texto.trim() && !archivo)}>
         {ocupado ? "Procesando (la IA está mirando el archivo)…" : "Mandar como el operador"}
       </button>
     </details>
+  );
+}
+
+function ResumenIA({ h, onTexto, ventanaAbierta, onActualizado }: { h: CasoHerramientas; onTexto: (t: string) => void; ventanaAbierta: boolean; onActualizado: () => void }) {
+  const [generando, setGenerando] = useState(false);
+  const [abierto, setAbierto] = useState(false);
+  const r = h.resumen;
+
+  async function generar() {
+    setGenerando(true);
+    try {
+      const res = await fetch(`/api/casos/${h.id}/resumen`, { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? "No se pudo generar el resumen.");
+      setAbierto(true);
+      onActualizado();
+    } catch (e) {
+      notificar.error(e instanceof Error ? e.message : "No se pudo generar el resumen.");
+    } finally {
+      setGenerando(false);
+    }
+  }
+
+  if (!r) {
+    return (
+      <button className="wa-btn" style={{ justifySelf: "start" }} onClick={generar} disabled={generando}>
+        {generando ? "La IA está leyendo el caso…" : "✨ Resumen IA y qué falta"}
+      </button>
+    );
+  }
+  return (
+    <div className="wa-resumen">
+      <div className="wa-fila">
+        <strong style={{ fontSize: 13 }}>✨ {r.situacion}</strong>
+      </div>
+      {h.resumenViejo && <div className="wa-viejo">Llegaron pruebas nuevas después de este resumen.</div>}
+      <button className="wa-mas" onClick={() => setAbierto(a => !a)}>{abierto ? "Ver menos ▲" : "Ver resumen, faltantes y próximos pasos ▼"}</button>
+      {abierto && (
+        <>
+          <p className="wa-res-txt">{r.resumen}</p>
+          {r.segmento.motivo && <p className="wa-res-motivo">{r.segmento.motivo}</p>}
+          {r.alertas.length > 0 && (
+            <>
+              <div className="wa-panel-sub">⚠️ Alertas</div>
+              <ul className="wa-lista-ia alerta">{r.alertas.map((a, i) => <li key={i}>{a}</li>)}</ul>
+            </>
+          )}
+          {r.faltan.length > 0 && (
+            <>
+              <div className="wa-panel-sub">La IA sugiere que falta</div>
+              <ul className="wa-lista-ia">{r.faltan.map((f, i) => <li key={i}><b>{f.que}</b>{f.por_que ? ` — ${f.por_que}` : ""}</li>)}</ul>
+              {ventanaAbierta && (
+                <button className="wa-mas" onClick={() => onTexto(`Para ${h.asegurado ?? "el caso"} (#${h.nro ?? "s/n"}) me falta: ${r.faltan.map(f => f.que).join(", ")}. ¿Me lo mandás?`)}>
+                  ✍️ Pedírselo al operador
+                </button>
+              )}
+            </>
+          )}
+          {r.proximos_pasos.length > 0 && (
+            <>
+              <div className="wa-panel-sub">Próximos pasos</div>
+              <ol className="wa-lista-ia">{r.proximos_pasos.map((p, i) => <li key={i}>{p}</li>)}</ol>
+            </>
+          )}
+          {r.preguntas_operador.length > 0 && (
+            <>
+              <div className="wa-panel-sub">Preguntas para el operador</div>
+              <div className="wa-preguntas">
+                {r.preguntas_operador.map((q, i) => (
+                  <button key={i} disabled={!ventanaAbierta} onClick={() => onTexto(q)} title={ventanaAbierta ? "Ponerla en el mensaje" : "Ventana de 24 h cerrada"}>❓ {q}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+      <div className="wa-fila" style={{ fontSize: 11, color: "var(--wa-suave)" }}>
+        <span>{h.resumenEn ? `Actualizado ${new Date(h.resumenEn).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}</span>
+        <button className="wa-mas" onClick={generar} disabled={generando}>{generando ? "Actualizando…" : "↻ Actualizar"}</button>
+      </div>
+    </div>
   );
 }

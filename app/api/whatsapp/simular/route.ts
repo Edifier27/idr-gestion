@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   try {
     await procesarEntrante({
       waId: `simulado.${randomUUID()}`, telefono, nombre: null,
-      tipo: archivo instanceof File ? (archivo.type.startsWith("image/") ? "image" : "document") : "text",
+      tipo: archivo instanceof File ? (archivo.type.startsWith("image/") ? "image" : archivo.type.startsWith("audio/") ? "audio" : "document") : "text",
       texto,
       archivo: archivo instanceof File ? { buffer: Buffer.from(await archivo.arrayBuffer()), mime: archivo.type || "application/octet-stream", nombre: archivo.name } : null,
     });

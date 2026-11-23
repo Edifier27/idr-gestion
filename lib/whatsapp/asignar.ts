@@ -17,6 +17,7 @@ import { enviarTexto, enviarBotones } from "@/lib/whatsapp/meta";
 export type MensajeMedia = {
   id: string; conversacionId: string; telefono: string; operador: string | null;
   texto: string | null; mediaUrl: string; mediaMime: string; mediaNombre: string;
+  transcripcion?: string | null; // notas de voz (OpenAI)
 };
 
 type Caso = { id: string; nro: string | null; asegurado: string | null; dni: string | null; tipo: string | null; domicilio: string | null; lugar: string | null; etapa: string | null };
@@ -40,7 +41,7 @@ async function casosAbiertos(operador: string | null): Promise<Caso[]> {
 
 async function contextoReciente(conversacionId: string): Promise<string[]> {
   const res = await getDb().execute(sql`
-    SELECT m.creado_en, m.texto, s.nro_siniestro AS nro, COALESCE(s.asegurado, s.denunciante) AS asegurado
+    SELECT m.creado_en, COALESCE(m.texto, m.transcripcion) AS texto, s.nro_siniestro AS nro, COALESCE(s.asegurado, s.denunciante) AS asegurado
     FROM wa_mensaje m LEFT JOIN siniestros s ON s.id = m.siniestro_id
     WHERE m.conversacion_id = ${conversacionId} AND m.direccion = 'entrante'
     ORDER BY m.creado_en DESC LIMIT 12`);
@@ -62,7 +63,7 @@ async function decidir(m: MensajeMedia, casos: Caso[], bytes: Buffer): Promise<D
   else if (["image/jpeg", "image/png", "image/webp", "image/gif"].includes(m.mediaMime)) contenido.push({ type: "image", source: { type: "base64", media_type: m.mediaMime as "image/jpeg", data } });
   contenido.push({
     type: "text",
-    text: `Un operador de un estudio de investigación de siniestros mandó este archivo por WhatsApp ("${m.mediaNombre}")${m.texto ? ` con el texto: "${m.texto}"` : " sin texto"}.
+    text: `Un operador de un estudio de investigación de siniestros mandó este archivo por WhatsApp ("${m.mediaNombre}")${m.texto ? ` con el texto: "${m.texto}"` : " sin texto"}.${m.transcripcion ? `\nEs una nota de voz; dice: "${m.transcripcion}"` : ""}
 
 Sus casos abiertos:
 ${lista}

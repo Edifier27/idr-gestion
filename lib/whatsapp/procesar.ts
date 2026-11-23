@@ -5,6 +5,7 @@ import { asegurarTablasWhatsapp } from "@/lib/db/asegurar-whatsapp";
 import { claveTelefono, descargarMedia } from "@/lib/whatsapp/meta";
 import { asignarMedia, guardarEnCaso, responder } from "@/lib/whatsapp/asignar";
 import { CACHE_NOMBRES } from "@/lib/whatsapp/tipos";
+import { transcribir } from "@/lib/whatsapp/transcribir";
 
 // Procesa lo que llega del webhook de Meta (o del simulador): guarda cada
 // mensaje una sola vez (por su id de WhatsApp), baja los archivos al
@@ -51,11 +52,14 @@ export async function procesarEntrante(e: EntranteBase) {
     const blob = await put(`whatsapp/${e.archivo.nombre}`, e.archivo.buffer, { access: "public", addRandomSuffix: true, contentType: e.archivo.mime });
     mediaUrl = blob.url;
   }
+  // Notas de voz: se transcriben antes de ubicarlas (el texto es la pista).
+  const transcripcion = e.archivo?.mime.startsWith("audio/") ? await transcribir(e.archivo.buffer, e.archivo.mime, e.archivo.nombre) : null;
   const ins = await db.execute(sql`
-    INSERT INTO wa_mensaje (conversacion_id, wa_id, direccion, tipo, texto, media_url, media_mime, media_nombre, estado, asignacion)
+    INSERT INTO wa_mensaje (conversacion_id, wa_id, direccion, tipo, texto, media_url, media_mime, media_nombre, estado, asignacion, transcripcion)
     VALUES (${conv.id}, ${e.waId}, 'entrante', ${e.tipo}, ${e.texto}, ${mediaUrl}, ${e.archivo?.mime ?? null}, ${e.archivo?.nombre ?? null}, 'recibido',
-            ${e.archivo ? "pendiente" : null})
+            ${e.archivo ? "pendiente" : null}, ${transcripcion})
     ON CONFLICT (wa_id) DO NOTHING RETURNING id`);
+  if (transcripcion) await db.execute(sql`UPDATE wa_conversacion SET ultimo_texto = ${`🎤 ${transcripcion.slice(0, 110)}`} WHERE id = ${conv.id}`);
   const mensajeId = (ins.rows as { id: string }[])[0]?.id;
   if (!mensajeId) return;
 
@@ -72,7 +76,7 @@ export async function procesarEntrante(e: EntranteBase) {
   if (e.archivo && mediaUrl) {
     await asignarMedia({
       id: mensajeId, conversacionId: conv.id, telefono: e.telefono, operador: conv.operador,
-      texto: e.texto, mediaUrl, mediaMime: e.archivo.mime, mediaNombre: e.archivo.nombre,
+      texto: e.texto, mediaUrl, mediaMime: e.archivo.mime, mediaNombre: e.archivo.nombre, transcripcion,
     }, e.archivo.buffer);
   } else if (!conv.operador) {
     await responder(conv.id, e.telefono, "Hola. Este número todavía no está vinculado a un operador de IDR: avisale al administrador.");

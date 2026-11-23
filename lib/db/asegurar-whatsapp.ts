@@ -51,5 +51,13 @@ export async function asegurarTablasWhatsapp() {
     )`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS wa_mensaje_conv ON wa_mensaje (conversacion_id, creado_en)`);
   await db.execute(sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefono text`);
+  await db.execute(sql`ALTER TABLE wa_mensaje ADD COLUMN IF NOT EXISTS transcripcion text`);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS resumen_caso (
+      siniestro_id uuid PRIMARY KEY,
+      datos jsonb NOT NULL,
+      evidencias integer NOT NULL DEFAULT 0,
+      generado_en timestamptz NOT NULL DEFAULT now()
+    )`);
   asegurada = true;
 }

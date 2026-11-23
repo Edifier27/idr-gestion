@@ -9,6 +9,7 @@ import { modoPrueba } from "@/lib/whatsapp/meta";
 import { etiquetaCategoriaEvidencia, ramoDeTipo, seccionesExpediente } from "@/lib/categorias-evidencia";
 import { etiquetaEtapaContacto } from "@/lib/etapa-contacto";
 import { rubroDeTipo } from "@/lib/tipos-siniestro";
+import { leerResumenes } from "@/lib/resumen-caso";
 import { BandejaWhatsapp, type Conversacion, type Mensaje, type CasoOpcion, type OperadorTel, type CasoHerramientas } from "@/components/bandeja-whatsapp";
 import "./whatsapp.css";
 
@@ -69,6 +70,8 @@ export default async function WhatsappPage({ searchParams }: { searchParams: { c
     const ids = propios.map(p => p.id);
     const cats = ids.length ? (await db.execute(sql`SELECT siniestro_id, categoria FROM evidencia WHERE siniestro_id = ANY(${ids}::uuid[])`)).rows as { siniestro_id: string; categoria: string | null }[] : [];
     const porWa = ids.length ? (await db.execute(sql`SELECT siniestro_id, count(*)::int AS n FROM wa_mensaje WHERE conversacion_id = ${seleccionada.id} AND siniestro_id = ANY(${ids}::uuid[]) GROUP BY siniestro_id`)).rows as { siniestro_id: string; n: number }[] : [];
+    const resumenes = await leerResumenes(ids);
+    const ultimoWa = ids.length ? (await db.execute(sql`SELECT siniestro_id, max(creado_en) AS ultimo FROM wa_mensaje WHERE siniestro_id = ANY(${ids}::uuid[]) GROUP BY siniestro_id`)).rows as { siniestro_id: string; ultimo: string }[] : [];
     herramientas = propios.map(p => {
       const ramo = ramoDeTipo(p.tipo);
       const pedidas = seccionesExpediente(ramo).filter(x => x.id !== "otros" && x.id !== "lugar").flatMap(x => x.categorias);
@@ -79,6 +82,16 @@ export default async function WhatsappPage({ searchParams }: { searchParams: { c
         telefono: p.telefono, etapa: etiquetaEtapaContacto(p.etapa), entrevista: p.fecha_entrevista ? new Date(p.fecha_entrevista).toISOString() : null,
         pedidas: pedidas.length, tiene: pedidas.length - faltan.length, faltan: faltan.map(c => etiquetaCategoriaEvidencia(c, ramo)),
         porWhatsapp: porWa.find(x => x.siniestro_id === p.id)?.n ?? 0,
+        resumen: resumenes.get(p.id)?.datos ?? null,
+        resumenEn: resumenes.get(p.id)?.generado_en ? new Date(resumenes.get(p.id)!.generado_en).toISOString() : null,
+        // Desactualizado: llegaron pruebas o mensajes después del resumen.
+        resumenViejo: (() => {
+          const r = resumenes.get(p.id);
+          if (!r) return false;
+          const evNow = cats.filter(c => c.siniestro_id === p.id).length;
+          const ult = ultimoWa.find(x => x.siniestro_id === p.id)?.ultimo;
+          return evNow !== r.evidencias || (!!ult && new Date(ult) > new Date(r.generado_en));
+        })(),
       };
     });
   }
