@@ -79,6 +79,7 @@ export default async function WhatsappPage({ searchParams }: { searchParams: { c
       const faltan = pedidas.filter(c => !tiene.has(c));
       return {
         id: p.id, nro: p.nro, asegurado: p.asegurado, dni: p.dni, tipo: p.tipo, rubro: rubroDeTipo(p.tipo), domicilio: p.domicilio, lugar: p.lugar,
+        ingreso: new Date(p.creado_en).toISOString(),
         telefono: p.telefono, etapa: etiquetaEtapaContacto(p.etapa), entrevista: p.fecha_entrevista ? new Date(p.fecha_entrevista).toISOString() : null,
         pedidas: pedidas.length, tiene: pedidas.length - faltan.length, faltan: faltan.map(c => etiquetaCategoriaEvidencia(c, ramo)),
         porWhatsapp: porWa.find(x => x.siniestro_id === p.id)?.n ?? 0,

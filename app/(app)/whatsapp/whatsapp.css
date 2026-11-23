@@ -122,9 +122,7 @@
 .wa-popup.adjuntar button { display: flex; align-items: center; gap: 12px; border: 0; background: none; font: inherit; padding: 9px 12px; border-radius: 8px; cursor: pointer; text-align: left; }
 .wa-popup.adjuntar button:hover { background: var(--wa-barra); }
 .wa-popup.adjuntar .circ { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; }
-.wa-popup.emojis { display: grid; grid-template-columns: repeat(8, 34px); gap: 2px; }
-.wa-popup.emojis button { border: 0; background: none; font-size: 22px; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; }
-.wa-popup.emojis button:hover { background: var(--wa-barra); }
+
 .wa-popup.rapidas { display: grid; gap: 2px; max-width: min(460px, 90vw); left: 56px; }
 .wa-popup.rapidas button { border: 0; background: none; text-align: left; font: inherit; font-size: 13.5px; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
 .wa-popup.rapidas button:hover { background: var(--wa-barra); }
@@ -203,3 +201,59 @@
 .wa-separador-caso::before, .wa-separador-caso::after { content: ""; flex: 1; height: 2px; background: var(--color-caso, #ccc); opacity: .45; border-radius: 1px; }
 .wa-separador-caso span { background: #fff; border: 2px solid var(--color-caso, #ccc); border-radius: 12px; padding: 2px 10px; }
 .wa-panel-cuerpo > .wa-chips { margin-bottom: 2px; }
+
+/* ---------- Experiencia WhatsApp: íconos, emojis y transiciones ---------- */
+.wa-pagina { --curva: cubic-bezier(0.1, 0.82, 0.25, 1); }
+.wa-icono-btn { color: #54656F; transition: background-color .15s ease, transform .12s ease; }
+.wa-icono-btn:active { transform: scale(0.92); }
+.wa-icono-btn svg { transition: transform .2s var(--curva); }
+.wa-icono-btn.girado svg { transform: rotate(135deg); }
+.wa-enviar { transition: background-color .15s ease, transform .12s ease; }
+.wa-enviar:active:not(:disabled) { transform: scale(0.92); }
+.wa-chat, .wa-sinasignar { transition: background-color .12s ease; }
+.wa-chip { transition: background-color .15s ease, color .15s ease; }
+.wa-buscador { transition: box-shadow .15s ease; }
+.wa-buscador:focus-within { box-shadow: 0 0 0 2px #D9FDD3 inset; }
+.wa-buscador svg { flex: none; }
+.wa-sinasignar .icono { color: #B7791F; }
+.wa-avatar.chico svg { color: #fff; }
+
+.wa-popup { animation: wa-menu .16s var(--curva) both; transform-origin: bottom left; }
+@keyframes wa-menu { from { opacity: 0; transform: scale(0.85) translateY(6px); } }
+.wa-popup.adjuntar { border-radius: 16px; padding: 8px; min-width: 230px; }
+.wa-popup.adjuntar button { font-size: 14.5px; color: #3B4A54; }
+.wa-popup.adjuntar .circ { width: 34px; height: 34px; color: #fff; }
+
+.wa-popup.emojis { left: 10px; width: min(360px, calc(100vw - 24px)); padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.wa-emoji-tabs { display: flex; border-bottom: 1px solid var(--wa-linea); }
+.wa-emoji-tabs button { flex: 1; border: 0; background: none; font-size: 20px; padding: 8px 0; cursor: pointer; filter: grayscale(1); opacity: .6; border-bottom: 3px solid transparent; transition: opacity .15s, filter .15s; }
+.wa-emoji-tabs button.activo { filter: none; opacity: 1; border-bottom-color: var(--wa-verde); }
+.wa-emoji-titulo { font-size: 12px; font-weight: 600; color: var(--wa-suave); padding: 8px 12px 2px; }
+.wa-emoji-grilla { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 4px 8px 10px; max-height: 230px; overflow-y: auto; }
+.wa-emoji-grilla button { border: 0; background: none; font-size: 24px; height: 40px; border-radius: 8px; cursor: pointer; transition: background-color .1s, transform .1s; }
+.wa-emoji-grilla button:hover { background: var(--wa-barra); transform: scale(1.12); }
+
+.wa-envoltura.recien { animation: wa-entra .22s var(--curva) both; }
+.wa-envoltura.recien.entrante { transform-origin: left bottom; }
+.wa-envoltura.recien.saliente { transform-origin: right bottom; }
+@keyframes wa-entra { from { opacity: 0; transform: translateY(10px) scale(0.98); } }
+.wa-panel { animation: wa-panel-entra .18s var(--curva) both; }
+@keyframes wa-panel-entra { from { transform: translateX(24px); opacity: 0; } }
+.wa-previa { animation: wa-sube .2s var(--curva) both; }
+@keyframes wa-sube { from { transform: translateY(16px); opacity: 0; } }
+.wa-visor { animation: wa-fundido .18s ease both; }
+.wa-visor-cuerpo img { animation: wa-zoom .22s var(--curva) both; }
+@keyframes wa-fundido { from { opacity: 0; } }
+@keyframes wa-zoom { from { transform: scale(0.94); opacity: 0; } }
+.wa-abajo { display: inline-flex; align-items: center; justify-content: center; animation: wa-menu .16s var(--curva) both; }
+.wa-menu { animation: wa-menu .14s var(--curva) both; transform-origin: top left; }
+.wa-busqueda-chat, .wa-filtro-caso { animation: wa-baja .16s var(--curva) both; }
+@keyframes wa-baja { from { transform: translateY(-6px); opacity: 0; } }
+.wa-visor-nav { display: inline-flex; align-items: center; justify-content: center; color: #54656F; }
+.wa-conv-cab .wa-icono-btn, .wa-panel-cab .wa-icono-btn { width: 40px; height: 40px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wa-pagina *, .wa-pagina *::before { animation: none !important; transition: none !important; }
+}
+.wa-periodos { padding-bottom: 6px; border-bottom: 1px solid var(--wa-linea); }
+.wa-periodos .wa-chip { font-size: 12.5px; padding: 5px 10px; }

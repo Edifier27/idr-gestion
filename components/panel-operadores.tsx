@@ -5,10 +5,12 @@ import { boton, campo, colorPorTexto } from "@/lib/ui";
 import { notificar } from "@/components/notificaciones";
 import { etiquetaEtapaContacto } from "@/lib/etapa-contacto";
 import type { Pendiente } from "@/lib/pendientes";
+import { enPeriodo, PERIODOS, type Periodo } from "@/components/bandeja-whatsapp";
 
 export type CasoPanel = {
   id: string; nro: string | null; asegurado: string | null; tipo: string | null; rubro: number | null;
   etapa: string | null; operador: string | null; orden: number | null; dias: number; pendientes: Pendiente[];
+  ingreso: string;
 };
 export type OperadorPanel = {
   codigo: string; nombre: string; zona: string | null; abiertos: number; urgentes: number; cerradosMes: number;
@@ -43,8 +45,11 @@ export function PanelOperadores({ operadores, casos, inicial }: { operadores: Op
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [guardandoOrden, setGuardandoOrden] = useState(false);
+  // Período de ingreso: para no ver todos los casos del operador de golpe.
+  const [periodo, setPeriodo] = useState<Periodo>("todos");
 
-  const suyos = useMemo(() => ordenar(lista.filter(c => c.operador === sel)), [lista, sel]);
+  const todosSuyos = useMemo(() => ordenar(lista.filter(c => c.operador === sel)), [lista, sel]);
+  const suyos = useMemo(() => todosSuyos.filter(c => enPeriodo(c.ingreso, periodo)), [todosSuyos, periodo]);
   const op = operadores.find(o => o.codigo === sel) ?? null;
 
   async function mover(i: number, delta: number) {
@@ -128,7 +133,15 @@ export function PanelOperadores({ operadores, casos, inicial }: { operadores: Op
             <h2 className="text-lg font-semibold text-ink">Casos de {op.nombre} <span className="text-sm font-normal text-slate">· {suyos.length} abiertos</span></h2>
             <p className="text-xs text-slate">{guardandoOrden ? "Guardando orden…" : "Ordená con las flechas: el operador los ve en ese orden en su tablero."}</p>
           </div>
-          {suyos.length === 0 ? <p className="text-sm text-slate">No tiene casos abiertos.</p> : (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {PERIODOS.map(x => (
+              <button key={x.k} onClick={() => setPeriodo(x.k)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${periodo === x.k ? "bg-azul text-paper" : "bg-paper text-slate hover:text-ink"}`}>
+                {x.t} ({todosSuyos.filter(c => enPeriodo(c.ingreso, x.k)).length})
+              </button>
+            ))}
+          </div>
+          {suyos.length === 0 ? <p className="text-sm text-slate">{todosSuyos.length ? "Ningún caso ingresó en este período." : "No tiene casos abiertos."}</p> : (
             <ol className="divide-y divide-line">
               {suyos.map((c, i) => (
                 <li key={c.id} className="py-3">

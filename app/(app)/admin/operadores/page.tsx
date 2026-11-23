@@ -48,6 +48,7 @@ export default async function PanelOperadoresPage({ searchParams }: { searchPara
     operador: s.operador,
     orden: orden.get(s.id) ?? null,
     dias: Math.floor((ahora - new Date(s.creadoEn).getTime()) / 86_400_000),
+    ingreso: new Date(s.creadoEn).toISOString(),
     pendientes: pendientesDeCaso(s, categorias.get(s.id) ?? new Set(), diferencias.get(s.id) ?? 0, ahora),
   }));
 

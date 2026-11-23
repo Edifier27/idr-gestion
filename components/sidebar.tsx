@@ -16,14 +16,15 @@ import { ReportarProblema } from "@/components/reportar-problema";
 // abajo en mobile (ver más abajo) — el resto (Usuarios/Mail/Importar caso)
 // queda solo en el drawer completo, se abre con "Más".
 const NAV = [
+  // CRMgestion: los mensajes van primero (es la pantalla de trabajo del admin).
+  { href: "/whatsapp", label: "WhatsApp", icon: IconChat, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: true },
   { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false, quick: undefined as string | undefined, enBarraInferior: true },
   { href: "/pipeline", label: "Pipeline", icon: IconColumnas, soloAdmin: false, quick: undefined as string | undefined, enBarraInferior: true },
   { href: "/admin/operadores", label: "Panel de operadores", icon: IconOperadores, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/base", label: "Base de datos", icon: IconTabla, soloAdmin: false, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/panel?quick=cerrados", label: "Cerrados", icon: IconArchive, soloAdmin: false, quick: "cerrados", enBarraInferior: true },
-  { href: "/admin/ranking", label: "Ranking", icon: IconTrophy, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: true },
+  { href: "/admin/ranking", label: "Ranking", icon: IconTrophy, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
-  { href: "/whatsapp", label: "WhatsApp", icon: IconChat, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/admin/mail", label: "Mail", icon: IconMail, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/admin/importar-caso", label: "Importar caso", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/admin/importar-planilla", label: "Importar planilla", icon: IconUpload, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },

@@ -7,6 +7,10 @@ import { colorPorTexto } from "@/lib/ui";
 import { notificar } from "@/components/notificaciones";
 import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ramoDeTipo } from "@/lib/categorias-evidencia";
 import type { ResumenCaso } from "@/lib/resumen-caso";
+import {
+  IconoAbajo, IconoBandeja, IconoBuscar, IconoCamara, IconoCasos, IconoCerrar, IconoDer, IconoDescargar, IconoDocumento,
+  IconoEmoji, IconoEnviar, IconoFotos, IconoIzq, IconoMas, IconoRapidas, IconoVolver,
+} from "@/components/wa-iconos";
 
 export type Conversacion = {
   id: string; telefono: string; nombre: string | null; operador: string | null; nombre_operador: string | null; zona_operador: string | null;
@@ -25,11 +29,19 @@ export type OperadorTel = { operador: string; nombre: string; telefono: string |
 export type CasoHerramientas = {
   id: string; nro: string | null; asegurado: string | null; dni: string | null; tipo: string | null; rubro: number | null;
   domicilio: string | null; lugar: string | null; telefono: string | null; etapa: string; entrevista: string | null;
+  ingreso: string;
   pedidas: number; tiene: number; faltan: string[]; porWhatsapp: number;
   resumen: ResumenCaso | null; resumenEn: string | null; resumenViejo: boolean;
 };
 
-const EMOJIS = ["👍", "🙏", "✅", "👌", "😊", "🙂", "😉", "👏", "🤝", "📸", "📄", "📍", "🚗", "🏍️", "🔑", "🔥", "⏰", "📞", "❓", "❗", "⚠️", "💪", "🙌", "😅", "🤔", "👀", "📎", "🗂️", "✍️", "🆗", "➡️", "⬆️"];
+// Selector de emojis por categoría, como el de WhatsApp.
+const EMOJIS: { cat: string; icono: string; lista: string[] }[] = [
+  { cat: "Caritas", icono: "😊", lista: ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "🙂", "😉", "😍", "🥰", "😘", "😎", "🤓", "🤗", "🤔", "🤨", "😐", "😑", "😶", "🙄", "😏", "😮", "😯", "😲", "😳", "🥺", "😢", "😭", "😤", "😠", "😡", "🤯", "😬", "😴", "🤒", "🤕", "😷"] },
+  { cat: "Gestos", icono: "👍", lista: ["👍", "👎", "👌", "✌️", "🤞", "🤝", "🙏", "👏", "🙌", "👋", "✋", "🤚", "👊", "✊", "💪", "☝️", "👆", "👇", "👉", "👈", "🫡", "🤷", "🤦", "🙋", "👀", "✍️", "💬", "🗣️"] },
+  { cat: "Trabajo", icono: "📄", lista: ["📄", "📃", "📑", "🗂️", "📁", "📎", "🖇️", "📌", "📍", "🗺️", "📸", "📷", "🎥", "📞", "📱", "💻", "🧾", "🪪", "🔑", "🗝️", "🔒", "📅", "📆", "⏰", "⏳", "✅", "☑️", "❌", "❓", "❗", "⚠️", "🚫", "🔍", "🔎", "📝", "💰", "🏠", "🏢", "🚓", "👮"] },
+  { cat: "Vehículos", icono: "🚗", lista: ["🚗", "🚙", "🚕", "🛻", "🚚", "🚐", "🏍️", "🛵", "🚲", "🚦", "🛞", "⛽", "🅿️", "🚧", "💥", "🔥", "🧯", "🪟", "🔧", "🛠️"] },
+  { cat: "Símbolos", icono: "❤️", lista: ["❤️", "💚", "💙", "💛", "🧡", "💜", "🖤", "🤍", "💯", "🆗", "🆕", "🔝", "⭐", "✨", "🎉", "➡️", "⬅️", "⬆️", "⬇️", "🔁", "➕", "➖", "✔️", "✖️"] },
+];
 
 // Color de cada caso (separadores, etiquetas y tarjetas): el ángulo dorado
 // reparte bien los tonos aunque los identificadores se parezcan.
@@ -38,6 +50,22 @@ function colorCaso(id: string) {
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
   return `hsl(${Math.round((Math.abs(h) * 137.508) % 360)} 55% 38%)`;
 }
+
+// Filtro por período de ingreso del caso (hoy, semana, mes), para no ver
+// todos los casos de golpe en los paneles.
+export type Periodo = "todos" | "hoy" | "semana" | "mes";
+export function enPeriodo(iso: string, periodo: Periodo, ahora = new Date()) {
+  if (periodo === "todos") return true;
+  const d = new Date(iso);
+  const inicio = new Date(ahora);
+  inicio.setHours(0, 0, 0, 0);
+  if (periodo === "semana") inicio.setDate(inicio.getDate() - ((inicio.getDay() + 6) % 7)); // desde el lunes
+  if (periodo === "mes") inicio.setDate(1);
+  return d >= inicio;
+}
+export const PERIODOS: { k: Periodo; t: string }[] = [
+  { k: "todos", t: "Todos" }, { k: "hoy", t: "Hoy" }, { k: "semana", t: "Esta semana" }, { k: "mes", t: "Este mes" },
+];
 
 function normalizar(x: string) {
   return x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -163,6 +191,13 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
   const campoRef = useRef<HTMLTextAreaElement>(null);
   const fotoRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLInputElement>(null);
+  const camaraRef = useRef<HTMLInputElement>(null);
+  const [catEmoji, setCatEmoji] = useState(0);
+  // Mensajes que llegan con el chat abierto: entran con animación.
+  const vistos = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    vistos.current = new Set(mensajes.map(m => m.id));
+  }, [mensajes]);
 
   useEffect(() => {
     const el = campoRef.current;
@@ -201,6 +236,7 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "No se pudo enviar.");
       setTexto("");
+      setPopup(null);
       pegadoAbajo.current = true;
       router.refresh();
     } catch (e) {
@@ -258,7 +294,7 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
         <div className="wa-lista-cab">
           <div className="wa-fila"><h1>Chats</h1>{modoPrueba && <span className="wa-prueba">Modo prueba</span>}</div>
           <label className="wa-buscador">
-            <span aria-hidden>🔍</span>
+            <IconoBuscar size={18} />
             <input value={busquedaLista} onChange={e => setBusquedaLista(e.target.value)} placeholder="Buscar un chat o un operador" />
           </label>
           <div className="wa-chips">
@@ -268,7 +304,7 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
           </div>
         </div>
         <Link href="/whatsapp?vista=sin" className={`wa-sinasignar ${vistaSin ? "activo" : ""}`}>
-          <span className="icono">📥</span>
+          <span className="icono"><IconoBandeja size={24} /></span>
           <span style={{ flex: 1 }}>
             <span className="wa-chat-nombre">Sin asignar</span><br />
             <span className="wa-chat-ultimo">Pruebas que falta ubicar en un caso</span>
@@ -309,8 +345,8 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
       {vistaSin ? (
         <section className="wa-conv">
           <div className="wa-conv-cab">
-            <Link href="/whatsapp" className="wa-icono-btn wa-volver" aria-label="Volver">←</Link>
-            <span className="wa-avatar chico" style={{ background: "#F2C230" }}>📥</span>
+            <Link href="/whatsapp" className="wa-icono-btn wa-volver" aria-label="Volver"><IconoVolver /></Link>
+            <span className="wa-avatar chico" style={{ background: "#F2C230" }}><IconoBandeja size={20} /></span>
             <div className="datos"><div className="nombre">Sin asignar</div><div className="sub">Elegí el caso y la categoría de cada prueba</div></div>
           </div>
           <div className="wa-mensajes">
@@ -336,7 +372,7 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
       ) : (
         <section className="wa-conv">
           <div className="wa-conv-cab">
-            <Link href="/whatsapp" className="wa-icono-btn wa-volver" aria-label="Volver">←</Link>
+            <Link href="/whatsapp" className="wa-icono-btn wa-volver" aria-label="Volver"><IconoVolver /></Link>
             <span className="wa-avatar chico" style={{ background: colorPorTexto(sel.operador ?? sel.telefono) }}>{nombreConv(sel).replace("+", "").trim()[0]?.toUpperCase()}</span>
             <div className="datos">
               <div className="nombre">{nombreConv(sel)}</div>
@@ -344,8 +380,8 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
                 {sel.operador ? `Operador ${sel.operador}${sel.zona_operador ? ` · ${sel.zona_operador}` : ""}` : "Número sin vincular a un operador (cargalo en Usuarios)"} · +{sel.telefono}
               </div>
             </div>
-            <button className={`wa-icono-btn ${buscandoChat ? "activo" : ""}`} onClick={() => setBuscandoChat(b => !b)} title="Buscar en el chat">🔍</button>
-            <button className={`wa-icono-btn ${panel ? "activo" : ""}`} onClick={() => setPanel(p => !p)} title="Casos del operador">🗂️</button>
+            <button className={`wa-icono-btn ${buscandoChat ? "activo" : ""}`} onClick={() => setBuscandoChat(b => !b)} title="Buscar en el chat" aria-label="Buscar en el chat"><IconoBuscar /></button>
+            <button className={`wa-icono-btn ${panel ? "activo" : ""}`} onClick={() => setPanel(p => !p)} title="Casos del operador" aria-label="Casos del operador"><IconoCasos /></button>
           </div>
           {buscandoChat && (
             <div className="wa-busqueda-chat">
@@ -375,7 +411,7 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
                       <span>🗂️ {separador.texto}</span>
                     </div>
                   )}
-                  <div className={`wa-envoltura ${m.direccion} ${primera ? "primera" : ""}`}>
+                  <div className={`wa-envoltura ${m.direccion} ${primera ? "primera" : ""} ${vistos.current && !vistos.current.has(m.id) ? "recien" : ""}`}>
                     <div className={`wa-burbuja ${m.direccion} ${primera ? "cola" : ""} ${busquedaChat && m.texto && normalizar(m.texto).includes(normalizar(busquedaChat)) ? "resaltada" : ""}`}>
                       {m.direccion === "saliente" && primera && m.autor && (
                         <span className={`wa-autor ${m.autor === "Asistente IDR" ? "ia" : ""}`}>{m.autor === "Asistente IDR" ? "🤖 Asistente IDR" : m.autor === miNombre ? "Vos" : m.autor}</span>
@@ -397,18 +433,28 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
               );
             })}
           </div>
-          {verAbajo && <button className="wa-abajo" onClick={() => { const el = contRef.current; if (el) el.scrollTop = el.scrollHeight; }} aria-label="Ir al último mensaje">↓</button>}
+          {verAbajo && <button className="wa-abajo" onClick={() => { const el = contRef.current; if (el) el.scrollTop = el.scrollHeight; }} aria-label="Ir al último mensaje"><IconoAbajo /></button>}
 
           {ventanaAbierta ? (
             <div className="wa-barra-escribir">
               {popup === "adjuntar" && (
-                <div className="wa-popup adjuntar">
-                  <button onClick={() => fotoRef.current?.click()}><span className="circ" style={{ background: "#BF59CF" }}>🖼️</span>Fotos y videos</button>
-                  <button onClick={() => docRef.current?.click()}><span className="circ" style={{ background: "#7F66FF" }}>📄</span>Documento</button>
+                <div className="wa-popup adjuntar" role="menu">
+                  <button role="menuitem" onClick={() => docRef.current?.click()}><span className="circ" style={{ background: "#7F66FF" }}><IconoDocumento /></span>Documento</button>
+                  <button role="menuitem" onClick={() => fotoRef.current?.click()}><span className="circ" style={{ background: "#007BFC" }}><IconoFotos /></span>Fotos y videos</button>
+                  <button role="menuitem" onClick={() => camaraRef.current?.click()}><span className="circ" style={{ background: "#FF2E74" }}><IconoCamara /></span>Cámara</button>
+                  <button role="menuitem" onClick={() => setPopup("rapidas")}><span className="circ" style={{ background: "#FFBC38" }}><IconoRapidas /></span>Respuestas rápidas</button>
                 </div>
               )}
               {popup === "emojis" && (
-                <div className="wa-popup emojis">{EMOJIS.map(e => <button key={e} onClick={() => insertar(e)}>{e}</button>)}</div>
+                <div className="wa-popup emojis" role="dialog" aria-label="Emojis">
+                  <div className="wa-emoji-tabs">
+                    {EMOJIS.map((c, i) => <button key={c.cat} className={i === catEmoji ? "activo" : ""} onClick={() => setCatEmoji(i)} title={c.cat}>{c.icono}</button>)}
+                  </div>
+                  <div className="wa-emoji-titulo">{EMOJIS[catEmoji].cat}</div>
+                  <div className="wa-emoji-grilla">
+                    {EMOJIS[catEmoji].lista.map(e => <button key={e} onClick={() => insertar(e)} aria-label={e}>{e}</button>)}
+                  </div>
+                </div>
               )}
               {popup === "rapidas" && (
                 <div className="wa-popup rapidas">
@@ -417,9 +463,9 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
               )}
               <input ref={fotoRef} type="file" accept="image/*,video/*" multiple hidden onChange={e => { elegirArchivos(e.target.files); e.target.value = ""; }} />
               <input ref={docRef} type="file" multiple hidden onChange={e => { elegirArchivos(e.target.files); e.target.value = ""; }} />
-              <button className="wa-icono-btn" onClick={() => setPopup(p => (p === "emojis" ? null : "emojis"))} title="Emojis">😊</button>
-              <button className="wa-icono-btn" onClick={() => setPopup(p => (p === "adjuntar" ? null : "adjuntar"))} title="Adjuntar">📎</button>
-              <button className="wa-icono-btn" onClick={() => setPopup(p => (p === "rapidas" ? null : "rapidas"))} title="Respuestas rápidas">⚡</button>
+              <input ref={camaraRef} type="file" accept="image/*" capture="environment" hidden onChange={e => { elegirArchivos(e.target.files); e.target.value = ""; }} />
+              <button className={`wa-icono-btn ${popup === "adjuntar" || popup === "rapidas" ? "activo girado" : ""}`} onClick={() => setPopup(p => (p === "adjuntar" || p === "rapidas" ? null : "adjuntar"))} title="Adjuntar" aria-label="Adjuntar"><IconoMas /></button>
+              <button className={`wa-icono-btn ${popup === "emojis" ? "activo" : ""}`} onClick={() => setPopup(p => (p === "emojis" ? null : "emojis"))} title="Emojis" aria-label="Emojis"><IconoEmoji /></button>
               <div className="wa-campo">
                 <textarea
                   ref={campoRef}
@@ -431,7 +477,7 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
                   placeholder="Escribí un mensaje"
                 />
               </div>
-              <button className="wa-enviar" onClick={enviarTexto} disabled={enviando || !texto.trim()} aria-label="Enviar">➤</button>
+              <button className="wa-enviar" onClick={enviarTexto} disabled={enviando || !texto.trim()} aria-label="Enviar"><IconoEnviar /></button>
             </div>
           ) : (
             <div className="wa-cerrada">Pasaron más de 24 h desde el último mensaje del operador: WhatsApp no deja escribirle hasta que vuelva a escribir.</div>
@@ -440,7 +486,7 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
           {archivos.length > 0 && (
             <div className="wa-previa">
               <div className="wa-previa-cab">
-                <button className="wa-icono-btn" onClick={() => setArchivos([])} aria-label="Cancelar">✕</button>
+                <button className="wa-icono-btn" onClick={() => setArchivos([])} aria-label="Cancelar"><IconoCerrar /></button>
                 <span style={{ flex: 1 }}>{archivos[previaIdx]?.name}</span>
               </div>
               <div className="wa-previa-cuerpo">
@@ -453,7 +499,7 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
                 <div className="wa-campo" style={{ maxWidth: 640 }}>
                   <textarea rows={1} value={epigrafe} onChange={e => setEpigrafe(e.target.value)} placeholder="Agregá un comentario…" />
                 </div>
-                <button className="wa-enviar" onClick={enviarArchivos} disabled={enviando} aria-label="Enviar">{enviando ? "…" : "➤"}</button>
+                <button className="wa-enviar" onClick={enviarArchivos} disabled={enviando} aria-label="Enviar">{enviando ? "…" : <IconoEnviar />}</button>
               </div>
               <div className="wa-previa-miniaturas">
                 {archivos.map((f, i) => (
@@ -496,14 +542,14 @@ export function BandejaWhatsapp({ conversaciones, seleccionadaId, vistaSin, mens
                 {fotos[visor].categoria ? ` · ${etiquetaCategoriaEvidencia(fotos[visor].categoria, ramoDeTipo(fotos[visor].caso_tipo))}` : ""}
               </div>
             </div>
-            <a className="wa-icono-btn" href={fotos[visor].media_url ?? ""} target="_blank" rel="noreferrer" title="Abrir original">⤓</a>
-            <button className="wa-icono-btn" onClick={() => setVisor(null)} aria-label="Cerrar">✕</button>
+            <a className="wa-icono-btn" href={fotos[visor].media_url ?? ""} target="_blank" rel="noreferrer" title="Abrir original" aria-label="Abrir original"><IconoDescargar /></a>
+            <button className="wa-icono-btn" onClick={() => setVisor(null)} aria-label="Cerrar"><IconoCerrar /></button>
           </div>
           <div className="wa-visor-cuerpo">
-            {visor > 0 && <button className="wa-visor-nav" style={{ left: 8 }} onClick={e => { e.stopPropagation(); setVisor(visor - 1); }} aria-label="Anterior">‹</button>}
+            {visor > 0 && <button className="wa-visor-nav" style={{ left: 8 }} onClick={e => { e.stopPropagation(); setVisor(visor - 1); }} aria-label="Anterior"><IconoIzq /></button>}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={fotos[visor].media_url ?? ""} alt={fotos[visor].media_nombre ?? "foto"} onClick={e => e.stopPropagation()} />
-            {visor < fotos.length - 1 && <button className="wa-visor-nav" style={{ right: 8 }} onClick={e => { e.stopPropagation(); setVisor(visor + 1); }} aria-label="Siguiente">›</button>}
+            {visor < fotos.length - 1 && <button className="wa-visor-nav" style={{ right: 8 }} onClick={e => { e.stopPropagation(); setVisor(visor + 1); }} aria-label="Siguiente"><IconoDer /></button>}
           </div>
         </div>
       )}
@@ -632,6 +678,7 @@ function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFil
 }) {
   const [pestana, setPestana] = useState<"casos" | "pruebas">("casos");
   const [segmento, setSegmento] = useState<string>("todos");
+  const [periodo, setPeriodo] = useState<Periodo>("todos");
   // Segmentos: prioridad y alerta que fijó la IA, y rubro.
   const PESO = { alta: 0, media: 1, baja: 2 } as const;
   const segmentos = useMemo(() => {
@@ -644,9 +691,10 @@ function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFil
     ];
   }, [herramientas]);
   const tarjetas = useMemo(() => herramientas
+    .filter(h => enPeriodo(h.ingreso, periodo))
     .filter(h => segmento === "todos" || (segmento === "prioridad" && h.resumen?.segmento.prioridad === "alta") || (segmento === "alerta" && h.resumen?.segmento.alerta === "alta") || (segmento.startsWith("rubro-") && String(h.rubro) === segmento.slice(6)))
     .sort((a, b) => (PESO[a.resumen?.segmento.prioridad ?? "media"] - PESO[b.resumen?.segmento.prioridad ?? "media"]) || (PESO[a.resumen?.segmento.alerta ?? "media"] - PESO[b.resumen?.segmento.alerta ?? "media"])),
-    [herramientas, segmento]); // eslint-disable-line react-hooks/exhaustive-deps
+    [herramientas, segmento, periodo]); // eslint-disable-line react-hooks/exhaustive-deps
   const media = mensajes.filter(m => m.media_url && m.direccion === "entrante");
   const grupos = useMemo(() => {
     const sinUbicar = media.filter(m => m.asignacion !== "asignado");
@@ -660,7 +708,7 @@ function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFil
   return (
     <aside className="wa-panel">
       <div className="wa-panel-cab">
-        <button className="wa-icono-btn" onClick={onCerrar} aria-label="Cerrar panel">✕</button>
+        <button className="wa-icono-btn" onClick={onCerrar} aria-label="Cerrar panel"><IconoCerrar /></button>
         <h2>Casos de {sel.nombre_operador ?? sel.operador ?? "este número"}</h2>
       </div>
       <div className="wa-pestanas">
@@ -674,6 +722,9 @@ function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFil
           ) : herramientas.length === 0 ? (
             <p style={{ color: "var(--wa-suave)", fontSize: 13 }}>No tiene casos abiertos.</p>
           ) : <>
+          <div className="wa-chips wa-periodos">
+            {PERIODOS.map(x => <button key={x.k} className={`wa-chip ${periodo === x.k ? "activo" : ""}`} onClick={() => setPeriodo(x.k)}>{x.t} ({herramientas.filter(h => enPeriodo(h.ingreso, x.k)).length})</button>)}
+          </div>
           <div className="wa-chips">
             {segmentos.map(x => <button key={x.k} className={`wa-chip ${segmento === x.k ? "activo" : ""}`} onClick={() => setSegmento(x.k)}>{x.t}</button>)}
           </div>
@@ -707,6 +758,7 @@ function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFil
               </div>
             </div>
           ))}
+          {tarjetas.length === 0 && <p style={{ color: "var(--wa-suave)", fontSize: 13 }}>Ningún caso en este período o segmento.</p>}
           </>
         ) : (
           <>
