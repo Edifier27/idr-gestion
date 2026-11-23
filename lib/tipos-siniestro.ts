@@ -4,14 +4,19 @@
 // Ordenados por rubro, como los numera Dario: 1 choque (RC), 2 incendio
 // total o parcial, 3 robo total (auto, moto, camioneta), 4 robo parcial
 // (rueda, techo, batería), 5 cristales, 6 destrucción total.
+// Son la ÚNICA segmentación de los casos (pedido de Dario, 23-nov-2026).
 export const RUBROS = [
-  { rubro: 1, nombre: "Choque (RC)" },
-  { rubro: 2, nombre: "Incendio" },
-  { rubro: 3, nombre: "Robo total" },
-  { rubro: 4, nombre: "Robo parcial" },
-  { rubro: 5, nombre: "Cristales" },
-  { rubro: 6, nombre: "Destrucción total" },
+  { rubro: 1, nombre: "Choque (RC)", detalle: "Choque · responsabilidad civil", emoji: "💥", color: "#D9480F" },
+  { rubro: 2, nombre: "Incendio", detalle: "Incendio total o parcial", emoji: "🔥", color: "#C92A2A" },
+  { rubro: 3, nombre: "Robo total", detalle: "Robo total de auto, moto o camioneta", emoji: "🚗", color: "#5F3DC4" },
+  { rubro: 4, nombre: "Robo parcial", detalle: "Robo parcial: rueda, techo, batería", emoji: "🛞", color: "#1971C2" },
+  { rubro: 5, nombre: "Cristales", detalle: "Rotura de cristales", emoji: "🪟", color: "#0C8599" },
+  { rubro: 6, nombre: "Destrucción total", detalle: "Destrucción total (DT)", emoji: "🧱", color: "#495057" },
 ] as const;
+
+export function datosRubro(rubro: number | null | undefined) {
+  return RUBROS.find(r => r.rubro === rubro) ?? null;
+}
 
 export const TIPOS_SINIESTRO = [
   { codigo: "RC", nombre: "RESPONSABILIDAD CIVIL", rubro: 1 },

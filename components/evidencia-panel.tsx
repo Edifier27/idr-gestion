@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
-import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ordenCategorias, ramoDeTipo, type Ramo } from "@/lib/categorias-evidencia";
+import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ordenCategorias, ramoDeTipo, seccionesExpediente, type Ramo } from "@/lib/categorias-evidencia";
+import { rubroDeTipo } from "@/lib/tipos-siniestro";
+import { QueAdjuntar, RubroChip } from "@/components/que-adjuntar";
 import { confirmar, notificar } from "@/components/notificaciones";
 import { SelectShell } from "@/components/select-shell";
 import { selectCampo } from "@/lib/ui";
@@ -54,8 +56,9 @@ const ICONOS: Record<string, { emoji: string; corta: string }> = {
 // Cuadraditos de carga rápida: los del orden del expediente para el ramo del
 // caso (denuncia, lugar, inspección, documentación y las pruebas digitales
 // que corresponden), más "Otra foto" al final.
+// Solo lo que corresponde al rubro del caso (sin la sección "Otros").
 function capturaRapida(ramo: Ramo | null): { value: string; emoji: string; corta: string }[] {
-  const lista = ordenCategorias(ramo).filter(v => ICONOS[v]).map(v => ({ value: v, ...ICONOS[v] }));
+  const lista = seccionesExpediente(ramo).filter(s => s.id !== "otros").flatMap(s => s.categorias).filter(v => ICONOS[v]).map(v => ({ value: v, ...ICONOS[v] }));
   return [...lista, { value: "fotos", emoji: "🖼️", corta: "Otra foto" }];
 }
 
@@ -245,6 +248,10 @@ export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivo
       onDrop={onDrop}
       className={`relative space-y-3 rounded-lg transition ${arrastrando ? "ring-2 ring-azul/30 ring-offset-2" : ""}`}
     >
+      <div className="flex flex-wrap items-center gap-2">
+        <RubroChip rubro={rubroDeTipo(tipo)} />
+      </div>
+      <QueAdjuntar ramo={ramo} rubro={rubroDeTipo(tipo)} presentes={archivos.map(a => a.categoria)} abiertoInicial />
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate">Sacar foto o arrastrar por tipo</p>
         <span className="shrink-0 text-xs text-slate">{archivos.length} archivo{archivos.length === 1 ? "" : "s"}</span>

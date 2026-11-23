@@ -1,3 +1,5 @@
+import { rubroDeTipo } from "@/lib/tipos-siniestro";
+
 // Categorías de evidencia, compartidas entre el selector de subida
 // (components/evidencia-panel.tsx), la clasificación automática por IA
 // (lib/clasificar-evidencia.ts) y el armado del expediente en PDF
@@ -39,16 +41,12 @@ export function etiquetaCategoriaEvidencia(cat?: string | null, ramo?: Ramo | nu
 // camioneta), 4 robo parcial (rueda, techo, batería…), 5 cristales, 6 DT.
 export type Ramo = "rc" | "incendio" | "rt" | "rp" | "cristal" | "dt";
 
+// El ramo sale del rubro (lib/tipos-siniestro.ts): una sola regla para
+// segmentar y para saber qué hay que adjuntar.
+const RAMO_POR_RUBRO: Record<number, Ramo> = { 1: "rc", 2: "incendio", 3: "rt", 4: "rp", 5: "cristal", 6: "dt" };
 export function ramoDeTipo(tipo?: string | null): Ramo | null {
-  const t = (tipo ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
-  if (!t) return null;
-  if (t.includes("RESPONSABILIDAD") || t.includes("CHOQUE") || t === "RC") return "rc";
-  if (t.includes("INCENDIO")) return "incendio";
-  if (t.includes("ROBO TOTAL") || t.includes("ROBO APARECIDO") || t === "RT" || t === "RA") return "rt";
-  if (t.includes("ROBO PARCIAL") || t.includes("RUEDA") || t === "RP") return "rp";
-  if (t.includes("VIDRIO") || t.includes("CRISTAL")) return "cristal";
-  if (t.includes("DESTRUCCION") || t === "DT") return "dt";
-  return null;
+  const r = rubroDeTipo(tipo);
+  return r ? RAMO_POR_RUBRO[r] : null;
 }
 
 // Pruebas digitales que corresponden a cada ramo, en el orden en que van en
@@ -91,4 +89,15 @@ export function seccionesExpediente(ramo: Ramo | null): SeccionExpediente[] {
 // evidencia = mismo orden que el PDF).
 export function ordenCategorias(ramo: Ramo | null): string[] {
   return seccionesExpediente(ramo).flatMap(s => s.categorias);
+}
+
+// Lo que hay que adjuntar en un caso según su rubro, agrupado como el
+// expediente, con lo que ya está marcado. Sin "Otros" (no se pide).
+export type ItemAdjuntar = { categoria: string; label: string; tiene: boolean };
+export function queAdjuntar(ramo: Ramo | null, presentes: Iterable<string | null | undefined>): { titulo: string; items: ItemAdjuntar[] }[] {
+  const tiene = new Set(Array.from(presentes).filter(Boolean) as string[]);
+  return seccionesExpediente(ramo).filter(s => s.id !== "otros").map(s => ({
+    titulo: s.titulo,
+    items: s.categorias.map(c => ({ categoria: c, label: etiquetaCategoriaEvidencia(c, ramo), tiene: tiene.has(c) })),
+  }));
 }

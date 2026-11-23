@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { RUBROS, rubroDeTipo } from "@/lib/tipos-siniestro";
+import { RubroChip } from "@/components/que-adjuntar";
 import { useSearchParams } from "next/navigation";
 import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
@@ -297,6 +298,21 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes, ordenAdmi
           <QuickBtn label="Cerrados" activo={quick === "cerrados"} n={conteos.cerrados} onClick={() => setQuick("cerrados")} />
         </div>
 
+        {/* Segmentación por rubro (la única): un botón por cada uno de los 6. */}
+        <div className="flex flex-wrap gap-1.5">
+          {RUBROS.map(r => {
+            const activo = rubro === String(r.rubro);
+            const n = rows.filter(x => rubroDeTipo(x.tipo) === r.rubro).length;
+            return (
+              <button key={r.rubro} onClick={() => setRubro(activo ? "" : String(r.rubro))} title={r.detalle}
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${activo ? "text-white" : "bg-white text-ink hover:opacity-80"}`}
+                style={activo ? { background: r.color, borderColor: r.color } : { borderColor: r.color }}>
+                {r.emoji} {r.rubro} · {r.nombre} <span className="opacity-70">({n})</span>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="flex flex-wrap gap-2">
           <input
             type="text"
@@ -306,7 +322,6 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes, ordenAdmi
             className="min-w-[220px] flex-1 rounded-md border border-line bg-white px-3 py-1.5 text-sm text-ink shadow-sm transition placeholder:text-slate/60 focus:border-ink/40 focus:outline-none"
           />
           <Select value={operador} onChange={setOperador} placeholder="Operador" opciones={operadores.map(o => ({ value: o, label: o }))} />
-          <Select value={rubro} onChange={setRubro} placeholder="Rubro" opciones={RUBROS.map(r => ({ value: String(r.rubro), label: `${r.rubro} · ${r.nombre}` }))} />
           <Select value={compania} onChange={setCompania} placeholder="Compañía" opciones={companias.map(c => ({ value: c, label: c }))} />
         </div>
       </div>
@@ -559,8 +574,9 @@ function Tabla({ rows, esAdmin }: { rows: SiniestroRow[]; esAdmin: boolean }) {
             <div className="min-w-0 flex-1 rounded-r-xl bg-white p-3.5">
               <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
                 <div className="min-w-0">
-                  <p className="font-mono text-base font-bold text-ink">
+                  <p className="flex flex-wrap items-center gap-2 font-mono text-base font-bold text-ink">
                     #{s.numeroGestion ?? s.nroSiniestro ?? "—"}
+                    <RubroChip rubro={rubroDeTipo(s.tipo)} chico />
                   </p>
                   <p className="truncate text-sm text-slate">
                     {s.asegurado ?? "—"} · {s.dni ?? "—"} · {s.tipo ?? "—"} · {compania}

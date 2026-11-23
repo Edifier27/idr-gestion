@@ -81,6 +81,7 @@ export default async function WhatsappPage({ searchParams }: { searchParams: { c
         id: p.id, nro: p.nro, asegurado: p.asegurado, dni: p.dni, tipo: p.tipo, rubro: rubroDeTipo(p.tipo), domicilio: p.domicilio, lugar: p.lugar,
         ingreso: new Date(p.creado_en).toISOString(),
         telefono: p.telefono, etapa: etiquetaEtapaContacto(p.etapa), entrevista: p.fecha_entrevista ? new Date(p.fecha_entrevista).toISOString() : null,
+        ramo, presentes: Array.from(tiene),
         pedidas: pedidas.length, tiene: pedidas.length - faltan.length, faltan: faltan.map(c => etiquetaCategoriaEvidencia(c, ramo)),
         porWhatsapp: porWa.find(x => x.siniestro_id === p.id)?.n ?? 0,
         resumen: resumenes.get(p.id)?.datos ?? null,

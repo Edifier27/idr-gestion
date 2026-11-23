@@ -6,6 +6,8 @@ import { notificar } from "@/components/notificaciones";
 import { etiquetaEtapaContacto } from "@/lib/etapa-contacto";
 import type { Pendiente } from "@/lib/pendientes";
 import { enPeriodo, PERIODOS, type Periodo } from "@/components/bandeja-whatsapp";
+import { RUBROS } from "@/lib/tipos-siniestro";
+import { RubroChip } from "@/components/que-adjuntar";
 
 export type CasoPanel = {
   id: string; nro: string | null; asegurado: string | null; tipo: string | null; rubro: number | null;
@@ -47,16 +49,22 @@ export function PanelOperadores({ operadores, casos, inicial }: { operadores: Op
   const [guardandoOrden, setGuardandoOrden] = useState(false);
   // Período de ingreso: para no ver todos los casos del operador de golpe.
   const [periodo, setPeriodo] = useState<Periodo>("todos");
+  // Segmento: solo los 6 rubros ("" = todos, "0" = sin rubro).
+  const [rubro, setRubro] = useState("");
 
   const todosSuyos = useMemo(() => ordenar(lista.filter(c => c.operador === sel)), [lista, sel]);
-  const suyos = useMemo(() => todosSuyos.filter(c => enPeriodo(c.ingreso, periodo)), [todosSuyos, periodo]);
+  const enRubro = (c: CasoPanel, r: string) => r === "" || String(c.rubro ?? 0) === r;
+  const suyos = useMemo(() => todosSuyos.filter(c => enPeriodo(c.ingreso, periodo) && enRubro(c, rubro)), [todosSuyos, periodo, rubro]);
   const op = operadores.find(o => o.codigo === sel) ?? null;
 
   async function mover(i: number, delta: number) {
     const j = i + delta;
     if (j < 0 || j >= suyos.length) return;
-    const nuevo = [...suyos];
-    [nuevo[i], nuevo[j]] = [nuevo[j], nuevo[i]];
+    // Con filtros puestos se intercambian los dos casos dentro de la lista
+    // COMPLETA del operador (si no, se renumerarían solo los visibles).
+    const nuevo = [...todosSuyos];
+    const a = nuevo.findIndex(c => c.id === suyos[i].id), b = nuevo.findIndex(c => c.id === suyos[j].id);
+    [nuevo[a], nuevo[b]] = [nuevo[b], nuevo[a]];
     const ordenNuevo = new Map(nuevo.map((c, k) => [c.id, k + 1]));
     setLista(l => l.map(c => (ordenNuevo.has(c.id) ? { ...c, orden: ordenNuevo.get(c.id)! } : c)));
     setGuardandoOrden(true);
@@ -141,7 +149,28 @@ export function PanelOperadores({ operadores, casos, inicial }: { operadores: Op
               </button>
             ))}
           </div>
-          {suyos.length === 0 ? <p className="text-sm text-slate">{todosSuyos.length ? "Ningún caso ingresó en este período." : "No tiene casos abiertos."}</p> : (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            <button onClick={() => setRubro("")} className={`rounded-full px-3 py-1 text-xs font-medium transition ${rubro === "" ? "bg-ink text-paper" : "bg-paper text-slate hover:text-ink"}`}>
+              Todos los rubros ({todosSuyos.filter(c => enPeriodo(c.ingreso, periodo)).length})
+            </button>
+            {RUBROS.map(r => {
+              const n = todosSuyos.filter(c => enPeriodo(c.ingreso, periodo) && c.rubro === r.rubro).length;
+              const activo = rubro === String(r.rubro);
+              return (
+                <button key={r.rubro} onClick={() => setRubro(activo ? "" : String(r.rubro))} title={r.detalle}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${activo ? "text-white" : "bg-white text-ink hover:opacity-80"}`}
+                  style={activo ? { background: r.color, borderColor: r.color } : { borderColor: r.color }}>
+                  {r.emoji} {r.rubro} · {r.nombre} ({n})
+                </button>
+              );
+            })}
+            {todosSuyos.some(c => !c.rubro) && (
+              <button onClick={() => setRubro(rubro === "0" ? "" : "0")} className={`rounded-full px-3 py-1 text-xs font-medium ${rubro === "0" ? "bg-amarillo text-ink" : "bg-amarillo/20 text-ink"}`}>
+                ⚠️ Sin rubro ({todosSuyos.filter(c => !c.rubro && enPeriodo(c.ingreso, periodo)).length})
+              </button>
+            )}
+          </div>
+          {suyos.length === 0 ? <p className="text-sm text-slate">{todosSuyos.length ? "Ningún caso en este período o rubro." : "No tiene casos abiertos."}</p> : (
             <ol className="divide-y divide-line">
               {suyos.map((c, i) => (
                 <li key={c.id} className="py-3">
@@ -155,7 +184,8 @@ export function PanelOperadores({ operadores, casos, inicial }: { operadores: Op
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                         <a href={`/siniestros/${c.id}`} className="font-mono text-sm font-bold text-ink hover:underline">#{c.nro ?? "s/n"}</a>
                         <span className="truncate text-sm text-ink">{c.asegurado ?? "—"}</span>
-                        <span className="text-xs text-slate">{c.rubro ? `${c.rubro} · ` : ""}{c.tipo ?? "—"} · {etiquetaEtapaContacto(c.etapa)} · {c.dias} días</span>
+                        <RubroChip rubro={c.rubro} chico />
+                        <span className="text-xs text-slate">{c.tipo ?? "—"} · {etiquetaEtapaContacto(c.etapa)} · {c.dias} días</span>
                       </div>
                       {c.pendientes.length > 0 ? (
                         <div className="mt-1.5 flex flex-wrap gap-1.5">

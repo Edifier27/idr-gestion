@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { colorPorTexto } from "@/lib/ui";
 import { notificar } from "@/components/notificaciones";
-import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ramoDeTipo } from "@/lib/categorias-evidencia";
+import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ramoDeTipo, type Ramo } from "@/lib/categorias-evidencia";
+import { RUBROS } from "@/lib/tipos-siniestro";
+import { QueAdjuntar, RubroChip } from "@/components/que-adjuntar";
 import type { ResumenCaso } from "@/lib/resumen-caso";
 import {
   IconoAbajo, IconoBandeja, IconoBuscar, IconoCamara, IconoCasos, IconoCerrar, IconoDer, IconoDescargar, IconoDocumento,
@@ -30,6 +32,7 @@ export type CasoHerramientas = {
   id: string; nro: string | null; asegurado: string | null; dni: string | null; tipo: string | null; rubro: number | null;
   domicilio: string | null; lugar: string | null; telefono: string | null; etapa: string; entrevista: string | null;
   ingreso: string;
+  ramo: Ramo | null; presentes: string[];
   pedidas: number; tiene: number; faltan: string[]; porWhatsapp: number;
   resumen: ResumenCaso | null; resumenEn: string | null; resumenViejo: boolean;
 };
@@ -679,22 +682,20 @@ function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFil
   const [pestana, setPestana] = useState<"casos" | "pruebas">("casos");
   const [segmento, setSegmento] = useState<string>("todos");
   const [periodo, setPeriodo] = useState<Periodo>("todos");
-  // Segmentos: prioridad y alerta que fijó la IA, y rubro.
-  const PESO = { alta: 0, media: 1, baja: 2 } as const;
+  // Segmentos: SOLO los 6 rubros (más "Sin rubro" si hay alguno mal cargado).
   const segmentos = useMemo(() => {
-    const rubros = Array.from(new Set(herramientas.map(h => h.rubro).filter((r): r is number => !!r))).sort();
+    const sinRubro = herramientas.filter(h => !h.rubro).length;
     return [
-      { k: "todos", t: `Todos (${herramientas.length})` },
-      { k: "prioridad", t: `Prioridad alta (${herramientas.filter(h => h.resumen?.segmento.prioridad === "alta").length})` },
-      { k: "alerta", t: `Alerta alta (${herramientas.filter(h => h.resumen?.segmento.alerta === "alta").length})` },
-      ...rubros.map(r => ({ k: `rubro-${r}`, t: `Rubro ${r} (${herramientas.filter(h => h.rubro === r).length})` })),
+      { k: "todos", t: `Todos (${herramientas.length})`, color: "" },
+      ...RUBROS.map(r => ({ k: `rubro-${r.rubro}`, t: `${r.emoji} ${r.rubro} · ${r.nombre} (${herramientas.filter(h => h.rubro === r.rubro).length})`, color: r.color })),
+      ...(sinRubro ? [{ k: "sin-rubro", t: `⚠️ Sin rubro (${sinRubro})`, color: "" }] : []),
     ];
   }, [herramientas]);
   const tarjetas = useMemo(() => herramientas
     .filter(h => enPeriodo(h.ingreso, periodo))
-    .filter(h => segmento === "todos" || (segmento === "prioridad" && h.resumen?.segmento.prioridad === "alta") || (segmento === "alerta" && h.resumen?.segmento.alerta === "alta") || (segmento.startsWith("rubro-") && String(h.rubro) === segmento.slice(6)))
-    .sort((a, b) => (PESO[a.resumen?.segmento.prioridad ?? "media"] - PESO[b.resumen?.segmento.prioridad ?? "media"]) || (PESO[a.resumen?.segmento.alerta ?? "media"] - PESO[b.resumen?.segmento.alerta ?? "media"])),
-    [herramientas, segmento, periodo]); // eslint-disable-line react-hooks/exhaustive-deps
+    .filter(h => segmento === "todos" || (segmento === "sin-rubro" && !h.rubro) || (segmento.startsWith("rubro-") && String(h.rubro) === segmento.slice(6)))
+    .sort((a, b) => ((a.rubro ?? 9) - (b.rubro ?? 9)) || b.ingreso.localeCompare(a.ingreso)),
+    [herramientas, segmento, periodo]);
   const media = mensajes.filter(m => m.media_url && m.direccion === "entrante");
   const grupos = useMemo(() => {
     const sinUbicar = media.filter(m => m.asignacion !== "asignado");
@@ -726,30 +727,21 @@ function Herramientas({ sel, herramientas, mensajes, casoFiltro, onCerrar, onFil
             {PERIODOS.map(x => <button key={x.k} className={`wa-chip ${periodo === x.k ? "activo" : ""}`} onClick={() => setPeriodo(x.k)}>{x.t} ({herramientas.filter(h => enPeriodo(h.ingreso, x.k)).length})</button>)}
           </div>
           <div className="wa-chips">
-            {segmentos.map(x => <button key={x.k} className={`wa-chip ${segmento === x.k ? "activo" : ""}`} onClick={() => setSegmento(x.k)}>{x.t}</button>)}
+            {segmentos.map(x => <button key={x.k} className={`wa-chip ${segmento === x.k ? "activo" : ""}`} style={segmento === x.k && x.color ? { background: x.color, borderColor: x.color, color: "#fff" } : undefined} onClick={() => setSegmento(x.k)}>{x.t}</button>)}
           </div>
           {tarjetas.map(h => (
             <div key={h.id} className={`wa-tarjeta ${casoFiltro === h.id ? "elegida" : ""}`} style={{ borderLeft: `4px solid ${colorCaso(h.id)}` }}>
               <div className="tit"><span className="nro">#{h.nro ?? "s/n"}</span><span style={{ fontSize: 12, color: "var(--wa-suave)" }}>{h.etapa}</span></div>
-              <div className="wa-segmento">
-                {h.rubro && <span className="seg rubro">Rubro {h.rubro}</span>}
-                {h.resumen && <span className={`seg prio-${h.resumen.segmento.prioridad}`}>Prioridad {h.resumen.segmento.prioridad}</span>}
-                {h.resumen && <span className={`seg alerta-${h.resumen.segmento.alerta}`}>Alerta {h.resumen.segmento.alerta}</span>}
-                {h.resumen?.segmento.etiquetas.map(e => <span key={e} className="seg">{e}</span>)}
-              </div>
+              <div className="wa-segmento"><RubroChip rubro={h.rubro} chico /></div>
               <div className="nom">{h.asegurado ?? "—"}</div>
               <div className="det">
-                {h.rubro ? `${h.rubro} · ` : ""}{h.tipo ?? "Sin tipo"}{h.dni ? ` · DNI ${h.dni}` : ""}<br />
+                {h.tipo ?? "Sin tipo"}{h.dni ? ` · DNI ${h.dni}` : ""}<br />
                 {h.domicilio ? <>🏠 {h.domicilio}<br /></> : null}
                 {h.lugar ? <>📍 {h.lugar}<br /></> : null}
                 {h.entrevista ? <>📅 Entrevista {new Date(h.entrevista).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}<br /></> : null}
                 📎 {h.porWhatsapp} prueba{h.porWhatsapp === 1 ? "" : "s"} por WhatsApp
               </div>
-              <div>
-                <div className="wa-fila" style={{ fontSize: 12, marginBottom: 3 }}><span>Pruebas del ramo</span><span>{h.tiene}/{h.pedidas}</span></div>
-                <div className="wa-barra-progreso"><i style={{ width: `${h.pedidas ? (h.tiene / h.pedidas) * 100 : 0}%` }} /></div>
-              </div>
-              {!h.resumen && h.faltan.length > 0 && <div className="wa-faltan">{h.faltan.map(f => <span key={f}>{f}</span>)}</div>}
+              <QueAdjuntar ramo={h.ramo} rubro={h.rubro} presentes={h.presentes} compacto />
               <ResumenIA h={h} onTexto={onTexto} ventanaAbierta={ventanaAbierta} onActualizado={onActualizado} />
               <div className="wa-acciones">
                 <button onClick={() => onFiltrar(casoFiltro === h.id ? null : h.id)}>{casoFiltro === h.id ? "Ver todo el chat" : "Ver sus pruebas en el chat"}</button>
@@ -884,7 +876,6 @@ function ResumenIA({ h, onTexto, ventanaAbierta, onActualizado }: { h: CasoHerra
       {abierto && (
         <>
           <p className="wa-res-txt">{r.resumen}</p>
-          {r.segmento.motivo && <p className="wa-res-motivo">{r.segmento.motivo}</p>}
           {r.alertas.length > 0 && (
             <>
               <div className="wa-panel-sub">⚠️ Alertas</div>

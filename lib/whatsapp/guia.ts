@@ -7,6 +7,7 @@ import { etiquetaCategoriaEvidencia, ramoDeTipo, seccionesExpediente } from "@/l
 import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
 import { generarResumenCaso } from "@/lib/resumen-caso";
 import { responder } from "@/lib/whatsapp/asignar";
+import { etiquetaRubro, rubroDeTipo } from "@/lib/tipos-siniestro";
 
 // Perito IA que guía al operador por WhatsApp (como el asesor IA de
 // AsesorCRM). No contesta foto por foto: espera a que el operador termine de
@@ -106,6 +107,7 @@ const SISTEMA = `Sos perito liquidador de siniestros en Argentina y guiás por W
 El operador terminó de mandarte una tanda de pruebas de un caso. Miralas UNA POR UNA como perito: qué muestran,
 si sirven, si están bien sacadas (legibles, completas, con fecha/patente/numeración visible), si coinciden con lo
 denunciado y con el lugar, y si hay señales de alteración, daño viejo o inconsistencias.
+Lo que se pide adjuntar depende del RUBRO del caso (pruebasDelRamoQueFaltan): pedí eso, no pruebas de otro rubro.
 Después decile qué falta para cerrar la investigación, en orden de importancia, y qué preguntar en la entrevista.
 
 Devolvé SOLO un JSON:
@@ -150,7 +152,7 @@ async function peritarCaso(siniestroId: string, mensajes: Entrante[], sueltos: s
     } catch { noVistos.push(m.media_nombre ?? "archivo"); }
   }
   const datos = {
-    siniestro: s.nro_siniestro, tipo, asegurado: s.asegurado ?? s.denunciante, dni: s.dni, domicilio: s.domicilio,
+    siniestro: s.nro_siniestro, tipo, rubro: etiquetaRubro(rubroDeTipo(tipo)), asegurado: s.asegurado ?? s.denunciante, dni: s.dni, domicilio: s.domicilio,
     lugarHecho: [lugar.calle1, lugar.altura1, lugar.localidad].filter(Boolean).join(" "),
     fechaOcurrencia: s.fecha_ocurrencia, horaOcurrencia: s.hora_ocurrencia, vencimiento: s.fecha_limite,
     relatoDenuncia: s.relato_denuncia, denunciaVsSiniestro: lectura ? { cotejo: lectura.cotejo, alertas: lectura.alertas } : null,

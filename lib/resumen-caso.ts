@@ -8,6 +8,7 @@ import { asegurarTablaDatoExtra } from "@/lib/db/asegurar-dato-extra";
 import { etiquetaCategoriaEvidencia, ramoDeTipo, seccionesExpediente } from "@/lib/categorias-evidencia";
 import { etiquetaEtapaContacto } from "@/lib/etapa-contacto";
 import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
+import { etiquetaRubro, rubroDeTipo } from "@/lib/tipos-siniestro";
 
 // Resumen de cada caso con IA (como la ficha de AsesorCRM): qué pasó, en qué
 // está, cómo se segmenta (rubro, alerta, prioridad, etiquetas), qué le falta
@@ -50,6 +51,7 @@ Con todo lo que hay del caso armá una ficha para el administrador. Devolvé SOL
   "preguntas_operador": ["preguntas para mandarle al operador por WhatsApp"],
   "alertas": ["inconsistencias o puntos a verificar"]
 }
+Los casos se segmentan SOLO por rubro (1 choque RC, 2 incendio, 3 robo total, 4 robo parcial, 5 cristales, 6 destrucción total): las etiquetas son descriptivas, no segmentos nuevos.
 En "faltan" incluí las pruebas del ramo que no están (pruebasDelRamoFaltantes) y sumá lo que el caso puntual pida.
 No inventes datos: si algo no surge de la información, no lo afirmes. Español rioplatense, claro y concreto.`;
 
@@ -75,7 +77,7 @@ export async function generarResumenCaso(siniestroId: string): Promise<ResumenCa
   const lugar = (s.lugarSiniestro ?? {}) as Record<string, string>;
 
   const datos = {
-    nro: s.nroSiniestro, compania: s.compania, tipo: s.tipo, asegurado: s.asegurado ?? s.denunciante, dni: s.dni,
+    nro: s.nroSiniestro, compania: s.compania, tipo: s.tipo, rubro: etiquetaRubro(rubroDeTipo(s.tipo)), asegurado: s.asegurado ?? s.denunciante, dni: s.dni,
     domicilio: s.domicilio, lugarHecho: [lugar.calle1, lugar.altura1, lugar.localidad].filter(Boolean).join(" "),
     fechaOcurrencia: s.fechaOcurrencia, ingreso: s.fechaIngreso, operador: s.operador,
     etapa: etiquetaEtapaContacto(s.etapaContacto), entrevista: s.fechaEntrevista, vencimiento: s.fechaLimite,
