@@ -17,6 +17,9 @@ import { ReportarProblema } from "@/components/reportar-problema";
 // queda solo en el drawer completo, se abre con "Más".
 const NAV = [
   { href: "/panel", label: "Tablero", icon: IconGrid, soloAdmin: false, quick: undefined as string | undefined, enBarraInferior: true },
+  { href: "/pipeline", label: "Pipeline", icon: IconColumnas, soloAdmin: false, quick: undefined as string | undefined, enBarraInferior: true },
+  { href: "/admin/operadores", label: "Panel de operadores", icon: IconOperadores, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
+  { href: "/base", label: "Base de datos", icon: IconTabla, soloAdmin: false, quick: undefined as string | undefined, enBarraInferior: false },
   { href: "/panel?quick=cerrados", label: "Cerrados", icon: IconArchive, soloAdmin: false, quick: "cerrados", enBarraInferior: true },
   { href: "/admin/ranking", label: "Ranking", icon: IconTrophy, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: true },
   { href: "/admin/usuarios", label: "Usuarios", icon: IconUsers, soloAdmin: true, quick: undefined as string | undefined, enBarraInferior: false },
@@ -225,6 +228,15 @@ function IconChevron({ colapsado }: { colapsado: boolean }) {
 }
 function IconGrid() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4"/></svg>;
+}
+function IconColumnas() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1.2" y="2" width="3.6" height="12" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="6.2" y="2" width="3.6" height="8" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="11.2" y="2" width="3.6" height="5" rx="1" stroke="currentColor" strokeWidth="1.4"/></svg>;
+}
+function IconOperadores() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><circle cx="5" cy="4.5" r="2" stroke="currentColor" strokeWidth="1.4"/><path d="M1.5 11c0-2 1.6-3.3 3.5-3.3S8.5 9 8.5 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M10 4h5M10 7h5M10 10h5M1.5 14h13.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>;
+}
+function IconTabla() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1.5" y="2" width="13" height="12" rx="1.3" stroke="currentColor" strokeWidth="1.4"/><path d="M1.5 6h13M1.5 10h13M6 6v8" stroke="currentColor" strokeWidth="1.4"/></svg>;
 }
 function IconArchive() {
   return <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0"><rect x="1.5" y="2" width="13" height="3.2" rx="0.8" stroke="currentColor" strokeWidth="1.4"/><path d="M2.3 5.2v7.3a1.5 1.5 0 001.5 1.5h8.4a1.5 1.5 0 001.5-1.5V5.2" stroke="currentColor" strokeWidth="1.4"/><path d="M6.2 8.3h3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>;

@@ -37,6 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: { siniestroId
   // solo el operador — no tiene sentido al revés, y evita que alguien la use
   // para spamear al otro lado con el tipo equivocado.
   if (tipo === "devolucion" && !esAdmin(session)) return NextResponse.json({ error: "Solo el admin puede pedir una corrección." }, { status: 403 });
+  if (tipo === "pregunta" && !esAdmin(session)) return NextResponse.json({ error: "Las preguntas al operador las hace el admin." }, { status: 403 });
   if (tipo === "pedido_ayuda" && esAdmin(session)) return NextResponse.json({ error: "El pedido de ayuda es para el operador." }, { status: 403 });
   const [row] = await db.insert(bitacora)
     .values({

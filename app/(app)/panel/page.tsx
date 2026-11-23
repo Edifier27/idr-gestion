@@ -8,6 +8,7 @@ import type { SiniestroRow } from "@/lib/db/schema";
 import { listarOperadoresActivos } from "@/lib/operadores";
 import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 import { TablaSiniestros } from "@/components/tabla-siniestros";
+import { ordenAdmin } from "@/lib/pendientes";
 import { PanelLayout } from "@/components/panel-layout";
 
 export const metadata: Metadata = { title: "Tablero · IDR Gestión" };
@@ -34,6 +35,7 @@ export default async function Dashboard() {
   const operadoresActivos = await listarOperadoresActivos();
   const operadoresExistentes = Array.from(new Set([...operadoresActivos, ...operadoresDeCasos])).sort();
 
+  const orden = dbConfigurada() ? await ordenAdmin() : {};
   const total = rows.length;
   const derivados = esAdmin ? rows.filter(r => r.derivadoAdmin && r.estado !== "cerrado").length : 0;
 
@@ -107,7 +109,7 @@ export default async function Dashboard() {
 
       <PanelLayout esAdmin={esAdmin} operadoresExistentes={operadoresExistentes}>
         {sinDb ? <EmptyStateSinDb /> : rows.length === 0 ? <EmptyStateSinDatos /> : (
-          <TablaSiniestros rows={rows} esAdmin={esAdmin} operadoresExistentes={operadoresExistentes} />
+          <TablaSiniestros rows={rows} esAdmin={esAdmin} operadoresExistentes={operadoresExistentes} ordenAdmin={orden} />
         )}
       </PanelLayout>
     </main>

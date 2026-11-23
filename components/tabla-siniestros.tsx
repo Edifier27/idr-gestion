@@ -62,8 +62,9 @@ function prioridad(r: SiniestroRow, esAdmin: boolean): number {
 const SIN_ASIGNAR = "__sin_asignar__";
 function claveOperador(r: SiniestroRow) { return r.operador ?? SIN_ASIGNAR; }
 
-export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
+export function TablaSiniestros({ rows, esAdmin, operadoresExistentes, ordenAdmin = {} }: {
   rows: SiniestroRow[]; esAdmin: boolean; operadoresExistentes?: string[];
+  ordenAdmin?: Record<string, number>; // prioridad que fija el admin en el Panel de operadores
 }) {
   // El link "Cerrados" de la sidebar manda a /panel?quick=cerrados — si viene
   // ese parámetro, la tabla arranca ya parada en esa bandeja.
@@ -173,8 +174,9 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes }: {
       });
     }
     // Lo más urgente primero, siempre — no solo en la pestaña "Hoy".
-    return [...out].sort((a, b) => prioridad(b, esAdmin) - prioridad(a, esAdmin));
-  }, [rows, quick, operador, compania, rubro, etapaContacto, resultado, busqueda, esAdmin]);
+    // Lo más urgente primero; a igual urgencia, el orden que fijó el admin.
+    return [...out].sort((a, b) => prioridad(b, esAdmin) - prioridad(a, esAdmin) || (ordenAdmin[a.id] ?? 1e9) - (ordenAdmin[b.id] ?? 1e9));
+  }, [rows, quick, operador, compania, rubro, etapaContacto, resultado, busqueda, esAdmin, ordenAdmin]);
 
   // El resumen (por operador + resultados) queda un click abajo por default:
   // si algo ahí adentro está activo como filtro, lo mostramos igual para que

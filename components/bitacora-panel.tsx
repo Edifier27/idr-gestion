@@ -18,6 +18,7 @@ export type EntradaBitacora = {
 
 const ETIQUETA_TIPO: Record<string, string> = {
   devolucion: "🔧 Corrección pedida",
+  pregunta: "❓ Pregunta del admin",
   pedido_ayuda: "🆘 Pedido de ayuda",
   mail: "✉️ Mail automático",
   nota: "Mensaje",
@@ -31,6 +32,7 @@ const ETIQUETA_TIPO: Record<string, string> = {
 const TAG_ESTILO: Record<string, string> = {
   devolucion: "bg-fraude text-paper",
   pedido_ayuda: "bg-amber text-paper",
+  pregunta: "bg-azul text-paper",
 };
 
 // Bitácora del caso — además del registro de gestión (llamados, mails), es
@@ -102,6 +104,7 @@ export function BitacoraPanel({ siniestroId, entradasIniciales, esAdmin, nombreO
           <SelectShell>
             <select value={tipo} onChange={e => setTipo(e.target.value)} className={`w-56 ${selectCampo}`}>
               <option value="nota">Mensaje</option>
+              {esAdmin && <option value="pregunta">❓ Pregunta al operador</option>}
               {esAdmin && <option value="devolucion">🔧 Pedir corrección</option>}
               {!esAdmin && <option value="pedido_ayuda">🆘 Necesito ayuda</option>}
             </select>
