@@ -69,7 +69,7 @@ export function InformePanel({ siniestroId, informeInicial }: { siniestroId: str
             disabled={generando || borrando}
             className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-fraude transition hover:bg-fraude/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {borrando ? "Borrando…" : "🗑 Borrar todo"}
+            {borrando ? "Borrando…" : "Borrar todo"}
           </button>
         )}
         {error && <span className="text-xs text-fraude">{error}</span>}

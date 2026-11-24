@@ -72,7 +72,7 @@ export function InformeFinalPanel({ siniestroId, informeInicial }: { siniestroId
             disabled={generando || borrando}
             className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-fraude transition hover:bg-fraude/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {borrando ? "Borrando…" : "🗑 Borrar todo"}
+            {borrando ? "Borrando…" : "Borrar todo"}
           </button>
         )}
         {error && <span className="text-xs text-fraude">{error}</span>}
@@ -81,7 +81,7 @@ export function InformeFinalPanel({ siniestroId, informeInicial }: { siniestroId
         <div className="overflow-hidden rounded-lg border border-ink/20 bg-ink/[0.03]">
           <div className="flex items-center gap-1.5 border-b border-ink/10 bg-white px-3 py-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-ink" />
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate">🔒 Privado — solo vos lo ves</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate">Privado — solo vos lo ves</span>
           </div>
           <pre className="max-h-[32rem] overflow-y-auto whitespace-pre-wrap p-4 text-xs leading-relaxed text-ink">{informeInicial}</pre>
         </div>

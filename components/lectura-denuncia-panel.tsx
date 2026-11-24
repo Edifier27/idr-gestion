@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { boton } from "@/lib/ui";
 import { notificar } from "@/components/notificaciones";
 import type { LecturaDenuncia } from "@/lib/leer-denuncia";
+import { Icono } from "@/components/iconos-idr";
 
 // Botón "Leer denuncia y ampliación" + resultado del cotejo denuncia vs.
 // siniestro (lo que coincide, lo que no y las alertas). Va arriba del
@@ -37,7 +38,7 @@ export function LecturaDenunciaPanel({ siniestroId, lecturaInicial }: { siniestr
   return (
     <div className="mb-3 space-y-2">
       <button onClick={leer} disabled={leyendo} className={`w-full ${boton.secundario}`}>
-        {leyendo ? "Leyendo denuncia…" : lectura ? "📄 Volver a leer denuncia y ampliación" : "📄 Leer denuncia y ampliación con IA"}
+        {leyendo ? "Leyendo denuncia…" : lectura ? "Volver a leer denuncia y ampliación" : "Leer denuncia y ampliación con IA"}
       </button>
       {lectura && (
         <div className="rounded-md border border-line bg-paper/60 p-2.5 text-xs">
@@ -59,7 +60,7 @@ export function LecturaDenunciaPanel({ siniestroId, lecturaInicial }: { siniestr
                 <tbody className="divide-y divide-line">
                   {lectura.cotejo.map((c, i) => (
                     <tr key={i} className={c.coincide === false ? "bg-fraude/5" : ""}>
-                      <td className="py-1 pr-1 align-top font-medium text-ink">{c.coincide === false ? "⚠️ " : c.coincide ? "✓ " : ""}{c.dato}</td>
+                      <td className="py-1 pr-1 align-top font-medium text-ink">{c.coincide === false ? <Icono n="alerta" size={13} className="mr-1 inline align-[-2px] text-fraude" /> : c.coincide ? "✓ " : ""}{c.dato}</td>
                       <td className="py-1 pr-1 align-top text-slate">{c.siniestro ?? "—"}</td>
                       <td className="py-1 align-top text-slate">{c.denuncia ?? "—"}{c.nota ? <span className="block text-[10px] italic">{c.nota}</span> : null}</td>
                     </tr>

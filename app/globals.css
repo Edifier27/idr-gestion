@@ -27,3 +27,6 @@ body {
 .tnum {
   font-variant-numeric: tabular-nums;
 }
+
+/* Emojis Fluent (components/emoji.tsx): del tamaño del texto, alineados a la línea. */
+img.emoji { display: inline-block; width: 1.2em; height: 1.2em; vertical-align: -0.22em; margin: 0 0.04em; user-select: none; }

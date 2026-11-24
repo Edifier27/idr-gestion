@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { RUBROS, rubroDeTipo } from "@/lib/tipos-siniestro";
 import { RubroChip } from "@/components/que-adjuntar";
+import { Icono } from "@/components/iconos-idr";
+import { Emoji } from "@/components/emoji";
 import { useSearchParams } from "next/navigation";
 import type { SiniestroRow } from "@/lib/db/schema";
 import { formatARS } from "@/lib/facturacion";
@@ -288,9 +290,9 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes, ordenAdmi
       <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2">
           {esAdmin && conteos.derivados > 0 && (
-            <QuickBtn label="🚩 Derivados" activo={quick === "derivados"} n={conteos.derivados} urgente onClick={() => setQuick("derivados")} />
+            <QuickBtn icono="bandera" label="Derivados" activo={quick === "derivados"} n={conteos.derivados} urgente onClick={() => setQuick("derivados")} />
           )}
-          <QuickBtn label="🔥 Hoy" activo={quick === "hoy"} n={conteos.hoy} urgente={conteos.hoy > 0} onClick={() => setQuick("hoy")} />
+          <QuickBtn icono="urgente" label="Hoy" activo={quick === "hoy"} n={conteos.hoy} urgente={conteos.hoy > 0} onClick={() => setQuick("hoy")} />
           <QuickBtn label="Todos" activo={quick === "todos"} n={conteos.todos} onClick={() => setQuick("todos")} />
           <QuickBtn label="Pendientes" activo={quick === "pendientes"} n={conteos.pendientes} onClick={() => setQuick("pendientes")} />
           <QuickBtn label="Sin informe" activo={quick === "sin_informe"} n={conteos.sin_informe} onClick={() => setQuick("sin_informe")} />
@@ -305,9 +307,9 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes, ordenAdmi
             const n = rows.filter(x => rubroDeTipo(x.tipo) === r.rubro).length;
             return (
               <button key={r.rubro} onClick={() => setRubro(activo ? "" : String(r.rubro))} title={r.detalle}
-                className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${activo ? "text-white" : "bg-white text-ink hover:opacity-80"}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition ${activo ? "text-white" : "bg-white text-ink hover:opacity-80"}`}
                 style={activo ? { background: r.color, borderColor: r.color } : { borderColor: r.color }}>
-                {r.emoji} {r.rubro} · {r.nombre} <span className="opacity-70">({n})</span>
+                <Icono n={r.icono} size={15} style={activo ? undefined : { color: r.color }} /> {r.rubro} · {r.nombre} <span className="opacity-70">({n})</span>
               </button>
             );
           })}
@@ -329,7 +331,7 @@ export function TablaSiniestros({ rows, esAdmin, operadoresExistentes, ordenAdmi
       {filtradas.length === 0 ? (
         <div className="rounded-lg border border-dashed border-line bg-white p-10 text-center">
           <p className="text-sm text-slate">
-            {quick === "hoy" ? "🎉 Nada urgente por hoy." : "Ningún siniestro coincide con los filtros."}
+            {quick === "hoy" ? <><Emoji e="🎉" /> Nada urgente por hoy.</> : "Ningún siniestro coincide con los filtros."}
           </p>
         </div>
       ) : (
@@ -349,7 +351,7 @@ function FlechaFlujo({ className = "" }: { className?: string }) {
   );
 }
 
-function QuickBtn({ label, n, activo, urgente, onClick }: { label: string; n: number; activo: boolean; urgente?: boolean; onClick: () => void }) {
+function QuickBtn({ label, icono, n, activo, urgente, onClick }: { label: string; icono?: string; n: number; activo: boolean; urgente?: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -358,6 +360,7 @@ function QuickBtn({ label, n, activo, urgente, onClick }: { label: string; n: nu
       }`}
     >
       {urgente && <PuntoUrgente />}
+      {icono && <Icono n={icono} size={14} />}
       {label} <span className={activo ? "text-paper/70" : "text-slate"}>({n})</span>
     </button>
   );
@@ -521,7 +524,7 @@ function CartelEtapa({ s }: { s: SiniestroRow }) {
     // Prioridad sobre el resto: el operador ya dio por terminada su parte y
     // te devolvió el trámite explícitamente — es más específico que un
     // "contacto_fallido" genérico (ese puede ser solo un reintento en curso).
-    texto = `🚩 DERIVADO AL ADMIN POR ${operador}${s.motivoContacto ? `: ${s.motivoContacto}` : ""}`;
+    texto = `DERIVADO AL ADMIN POR ${operador}${s.motivoContacto ? `: ${s.motivoContacto}` : ""}`;
     color = "text-fraude bg-fraude/10";
   } else if (s.etapaContacto === "contacto_fallido") {
     texto = `SIN CONTACTAR — ${operador}${s.motivoContacto ? `: ${s.motivoContacto}` : ""}`;

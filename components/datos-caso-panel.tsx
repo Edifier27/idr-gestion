@@ -8,6 +8,7 @@ import { mapsUrl, telUrl, whatsappUrl } from "@/lib/contacto";
 import { MapaEmbed } from "@/components/mapa-embed";
 import { IconWhatsApp } from "@/components/icon-whatsapp";
 import { TIPOS_SINIESTRO, RUBROS } from "@/lib/tipos-siniestro";
+import { Icono } from "@/components/iconos-idr";
 
 type DatoExtra = { id: string; etiqueta: string; valor: string };
 
@@ -102,7 +103,7 @@ export function DatosCasoPanel({ siniestroId, tipo, dni, poliza, denunciante, do
   return (
     <div className="space-y-3">
       <div className={`min-w-0 ${tarjeta} p-4`}>
-        <CabeceraTarjeta icono="📋" titulo="Datos del siniestro" />
+        <CabeceraTarjeta icono="documento" titulo="Datos del siniestro" />
         <div className="divide-y divide-dashed divide-line">
           <div className="-mx-1.5 grid grid-cols-[104px_1fr] items-center gap-2 rounded-md px-1.5 py-2 font-mono text-[11px] transition hover:bg-paper/70">
             <span className="truncate uppercase tracking-wide text-slate">Tipo</span>
@@ -133,7 +134,7 @@ export function DatosCasoPanel({ siniestroId, tipo, dni, poliza, denunciante, do
 
       {datosExtra.length > 0 && (
         <div className={`min-w-0 ${tarjeta} p-4`}>
-          <CabeceraTarjeta icono="🏷️" titulo="Datos adicionales" />
+          <CabeceraTarjeta icono="etiqueta" titulo="Datos adicionales" />
           <div className="divide-y divide-dashed divide-line">
             {datosExtra.map(d => (
               <div key={d.id} className="group -mx-1.5 flex items-baseline gap-2 rounded-md px-1.5 py-2 font-mono text-[11px] transition hover:bg-paper/70">
@@ -185,7 +186,7 @@ export function DatosCasoPanel({ siniestroId, tipo, dni, poliza, denunciante, do
 function CabeceraTarjeta({ icono, titulo }: { icono: string; titulo: string }) {
   return (
     <div className="mb-1.5 flex items-center gap-1.5 text-ink">
-      <span className="text-sm leading-none">{icono}</span>
+      <Icono n={icono} size={16} className="text-azul" />
       <h3 className="text-[11px] font-bold uppercase tracking-wide">{titulo}</h3>
     </div>
   );
@@ -222,7 +223,7 @@ function BotonMaps({ direccion }: { direccion: string }) {
       title="Abrir en Google Maps"
       className="shrink-0 text-sm leading-none text-slate transition hover:text-ink"
     >
-      📍
+      <Icono n="lugar" size={15} />
     </a>
   );
 }
@@ -241,7 +242,7 @@ function BotonesContacto({ numero }: { numero: string }) {
       )}
       {tel && (
         <a href={tel} title="Llamar" className="text-sm leading-none text-slate transition hover:text-ink">
-          📞
+          <Icono n="telefono" size={14} />
         </a>
       )}
     </span>

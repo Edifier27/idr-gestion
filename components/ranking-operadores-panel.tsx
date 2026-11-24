@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { boton, selectCampo, tarjetaElevada, colorPorTexto } from "@/lib/ui";
 import { SelectShell } from "@/components/select-shell";
 import { notificar } from "@/components/notificaciones";
+import { Emoji, ConEmojis } from "@/components/emoji";
 
 export type StatOperador = { nombre: string; total: number; resueltos: number };
 export type EventoDesistido = { operador: string; fecha: string }; // fecha: ISO string
@@ -97,7 +98,7 @@ export function RankingOperadoresPanel({ stats, eventos, fecha }: { stats: StatO
     ctx.font = `700 30px ${FUENTE}`;
     ctx.fillText("IDR GESTIÓN", 56, 74);
     ctx.font = `800 50px ${FUENTE}`;
-    ctx.fillText("🏆 Ranking de desistidos", 56, 148);
+    ctx.fillText("Ranking de desistidos", 56, 148);
     ctx.fillStyle = "rgba(255,255,255,0.65)";
     ctx.font = `500 24px ${FUENTE}`;
     ctx.fillText(`${tituloMes} · generado el ${fecha}`, 56, 192);
@@ -228,7 +229,7 @@ export function RankingOperadoresPanel({ stats, eventos, fecha }: { stats: StatO
           </select>
         </SelectShell>
         <button onClick={copiarImagen} disabled={generando} className={boton.primario}>
-          {generando ? "Generando…" : "📋 Copiar imagen"}
+          {generando ? "Generando…" : "Copiar imagen"}
         </button>
       </div>
 
@@ -236,7 +237,7 @@ export function RankingOperadoresPanel({ stats, eventos, fecha }: { stats: StatO
         {statsOrdenados.map((s, i) => (
           <div key={s.nombre} className={`flex items-center gap-4 border-b border-line px-5 py-4 last:border-b-0 ${i < 3 && s.desistidos > 0 ? "bg-amber/5" : ""}`}>
             <span className="flex w-9 shrink-0 items-center justify-center text-2xl">
-              {i < 3 && s.desistidos > 0 ? MEDALLA[i] : <span className="text-sm font-bold text-slate">{i + 1}</span>}
+              {i < 3 && s.desistidos > 0 ? <Emoji e={MEDALLA[i]} size={26} /> : <span className="text-sm font-bold text-slate">{i + 1}</span>}
             </span>
             <span
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"

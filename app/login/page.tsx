@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { boton, campo } from "@/lib/ui";
+import { Icono } from "@/components/iconos-idr";
 
 export default function Login() {
   const router = useRouter();
@@ -71,7 +72,7 @@ export default function Login() {
           </label>
           {error && (
             <p className="flex items-center gap-1.5 rounded-md border border-fraude/30 bg-fraude/5 px-3 py-2 text-sm font-medium text-fraude">
-              <span aria-hidden>⚠</span> {error}
+              <Icono n="alerta" size={15} className="mr-1 inline align-[-3px]" /> {error}
             </p>
           )}
           <button type="submit" disabled={enviando} className={`w-full ${boton.primario}`}>

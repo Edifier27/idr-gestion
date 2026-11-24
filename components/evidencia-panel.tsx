@@ -5,6 +5,7 @@ import { upload } from "@vercel/blob/client";
 import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ordenCategorias, ramoDeTipo, seccionesExpediente, type Ramo } from "@/lib/categorias-evidencia";
 import { rubroDeTipo } from "@/lib/tipos-siniestro";
 import { QueAdjuntar, RubroChip } from "@/components/que-adjuntar";
+import { Icono, IconoMosaico, ICONO_CATEGORIA, COLOR_SECCION } from "@/components/iconos-idr";
 import { confirmar, notificar } from "@/components/notificaciones";
 import { SelectShell } from "@/components/select-shell";
 import { selectCampo } from "@/lib/ui";
@@ -19,7 +20,7 @@ type Archivo = {
   creadoEn: Date | string;
 };
 
-const CATEGORIAS = [{ value: "", label: "🤖 Que la IA la sugiera" }, ...CATEGORIAS_EVIDENCIA];
+const CATEGORIAS = [{ value: "", label: "Que la IA la sugiera" }, ...CATEGORIAS_EVIDENCIA];
 
 // Tipo de dato propio en el dataTransfer para distinguir "estoy arrastrando
 // un archivo nuevo desde el escritorio" (trae "Files") de "estoy arrastrando
@@ -33,33 +34,26 @@ function etiquetaCategoria(cat: string | null | undefined, ramo: Ramo | null): s
   return cat ? etiquetaCategoriaEvidencia(cat, ramo) : null;
 }
 
-const ICONOS: Record<string, { emoji: string; corta: string }> = {
-  denuncia: { emoji: "📃", corta: "Denuncia" },
-  ampliacion: { emoji: "✍️", corta: "Ampliación" },
-  foto_lugar: { emoji: "📍", corta: "Lugar" },
-  foto_siniestro: { emoji: "🚗", corta: "Inspección" },
-  dni: { emoji: "🪪", corta: "DNI aseg." },
-  dni_conductor: { emoji: "🪪", corta: "DNI cond." },
-  registro_conducir: { emoji: "🚘", corta: "Registro" },
-  cedula_vehiculo: { emoji: "📇", corta: "Cédula" },
-  geolocalizacion: { emoji: "🗺️", corta: "Geo" },
-  llamadas: { emoji: "📞", corta: "Llamadas" },
-  mensajes: { emoji: "💬", corta: "Chats" },
-  palabras_clave: { emoji: "🔎", corta: "Palabras clave" },
-  foto_momento: { emoji: "📸", corta: "Momento" },
-  foto_previa: { emoji: "🕓", corta: "Foto previa" },
-  llave: { emoji: "🔑", corta: "Llaves" },
-  vtv: { emoji: "✅", corta: "VTV" },
-  recibo_sueldo: { emoji: "💵", corta: "Recibo" },
+const ICONOS: Record<string, { corta: string }> = {
+  denuncia: { corta: "Denuncia" }, ampliacion: { corta: "Ampliación" }, foto_lugar: { corta: "Lugar" },
+  foto_siniestro: { corta: "Inspección" }, dni: { corta: "DNI aseg." }, dni_conductor: { corta: "DNI cond." },
+  registro_conducir: { corta: "Registro" }, cedula_vehiculo: { corta: "Cédula" }, geolocalizacion: { corta: "Geo" },
+  llamadas: { corta: "Llamadas" }, mensajes: { corta: "Chats" }, palabras_clave: { corta: "Palabras clave" },
+  foto_momento: { corta: "Momento" }, foto_previa: { corta: "Foto previa" }, llave: { corta: "Llaves" },
+  vtv: { corta: "VTV" }, recibo_sueldo: { corta: "Recibo" },
 };
+// Sección del expediente de cada categoría (para el color del mosaico).
+function seccionDe(ramo: Ramo | null, cat: string) {
+  return seccionesExpediente(ramo).find(x => x.categorias.includes(cat))?.id ?? "otros";
+}
 
 // Cuadraditos de carga rápida: los del orden del expediente para el ramo del
 // caso (denuncia, lugar, inspección, documentación y las pruebas digitales
 // que corresponden), más "Otra foto" al final.
 // Solo lo que corresponde al rubro del caso (sin la sección "Otros").
-function capturaRapida(ramo: Ramo | null): { value: string; emoji: string; corta: string }[] {
+function capturaRapida(ramo: Ramo | null): { value: string; corta: string }[] {
   const lista = seccionesExpediente(ramo).filter(s => s.id !== "otros").flatMap(s => s.categorias).filter(v => ICONOS[v]).map(v => ({ value: v, ...ICONOS[v] }));
-  return [...lista, { value: "fotos", emoji: "🖼️", corta: "Otra foto" }];
+  return [...lista, { value: "fotos", corta: "Otra foto" }];
 }
 
 export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivosChange }: {
@@ -264,9 +258,10 @@ export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivo
           cualquier otro lado del panel. */}
       {arrastrando && (
         <p className="rounded-md border border-dashed border-azul/40 bg-azul/5 px-3 py-1.5 text-center text-xs font-medium text-azul">
+          <Icono n="entrada" size={14} className="mr-1 inline align-[-2px]" />
           {categoriaSobrevolada
-            ? `📥 Soltar como "${(ICONOS[categoriaSobrevolada]?.corta ?? etiquetaCategoria(categoriaSobrevolada, ramo))}"`
-            : "📥 Soltá sobre un tipo para clasificarlo, o acá para dejarlo sin categoría"}
+            ? `Soltar como "${(ICONOS[categoriaSobrevolada]?.corta ?? etiquetaCategoria(categoriaSobrevolada, ramo))}"`
+            : "Soltá sobre un tipo para clasificarlo, o acá para dejarlo sin categoría"}
         </p>
       )}
 
@@ -288,7 +283,7 @@ export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivo
                 : "border-line bg-white hover:border-azul/30 hover:bg-azul/5"
             }`}
           >
-            <span className="text-xl leading-none">{c.emoji}</span>
+            <IconoMosaico n={ICONO_CATEGORIA[c.value] ?? "fotos"} color={COLOR_SECCION[seccionDe(ramo, c.value)]} size={30} />
             <span className="text-[10px] font-semibold leading-tight text-ink">{c.corta}</span>
             <input
               type="file"
@@ -326,7 +321,7 @@ export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivo
             </select>
           </SelectShell>
           <label className="cursor-pointer rounded-md border border-azul/20 bg-white px-3 py-1.5 text-xs font-medium text-ink shadow-sm transition hover:bg-azul hover:text-paper">
-            {subiendo ? "Subiendo…" : "📎 Subir archivo"}
+            {subiendo ? "Subiendo…" : <span className="inline-flex items-center gap-1"><Icono n="clip" size={14} /> Subir archivo</span>}
             <input
               ref={inputRef}
               type="file"
@@ -347,7 +342,7 @@ export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivo
         <p className="text-sm text-slate">Sin evidencia cargada todavía.</p>
       ) : (
         <div className="space-y-4">
-          <p className="text-[11px] text-slate">📦 Arrastrá una tarjeta a otro grupo para recategorizarla.</p>
+          <p className="text-[11px] text-slate">Arrastrá una tarjeta a otro grupo para recategorizarla.</p>
           {agruparPorCategoria(archivos, ramo).map(grupo => (
             <div
               key={grupo.categoria ?? "sin-categoria"}
@@ -404,7 +399,7 @@ function TarjetaArchivo({ f, onBorrar }: { f: Archivo; onBorrar: (id: string) =>
           <img src={f.url} alt={f.nombre} className="h-24 w-full object-cover" />
         ) : (
           <div className="flex h-24 w-full flex-col items-center justify-center gap-1 text-slate">
-            <span className="text-2xl">📄</span>
+            <Icono n="documento" size={28} />
             <span className="px-1 text-center text-[10px] leading-tight">{f.nombre}</span>
           </div>
         )}

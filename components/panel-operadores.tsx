@@ -8,6 +8,7 @@ import type { Pendiente } from "@/lib/pendientes";
 import { enPeriodo, PERIODOS, type Periodo } from "@/components/bandeja-whatsapp";
 import { RUBROS } from "@/lib/tipos-siniestro";
 import { RubroChip } from "@/components/que-adjuntar";
+import { Icono } from "@/components/iconos-idr";
 
 export type CasoPanel = {
   id: string; nro: string | null; asegurado: string | null; tipo: string | null; rubro: number | null;
@@ -158,15 +159,15 @@ export function PanelOperadores({ operadores, casos, inicial }: { operadores: Op
               const activo = rubro === String(r.rubro);
               return (
                 <button key={r.rubro} onClick={() => setRubro(activo ? "" : String(r.rubro))} title={r.detalle}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${activo ? "text-white" : "bg-white text-ink hover:opacity-80"}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${activo ? "text-white" : "bg-white text-ink hover:opacity-80"}`}
                   style={activo ? { background: r.color, borderColor: r.color } : { borderColor: r.color }}>
-                  {r.emoji} {r.rubro} · {r.nombre} ({n})
+                  <Icono n={r.icono} size={15} style={activo ? undefined : { color: r.color }} /> {r.rubro} · {r.nombre} ({n})
                 </button>
               );
             })}
             {todosSuyos.some(c => !c.rubro) && (
               <button onClick={() => setRubro(rubro === "0" ? "" : "0")} className={`rounded-full px-3 py-1 text-xs font-medium ${rubro === "0" ? "bg-amarillo text-ink" : "bg-amarillo/20 text-ink"}`}>
-                ⚠️ Sin rubro ({todosSuyos.filter(c => !c.rubro && enPeriodo(c.ingreso, periodo)).length})
+                <Icono n="alerta" size={14} className="mr-1 inline" />Sin rubro ({todosSuyos.filter(c => !c.rubro && enPeriodo(c.ingreso, periodo)).length})
               </button>
             )}
           </div>
@@ -203,7 +204,7 @@ export function PanelOperadores({ operadores, casos, inicial }: { operadores: Op
                       )}
                     </div>
                     {abierta !== c.id && (
-                      <button onClick={() => abrirPregunta(c)} className={`shrink-0 ${boton.secundario}`}>❓ Preguntar</button>
+                      <button onClick={() => abrirPregunta(c)} className={`shrink-0 ${boton.secundario}`}><Icono n="pregunta" size={14} className="mr-1 inline align-[-3px]" />Preguntar</button>
                     )}
                   </div>
                 </li>

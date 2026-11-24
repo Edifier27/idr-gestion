@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmar, notificar } from "@/components/notificaciones";
+import { Icono } from "@/components/iconos-idr";
 
 // Marca el caso como cerrado (estado = "cerrado") y lo saca de las bandejas
 // de trabajo activas — pasa a verse solo en la pestaña "Cerrados" del
@@ -38,7 +39,7 @@ export function CerrarCasoBoton({ siniestroId, yaClosed }: { siniestroId: string
   if (yaClosed) {
     return (
       <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-line bg-paper px-3.5 py-2 text-sm font-medium text-slate">
-        🔒 Caso cerrado
+        <Icono n="candado" size={14} className="mr-1 inline align-[-3px]" />Caso cerrado
       </span>
     );
   }
@@ -50,7 +51,7 @@ export function CerrarCasoBoton({ siniestroId, yaClosed }: { siniestroId: string
       disabled={enviando}
       className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-fraude/30 bg-fraude/5 px-3.5 py-2 text-sm font-medium text-fraude shadow-sm transition hover:bg-fraude/10 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      {enviando ? "Cerrando…" : "🔒 Cerrar caso"}
+      {enviando ? "Cerrando…" : <><Icono n="candado" size={14} className="mr-1 inline align-[-3px]" />Cerrar caso</>}
     </button>
   );
 }

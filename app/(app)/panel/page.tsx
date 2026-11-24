@@ -10,6 +10,7 @@ import { asegurarColumnasComunicacion } from "@/lib/db/asegurar-comunicacion";
 import { TablaSiniestros } from "@/components/tabla-siniestros";
 import { ordenAdmin } from "@/lib/pendientes";
 import { PanelLayout } from "@/components/panel-layout";
+import { Icono } from "@/components/iconos-idr";
 
 export const metadata: Metadata = { title: "Tablero · IDR Gestión" };
 export const dynamic = "force-dynamic";
@@ -82,7 +83,7 @@ export default async function Dashboard() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-fraude opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-fraude" />
             </span>
-            🚩 {derivados} caso{derivados === 1 ? "" : "s"} derivado{derivados === 1 ? "" : "s"} por el operador — no se pudo contactar al denunciante y necesita tu intervención
+            <Icono n="bandera" size={15} className="mr-1 inline align-[-3px]" />{derivados} caso{derivados === 1 ? "" : "s"} derivado{derivados === 1 ? "" : "s"} por el operador — no se pudo contactar al denunciante y necesita tu intervención
           </span>
           <span aria-hidden>→</span>
         </a>

@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { boton, campo } from "@/lib/ui";
+import { Icono } from "@/components/iconos-idr";
 
 // --- Toasts ---
 type Toast = { id: number; tipo: "ok" | "error"; texto: string };
@@ -111,7 +112,7 @@ export function NotificacionesHost() {
                 t.tipo === "ok" ? "border-ok/30 text-ok" : "border-fraude/30 text-fraude"
               }`}
             >
-              <span aria-hidden>{t.tipo === "ok" ? "✓" : "⚠"}</span>
+              <span aria-hidden><Icono n={t.tipo === "ok" ? "ok" : "alerta"} size={16} /></span>
               <span className="text-ink">{t.texto}</span>
             </div>
           ))}

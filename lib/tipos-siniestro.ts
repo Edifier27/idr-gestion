@@ -6,12 +6,12 @@
 // (rueda, techo, batería), 5 cristales, 6 destrucción total.
 // Son la ÚNICA segmentación de los casos (pedido de Dario, 23-nov-2026).
 export const RUBROS = [
-  { rubro: 1, nombre: "Choque (RC)", detalle: "Choque · responsabilidad civil", emoji: "💥", color: "#D9480F" },
-  { rubro: 2, nombre: "Incendio", detalle: "Incendio total o parcial", emoji: "🔥", color: "#C92A2A" },
-  { rubro: 3, nombre: "Robo total", detalle: "Robo total de auto, moto o camioneta", emoji: "🚗", color: "#5F3DC4" },
-  { rubro: 4, nombre: "Robo parcial", detalle: "Robo parcial: rueda, techo, batería", emoji: "🛞", color: "#1971C2" },
-  { rubro: 5, nombre: "Cristales", detalle: "Rotura de cristales", emoji: "🪟", color: "#0C8599" },
-  { rubro: 6, nombre: "Destrucción total", detalle: "Destrucción total (DT)", emoji: "🧱", color: "#495057" },
+  { rubro: 1, nombre: "Choque (RC)", detalle: "Choque · responsabilidad civil", icono: "choque", color: "#D9480F" },
+  { rubro: 2, nombre: "Incendio", detalle: "Incendio total o parcial", icono: "incendio", color: "#C92A2A" },
+  { rubro: 3, nombre: "Robo total", detalle: "Robo total de auto, moto o camioneta", icono: "robo_total", color: "#5F3DC4" },
+  { rubro: 4, nombre: "Robo parcial", detalle: "Robo parcial: rueda, techo, batería", icono: "robo_parcial", color: "#1971C2" },
+  { rubro: 5, nombre: "Cristales", detalle: "Rotura de cristales", icono: "cristales", color: "#0C8599" },
+  { rubro: 6, nombre: "Destrucción total", detalle: "Destrucción total (DT)", icono: "destruccion", color: "#495057" },
 ] as const;
 
 export function datosRubro(rubro: number | null | undefined) {

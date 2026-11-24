@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { boton, campo, selectCampo, colorPorTexto } from "@/lib/ui";
 import { SelectShell } from "@/components/select-shell";
 import { notificar } from "@/components/notificaciones";
+import { Icono } from "@/components/iconos-idr";
+import { Emoji, ConEmojis } from "@/components/emoji";
 
 export type EntradaBitacora = {
   id: string;
@@ -17,13 +19,16 @@ export type EntradaBitacora = {
 };
 
 const ETIQUETA_TIPO: Record<string, string> = {
-  devolucion: "🔧 Corrección pedida",
-  pregunta: "❓ Pregunta del admin",
-  pedido_ayuda: "🆘 Pedido de ayuda",
-  mail: "✉️ Mail automático",
+  devolucion: "Corrección pedida",
+  pregunta: "Pregunta del admin",
+  pedido_ayuda: "Pedido de ayuda",
+  mail: "Mail automático",
   nota: "Mensaje",
-  llamado: "📞 Llamado",
-  visita: "📍 Visita",
+  llamado: "Llamado",
+  visita: "Visita",
+};
+const ICONO_TIPO: Record<string, string> = {
+  devolucion: "herramienta", pregunta: "pregunta", pedido_ayuda: "alerta", mail: "mail", llamado: "telefono", visita: "lugar",
 };
 
 // Solo devolución/pedido_ayuda llevan chip propio adentro del globo — un
@@ -104,9 +109,9 @@ export function BitacoraPanel({ siniestroId, entradasIniciales, esAdmin, nombreO
           <SelectShell>
             <select value={tipo} onChange={e => setTipo(e.target.value)} className={`w-56 ${selectCampo}`}>
               <option value="nota">Mensaje</option>
-              {esAdmin && <option value="pregunta">❓ Pregunta al operador</option>}
-              {esAdmin && <option value="devolucion">🔧 Pedir corrección</option>}
-              {!esAdmin && <option value="pedido_ayuda">🆘 Necesito ayuda</option>}
+              {esAdmin && <option value="pregunta">Pregunta al operador</option>}
+              {esAdmin && <option value="devolucion">Pedir corrección</option>}
+              {!esAdmin && <option value="pedido_ayuda">Necesito ayuda</option>}
             </select>
           </SelectShell>
           <button type="submit" disabled={enviando || !texto.trim()} className={boton.primario}>
@@ -126,7 +131,7 @@ function Mensaje({ n, esAdmin, nombreOperador }: { n: EntradaBitacora; esAdmin: 
     return (
       <div className="flex justify-center">
         <span className="rounded-full bg-paper px-3 py-1 text-center text-[11px] text-slate">
-          {ETIQUETA_TIPO[n.tipo] ?? n.tipo} · {n.nota} · <FechaLocal fecha={n.fecha} />
+          {ICONO_TIPO[n.tipo] && <Icono n={ICONO_TIPO[n.tipo]} size={12} className="mr-1 inline align-[-2px]" />}{ETIQUETA_TIPO[n.tipo] ?? n.tipo} · <ConEmojis>{n.nota}</ConEmojis> · <FechaLocal fecha={n.fecha} />
         </span>
       </div>
     );
@@ -153,10 +158,10 @@ function Mensaje({ n, esAdmin, nombreOperador }: { n: EntradaBitacora; esAdmin: 
         >
           {tag && (
             <span className={`mb-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tag}`}>
-              {ETIQUETA_TIPO[n.tipo]}
+              {ICONO_TIPO[n.tipo] && <Icono n={ICONO_TIPO[n.tipo]} size={12} className="mr-1 inline align-[-2px]" />}{ETIQUETA_TIPO[n.tipo]}
             </span>
           )}
-          <p className="whitespace-pre-wrap break-words">{n.nota}</p>
+          <p className="whitespace-pre-wrap break-words"><ConEmojis>{n.nota}</ConEmojis></p>
         </div>
         <span className="px-1 text-[10px] text-slate">
           {autor} · <FechaLocal fecha={n.fecha} />

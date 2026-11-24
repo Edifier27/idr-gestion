@@ -5,6 +5,7 @@ import { etiquetaRol } from "@/lib/roles";
 import { boton, campo, selectCampo, tarjeta, tarjetaElevada, colorPorTexto, cinta, cintaTexto, badge, badgeDot } from "@/lib/ui";
 import { SelectShell } from "@/components/select-shell";
 import { pedirTexto, notificar } from "@/components/notificaciones";
+import { Icono } from "@/components/iconos-idr";
 
 type Usuario = {
   id: string;
@@ -192,14 +193,14 @@ export function UsuariosPanel({ usuariosIniciales, operadoresExistentes }: {
                     </p>
                     {u.rol === "vendedor" && (
                       <p className="truncate text-xs text-slate">
-                        {u.email ? `✉️ ${u.email}` : "Sin mail cargado — no le llegan avisos"}
+                        {u.email ? <><Icono n="mail" size={13} className="mr-1 inline align-[-2px]" />{u.email}</> : "Sin mail cargado — no le llegan avisos"}
                       </p>
                     )}
                     {u.rol === "vendedor" && u.zona && (
-                      <p className="truncate text-xs text-slate">📍 {u.zona}</p>
+                      <p className="truncate text-xs text-slate"><Icono n="lugar" size={13} className="mr-1 inline align-[-2px]" />{u.zona}</p>
                     )}
                     {u.rol === "vendedor" && (
-                      <p className="truncate text-xs text-slate">{u.telefono ? `💬 WhatsApp ${u.telefono}` : "Sin WhatsApp cargado — sus mensajes no se reconocen"}</p>
+                      <p className="truncate text-xs text-slate">{u.telefono ? <><Icono n="mensajes" size={13} className="mr-1 inline align-[-2px]" />WhatsApp {u.telefono}</> : "Sin WhatsApp cargado — sus mensajes no se reconocen"}</p>
                     )}
                   </div>
                   <span className={`${badge} ${u.activo ? "bg-ok/15 text-ok" : "bg-fraude/15 text-fraude"}`}>

@@ -27,6 +27,7 @@ import { CerrarCasoBoton } from "@/components/cerrar-caso-boton";
 import { CasoWizard } from "@/components/caso-wizard";
 import { MiniNavScrollSpy } from "@/components/mini-nav-scroll-spy";
 import { boton, tarjetaElevada, colorPorTexto } from "@/lib/ui";
+import { Icono } from "@/components/iconos-idr";
 
 export const dynamic = "force-dynamic";
 
@@ -115,7 +116,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
         <ResultadoBadge resultado={s.resultado} />
         {s.derivadoAdmin && (
           <span className="rounded-full border border-fraude/30 bg-fraude/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-fraude">
-            🚩 Derivado
+            <Icono n="bandera" size={12} className="mr-1 inline align-[-3px]" />Derivado
           </span>
         )}
       </div>
@@ -257,7 +258,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
           {/* Botones de acción */}
           <Bloque id="acciones" titulo="Acciones" accento="slate">
             <div className="grid grid-cols-1 gap-2 sm:max-w-xs">
-              <BtnLink href={`/api/expediente-pdf?id=${s.id}`} label="🗂️ Expediente PDF" />
+              <BtnLink href={`/api/expediente-pdf?id=${s.id}`} label="Expediente PDF" />
             </div>
             <div className="mt-2">
               <CerrarCasoBoton siniestroId={s.id} yaClosed={s.estado === "cerrado"} />
@@ -337,7 +338,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
                   className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
                   style={{ background: colorOperador }}
                 >
-                  ✨ Borrador de {nombreOperador}
+                  <Icono n="ia" size={12} className="mr-1 inline align-[-3px]" />Borrador de {nombreOperador}
                 </span>
               }
             >
@@ -355,7 +356,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               titulo="Resolución final"
               numero={4}
               accento="ink"
-              extra={<span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber to-amber/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">🔒 Solo vos — para el mail</span>}
+              extra={<span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber to-amber/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink"><Icono n="candado" size={12} />Solo vos — para el mail</span>}
             >
               <InformeFinalPanel siniestroId={s.id} informeInicial={s.informeFinal} />
             </Bloque>
@@ -431,7 +432,7 @@ function ChecklistInforme({ datosOk, descargoOk, evidenciaOk, informeOk, resoluc
   return (
     <div className="mb-5 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-paper p-3">
       <span className="mr-1 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate">
-        {faltan === 0 ? "✅ Todo listo para el informe" : `Falta para el informe (${faltan})`}
+        {faltan === 0 ? <><Icono n="ok" size={14} className="mr-1 inline align-[-3px]" />Todo listo para el informe</> : `Falta para el informe (${faltan})`}
       </span>
       {items.map(i => (
         <a

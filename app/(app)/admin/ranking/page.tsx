@@ -4,6 +4,7 @@ import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import { listarOperadoresActivos } from "@/lib/operadores";
 import { RankingOperadoresPanel, type StatOperador, type EventoDesistido } from "@/components/ranking-operadores-panel";
+import { Icono } from "@/components/iconos-idr";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,7 @@ export default async function AdminRanking() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">🏆 Ranking de operadores</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink"><Icono n="trofeo" size={24} className="mr-2 inline align-[-4px] text-amber" />Ranking de operadores</h1>
         <p className="text-sm text-slate">Quién viene consiguiendo más desistimientos — filtrá por mes y armá la imagen para compartir.</p>
       </header>
       <RankingOperadoresPanel stats={stats} eventos={eventos} fecha={fecha} />

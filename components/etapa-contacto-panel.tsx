@@ -6,6 +6,7 @@ import { boton, campo, selectCampo } from "@/lib/ui";
 import { SelectShell } from "@/components/select-shell";
 import { ETAPAS_CONTACTO, plazoInforme } from "@/lib/etapa-contacto";
 import { googleCalendarUrl } from "@/lib/calendario";
+import { Icono } from "@/components/iconos-idr";
 
 // Convierte un ISO string (o Date) a formato "YYYY-MM-DDTHH:mm" para el input
 // datetime-local, en hora local del navegador.
@@ -81,7 +82,7 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
       {derivadoAdmin && (
         <div className="flex items-center justify-between gap-2 rounded-md border border-fraude/30 bg-fraude/5 px-3 py-2">
           <p className="text-sm font-medium text-fraude">
-            🚩 Derivado por el operador{derivadoTxt ? ` · ${derivadoTxt}` : ""} — no logró contactarlo.
+            <Icono n="bandera" size={15} className="mr-1 inline align-[-3px]" />Derivado por el operador{derivadoTxt ? ` · ${derivadoTxt}` : ""} — no logró contactarlo.
           </p>
           <button
             type="button"
@@ -142,13 +143,13 @@ export function EtapaContactoPanel({ siniestroId, etapaContacto, fechaEntrevista
           </div>
           {linkCalendario && (
             <a href={linkCalendario} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate hover:text-ink hover:underline">
-              🗓️ Agregar a Google Calendar
+              <Icono n="calendario" size={14} /> Agregar a Google Calendar
             </a>
           )}
           {plazo && (
             <p className={`mt-1.5 text-xs font-medium ${plazo === "vencido" ? "text-fraude" : plazo === "atencion" ? "text-amber" : "text-slate"}`}>
-              {plazo === "vencido" && "⚠ Vencido — pasaron más de 48hs de la entrevista sin informe."}
-              {plazo === "atencion" && "⏰ Atención — se cumplen 48hs pronto, todavía sin informe."}
+              {plazo === "vencido" && <Icono n="alerta" size={14} className="mr-1 inline align-[-3px]" />}{plazo === "vencido" && "Vencido — pasaron más de 48hs de la entrevista sin informe."}
+              {plazo === "atencion" && <Icono n="reloj" size={14} className="mr-1 inline align-[-3px]" />}{plazo === "atencion" && "Atención — se cumplen 48hs pronto, todavía sin informe."}
               {plazo === "ok" && "En plazo: tenés 48hs desde la entrevista para cargar el informe."}
             </p>
           )}

@@ -1,5 +1,6 @@
 import { tarjetaElevada } from "@/lib/ui";
 import { mapsUrl } from "@/lib/contacto";
+import { Icono } from "@/components/iconos-idr";
 
 // Mapa embebido de la dirección del caso — a Dario se le ocurrió que además
 // del botón que abre Google Maps en otra pestaña, quede un cuadro con el
@@ -14,7 +15,7 @@ export function MapaEmbed({ direccion }: { direccion: string | null }) {
   return (
     <div className={`overflow-hidden ${tarjetaElevada}`}>
       <div className="flex items-center justify-between border-b border-line px-3 py-1.5">
-        <p className="truncate text-[10px] font-bold uppercase tracking-wide text-slate" title={direccion}>📍 {direccion}</p>
+        <p className="truncate text-[10px] font-bold uppercase tracking-wide text-slate" title={direccion}><Icono n="lugar" size={11} className="mr-0.5 inline align-[-1px]" />{direccion}</p>
         {linkExterno && (
           <a href={linkExterno} target="_blank" rel="noopener noreferrer" className="shrink-0 text-[10px] font-medium text-ok hover:underline">
             Abrir en Maps ↗

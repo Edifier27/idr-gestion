@@ -14,6 +14,7 @@ import { InformePanel } from "@/components/informe-panel";
 import { EvidenciaPanel } from "@/components/evidencia-panel";
 import { CerrarCasoBoton } from "@/components/cerrar-caso-boton";
 import { notificar } from "@/components/notificaciones";
+import { Icono } from "@/components/iconos-idr";
 
 type Archivo = { id: string; nombre: string; url: string; tipo: string; categoria?: string | null; subidoPor: string | null; creadoEn: Date | string };
 type Nota = EntradaBitacora;
@@ -180,9 +181,9 @@ export function CasoWizard({
             <p className="truncate font-mono text-xs text-slate">{telUno ?? "Sin teléfono cargado"}</p>
             {(telUno || direccionMapa) && (
               <div className="mt-3 flex gap-2">
-                <AccionIcono href={direccionMapa ? mapsUrl(direccionMapa) : null} icono="📍" label="Maps" />
+                <AccionIcono href={direccionMapa ? mapsUrl(direccionMapa) : null} icono={<Icono n="lugar" size={20} />} label="Maps" />
                 <AccionIcono href={telUno ? whatsappUrl(telUno) : null} icono={<IconWhatsApp className="h-4 w-4" />} label="WhatsApp" />
-                <AccionIcono href={telUno ? telUrl(telUno) : null} icono="📞" label="Llamar" />
+                <AccionIcono href={telUno ? telUrl(telUno) : null} icono={<Icono n="telefono" size={20} />} label="Llamar" />
               </div>
             )}
           </div>
@@ -234,9 +235,9 @@ export function CasoWizard({
                 falta: el link de texto del paso Entrevista, al lado del
                 campo de fecha. */}
             <div className="mt-3 flex gap-2">
-              <AccionIcono href={direccionMapa ? mapsUrl(direccionMapa) : null} icono="📍" label="Maps" />
+              <AccionIcono href={direccionMapa ? mapsUrl(direccionMapa) : null} icono={<Icono n="lugar" size={20} />} label="Maps" />
               <AccionIcono href={telUno ? whatsappUrl(telUno) : null} icono={<IconWhatsApp className="h-4 w-4" />} label="WhatsApp" />
-              <AccionIcono href={telUno ? telUrl(telUno) : null} icono="📞" label="Llamar" />
+              <AccionIcono href={telUno ? telUrl(telUno) : null} icono={<Icono n="telefono" size={20} />} label="Llamar" />
             </div>
           </div>
 
@@ -245,20 +246,20 @@ export function CasoWizard({
               <p className="mb-2.5 text-sm font-medium text-ink">¿Pudiste contactarlo?</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <button disabled={guardando} onClick={() => guardar({ etapa_contacto: "contactado" })} className={`py-3 text-base ${boton.primario}`}>
-                  ✅ Sí, lo contacté
+                  <Icono n="ok" size={18} className="mr-1 inline align-[-3px]" />Sí, lo contacté
                 </button>
                 <button
                   disabled={guardando}
                   onClick={() => guardar({ etapa_contacto: "contacto_fallido" })}
                   className="inline-flex items-center justify-center gap-1.5 rounded-md border border-fraude/30 bg-fraude/5 px-3.5 py-3 text-base font-medium text-fraude shadow-sm transition hover:bg-fraude/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  📵 No pude contactarlo
+                  <Icono n="sin_contacto" size={18} className="mr-1 inline align-[-3px]" />No pude contactarlo
                 </button>
               </div>
             </div>
           ) : etapaContacto === "contacto_fallido" ? (
             <div className="space-y-3 rounded-lg border border-fraude/30 bg-fraude/5 p-3.5">
-              <p className="text-sm font-medium text-fraude">📵 Marcado como "sin contactar".</p>
+              <p className="text-sm font-medium text-fraude"><Icono n="sin_contacto" size={15} className="mr-1 inline align-[-3px]" />Marcado como &quot;sin contactar&quot;.</p>
               <div>
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate">Motivo (le avisa al admin)</span>
                 <div className="flex gap-2">
@@ -268,12 +269,12 @@ export function CasoWizard({
               </div>
 
               <button disabled={guardando} onClick={() => guardar({ etapa_contacto: "contactado" })} className={`w-full py-3 text-base ${boton.primario}`}>
-                ✅ Ahora sí lo contacté
+                <Icono n="ok" size={18} className="mr-1 inline align-[-3px]" />Ahora sí lo contacté
               </button>
 
               {derivadoAdmin ? (
                 <p className="rounded-md border border-fraude/30 bg-white px-3 py-2 text-sm font-medium text-fraude">
-                  🚩 Derivado al administrador — lo va a contactar directamente.
+                  <Icono n="bandera" size={15} className="mr-1 inline align-[-3px]" />Derivado al administrador — lo va a contactar directamente.
                 </p>
               ) : (
                 <button
@@ -281,20 +282,20 @@ export function CasoWizard({
                   onClick={() => guardar({ derivado_admin: true, motivo_contacto: motivo })}
                   className="w-full text-center text-xs font-medium text-fraude underline decoration-dotted underline-offset-2 hover:text-fraude/80 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  🚩 No puedo con este caso: derivar al administrador
+                  <Icono n="bandera" size={13} className="mr-1 inline align-[-3px]" />No puedo con este caso: derivar al administrador
                 </button>
               )}
             </div>
           ) : (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ok/30 bg-ok/5 p-3.5">
-                <p className="text-sm font-medium text-ok">✅ Contactado.</p>
+                <p className="text-sm font-medium text-ok"><Icono n="ok" size={15} className="mr-1 inline align-[-3px]" />Contactado.</p>
                 <button
                   disabled={guardando}
                   onClick={() => guardar({ etapa_contacto: "contacto_fallido" })}
                   className="text-xs font-medium text-fraude underline decoration-dotted underline-offset-2 hover:text-fraude/80 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  📵 En realidad no pude contactarlo
+                  <Icono n="sin_contacto" size={13} className="mr-1 inline align-[-3px]" />En realidad no pude contactarlo
                 </button>
               </div>
 
@@ -308,7 +309,7 @@ export function CasoWizard({
                     onClick={() => guardar({ etapa_contacto: "entrevista_pactada", fecha_entrevista: fecha ? new Date(fecha).toISOString() : null }, "entrevista")}
                     className={boton.primario}
                   >
-                    📅 Pactar →
+                    <Icono n="calendario" size={15} className="mr-1 inline align-[-3px]" />Pactar →
                   </button>
                 </div>
                 {/* El link de texto "Agregar a Google Calendar" que estaba
@@ -356,13 +357,13 @@ export function CasoWizard({
             </div>
             {linkCalendario && (
               <a href={linkCalendario} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate hover:text-ink hover:underline">
-                🗓️ Agregar a Google Calendar
+                <Icono n="calendario" size={14} /> Agregar a Google Calendar
               </a>
             )}
             {plazo && (
               <p className={`mt-1.5 text-xs font-medium ${plazo === "vencido" ? "text-fraude" : plazo === "atencion" ? "text-amber" : "text-slate"}`}>
-                {plazo === "vencido" && "⚠ Vencido — pasaron más de 48hs de la entrevista sin informe."}
-                {plazo === "atencion" && "⏰ Atención — se cumplen 48hs pronto, todavía sin informe."}
+                {plazo === "vencido" && <Icono n="alerta" size={14} className="mr-1 inline align-[-3px]" />}{plazo === "vencido" && "Vencido — pasaron más de 48hs de la entrevista sin informe."}
+                {plazo === "atencion" && <Icono n="reloj" size={14} className="mr-1 inline align-[-3px]" />}{plazo === "atencion" && "Atención — se cumplen 48hs pronto, todavía sin informe."}
                 {plazo === "ok" && "En plazo: tenés 48hs desde la entrevista para cargar el informe."}
               </p>
             )}
@@ -411,7 +412,7 @@ export function CasoWizard({
                 className={`w-full py-3 text-base ${boton.exito}`}
                 title={cantArchivos === 0 ? "Subí al menos una prueba para poder enviarlo" : undefined}
               >
-                📤 {guardando ? "Enviando…" : "Enviar informe"}
+                <Icono n="enviar" size={18} className="mr-1 inline align-[-3px]" />{guardando ? "Enviando…" : "Enviar informe"}
               </button>
               <p className="text-center text-xs text-slate">
                 {cantArchivos === 0
@@ -420,7 +421,7 @@ export function CasoWizard({
               </p>
             </div>
           ) : (
-            <p className="rounded-md border border-ok/30 bg-ok/5 px-3 py-2 text-sm font-medium text-ok">✅ Informe enviado — caso al día.</p>
+            <p className="rounded-md border border-ok/30 bg-ok/5 px-3 py-2 text-sm font-medium text-ok"><Icono n="ok" size={15} className="mr-1 inline align-[-3px]" />Informe enviado — caso al día.</p>
           )}
         </div>
       )}
@@ -431,7 +432,7 @@ export function CasoWizard({
       <div className={`p-5 ${tarjetaElevada}`}>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate">Acciones</h2>
         <div className="grid grid-cols-1 gap-2 sm:max-w-sm">
-          <a href={`/api/expediente-pdf?id=${siniestroId}`} className={`${boton.secundario} w-full`}>🗂️ Expediente PDF</a>
+          <a href={`/api/expediente-pdf?id=${siniestroId}`} className={`${boton.secundario} w-full`}><Icono n="carpeta" size={15} className="mr-1 inline align-[-3px]" />Expediente PDF</a>
         </div>
         <div className="mt-2">
           <CerrarCasoBoton siniestroId={siniestroId} yaClosed={yaClosed} />

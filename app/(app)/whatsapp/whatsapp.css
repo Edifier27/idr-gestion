@@ -82,9 +82,9 @@
 .wa-texto { white-space: pre-wrap; overflow-wrap: anywhere; }
 .wa-meta { float: right; margin: 6px 0 -5px 10px; font-size: 11px; color: var(--wa-suave); display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
 .wa-meta.sobre-foto { position: absolute; right: 10px; bottom: 8px; float: none; margin: 0; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
-.wa-tilde { font-size: 13px; letter-spacing: -4px; margin-right: 3px; }
-.wa-tilde.leido { color: var(--wa-azul); }
-.wa-tilde.error { color: var(--wa-rojo); letter-spacing: 0; }
+.wa-tilde { display: inline-flex; align-items: center; vertical-align: -1px; margin: 0 3px; color: #8696A0; }
+.wa-tilde.leido { color: #53BDEB; }
+.wa-tilde.error { color: var(--wa-rojo); }
 .wa-foto { display: block; margin: -3px -4px 4px -6px; border-radius: 6px; overflow: hidden; cursor: zoom-in; max-width: 330px; position: relative; background: #ddd; }
 .wa-foto img { display: block; width: 100%; max-height: 360px; object-fit: cover; }
 .wa-doc { display: flex; align-items: center; gap: 10px; background: rgba(11, 20, 26, 0.05); border-radius: 6px; padding: 10px; margin: -2px -3px 4px -5px; text-decoration: none; color: var(--wa-texto); min-width: 240px; }
@@ -226,11 +226,11 @@
 
 .wa-popup.emojis { left: 10px; width: min(360px, calc(100vw - 24px)); padding: 0; overflow: hidden; display: flex; flex-direction: column; }
 .wa-emoji-tabs { display: flex; border-bottom: 1px solid var(--wa-linea); }
-.wa-emoji-tabs button { flex: 1; border: 0; background: none; font-size: 20px; padding: 8px 0; cursor: pointer; filter: grayscale(1); opacity: .6; border-bottom: 3px solid transparent; transition: opacity .15s, filter .15s; }
+.wa-emoji-tabs button { flex: 1; border: 0; background: none; font-size: 22px; padding: 8px 0; cursor: pointer; filter: grayscale(1); opacity: .55; border-bottom: 3px solid transparent; transition: opacity .15s, filter .15s; }
 .wa-emoji-tabs button.activo { filter: none; opacity: 1; border-bottom-color: var(--wa-verde); }
 .wa-emoji-titulo { font-size: 12px; font-weight: 600; color: var(--wa-suave); padding: 8px 12px 2px; }
 .wa-emoji-grilla { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 4px 8px 10px; max-height: 230px; overflow-y: auto; }
-.wa-emoji-grilla button { border: 0; background: none; font-size: 24px; height: 40px; border-radius: 8px; cursor: pointer; transition: background-color .1s, transform .1s; }
+.wa-emoji-grilla button { border: 0; background: none; font-size: 26px; line-height: 1; height: 40px; border-radius: 8px; cursor: pointer; transition: background-color .1s, transform .1s; }
 .wa-emoji-grilla button:hover { background: var(--wa-barra); transform: scale(1.12); }
 
 .wa-envoltura.recien { animation: wa-entra .22s var(--curva) both; }
@@ -259,3 +259,6 @@
 .wa-periodos .wa-chip { font-size: 12.5px; padding: 5px 10px; }
 .wa-burbuja.perito { background: #FFF8E1; border-left: 3px solid #E0A800; }
 .wa-burbuja.perito .wa-texto { white-space: pre-wrap; }
+.wa-emoji-grilla img.emoji { width: 28px; height: 28px; vertical-align: middle; margin: 0; }
+.wa-vacio-icono { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; color: var(--wa-verde-oscuro); background: radial-gradient(circle at 30% 30%, #E7FCE3, #D1F4CC); box-shadow: 0 8px 24px rgba(0, 168, 132, .18); margin-bottom: 8px; }
+.wa-burbuja .wa-texto img.emoji { width: 1.35em; height: 1.35em; }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { boton, campo, tarjeta } from "@/lib/ui";
+import { Icono } from "@/components/iconos-idr";
 
 type Archivo = { id: string; nombre: string; tipo: string };
 
@@ -101,7 +102,7 @@ export function MailPanel({ siniestroId, destinatarioSugerido, archivos }: {
       <label className="flex cursor-pointer items-center gap-2 rounded-md border border-line bg-white px-2.5 py-2 text-xs text-ink shadow-sm transition hover:border-ink/30">
         <input type="checkbox" checked={adjuntarExpediente} onChange={e => setAdjuntarExpediente(e.target.checked)}
           className="h-3.5 w-3.5 accent-ink" />
-        <span className="font-medium">🗂️ Adjuntar expediente completo (PDF)</span>
+        <span className="font-medium"><Icono n="carpeta" size={14} className="mr-1 inline align-[-3px]" />Adjuntar expediente completo (PDF)</span>
       </label>
 
       <button type="submit" disabled={enviando} className={boton.primario}>

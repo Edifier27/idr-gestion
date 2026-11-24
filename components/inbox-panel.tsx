@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { esPdf } from "@/lib/adjuntos";
 import { boton, campo, tarjeta } from "@/lib/ui";
 import { confirmar } from "@/components/notificaciones";
+import { Icono } from "@/components/iconos-idr";
 
 type CasoImportado = { id: string; etiqueta: string; subidoEn?: string; operador?: string | null; automatico?: boolean } | null;
 type LecturaAuto = { resultado: string; detalle: string | null; en: string } | null;
@@ -21,7 +22,7 @@ function GloboSubido({ caso, auto }: { caso?: CasoImportado; auto?: LecturaAuto 
   if (caso) {
     return (
       <div className="relative mt-2 ml-2 inline-block max-w-full rounded-lg bg-ok/10 px-2.5 py-1.5 text-[11.5px] leading-snug text-ink ring-1 ring-ok/25 before:absolute before:-top-1.5 before:left-4 before:h-3 before:w-3 before:rotate-45 before:bg-[inherit] before:content-['']">
-        <span className="relative">✅ Caso subido al legajo <b>{caso.etiqueta}</b> {diaYHora(caso.subidoEn)}{caso.automatico ? " · automático" : ""}{caso.operador ? ` · ${caso.operador}` : " · sin operador"}</span>
+        <span className="relative"><Icono n="ok" size={14} className="mr-1 inline align-[-3px] text-ok" />Caso subido al legajo <b>{caso.etiqueta}</b> {diaYHora(caso.subidoEn)}{caso.automatico ? " · automático" : ""}{caso.operador ? ` · ${caso.operador}` : " · sin operador"}</span>
       </div>
     );
   }
@@ -29,7 +30,7 @@ function GloboSubido({ caso, auto }: { caso?: CasoImportado; auto?: LecturaAuto 
     const texto = auto.resultado === "duplicado" ? "Ya estaba en el CRM" : auto.resultado === "error" ? "No se pudo leer" : "La IA lo revisó: no es un caso";
     return (
       <div className="mt-2 ml-2 inline-block max-w-full rounded-lg bg-paper px-2.5 py-1 text-[11px] text-slate ring-1 ring-line" title={auto.detalle ?? ""}>
-        {auto.resultado === "error" ? "⚠️" : "👁️"} {texto} · {diaYHora(auto.en)}
+        <Icono n={auto.resultado === "error" ? "alerta" : "ojo"} size={13} className="mr-1 inline align-[-2px]" />{texto} · {diaYHora(auto.en)}
       </div>
     );
   }
@@ -199,7 +200,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
                       href={`/api/gmail/mensajes/${abierto.id}/adjuntos/${a.attachmentId}?nombre=${encodeURIComponent(a.nombre)}&tipo=${encodeURIComponent(a.tipo)}`}
                       className="rounded border border-azul/20 bg-paper px-2.5 py-1.5 text-xs text-ink transition hover:bg-azul hover:text-paper"
                     >
-                      📎 {a.nombre} <span className="text-slate">({formatearTamano(a.tamano)})</span>
+                      <Icono n="clip" size={13} className="mr-1 inline align-[-2px]" />{a.nombre} <span className="text-slate">({formatearTamano(a.tamano)})</span>
                     </a>
                   ))}
                 </div>
@@ -218,7 +219,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
             ) : mensajes?.find(m => m.id === abierto.id)?.casoImportado ? (
               <div className="mt-3 rounded-lg border border-line bg-paper p-3 text-sm shadow-sm">
                 <p className="font-medium text-ink">
-                  📋 Caso subido al legajo {mensajes.find(m => m.id === abierto.id)?.casoImportado?.etiqueta} {diaYHora(mensajes.find(m => m.id === abierto.id)?.casoImportado?.subidoEn)}{mensajes.find(m => m.id === abierto.id)?.casoImportado?.automatico ? " (lectura automática del mail)" : ""}.
+                  <Icono n="carpeta" size={15} className="mr-1 inline align-[-3px]" />Caso subido al legajo {mensajes.find(m => m.id === abierto.id)?.casoImportado?.etiqueta} {diaYHora(mensajes.find(m => m.id === abierto.id)?.casoImportado?.subidoEn)}{mensajes.find(m => m.id === abierto.id)?.casoImportado?.automatico ? " (lectura automática del mail)" : ""}.
                 </p>
                 <a href={`/siniestros/${mensajes.find(m => m.id === abierto.id)?.casoImportado?.id}`} className="mt-1 inline-block text-xs font-medium text-ink underline underline-offset-2">
                   Ver el caso →
@@ -256,7 +257,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo }: { operad
                     onClick={() => setMostrarImportar(true)}
                     className={`px-3 py-1.5 text-xs ${boton.secundario}`}
                   >
-                    🗂️ Crear legajo desde este mail
+                    <Icono n="carpeta" size={15} className="mr-1 inline align-[-3px]" />Crear legajo desde este mail
                   </button>
                 )}
                 {!abierto.adjuntos.some(esPdf) && (
