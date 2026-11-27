@@ -21,7 +21,7 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
   const operadoresExistentes = await listarOperadoresActivos();
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-6 md:px-8 md:py-8">
+    <main className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Casilla de mail</h1>
         <p className="text-sm text-slate">Donde entran los casos que mandan las aseguradoras.</p>
@@ -38,7 +38,9 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
         </div>
       )}
 
-      <section className="space-y-2">
+      <details className="mb-5 rounded-lg border border-line bg-white px-4 py-3" open={conexiones.length === 0}>
+        <summary className="cursor-pointer text-sm font-medium text-ink">Casillas conectadas ({conexiones.length})</summary>
+      <section className="mt-3 space-y-2">
         {conexiones.map(c => (
           <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border border-line bg-white p-4">
             <div className="min-w-0">
@@ -59,10 +61,11 @@ export default async function AdminMail({ searchParams }: { searchParams: { erro
           {conexiones.length === 0 ? "Conectar Gmail" : "+ Conectar otra casilla"}
         </a>
       </section>
+      </details>
 
       {miConexion && (
-        <div className="mt-6">
-          <InboxPanel operadoresExistentes={operadoresExistentes} />
+        <div>
+          <InboxPanel operadoresExistentes={operadoresExistentes} modo="completo" />
         </div>
       )}
     </main>

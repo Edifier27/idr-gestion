@@ -120,6 +120,11 @@ export async function enviarMail(opts: {
   cuerpo: string;
   adjuntos: AdjuntoMail[];
   conexionId?: string;
+  cc?: string;
+  // Respuesta: el mail queda en la misma conversación de Gmail.
+  threadId?: string;
+  inReplyTo?: string;
+  references?: string;
 }) {
   const conexion = await conexionActiva(opts.conexionId);
   if (!conexion) throw new Error("No hay una casilla de Gmail conectada.");
@@ -129,7 +134,10 @@ export async function enviarMail(opts: {
   const composer = new MailComposer({
     from: conexion.email,
     to: opts.para,
+    cc: opts.cc || undefined,
     subject: opts.asunto,
+    inReplyTo: opts.inReplyTo || undefined,
+    references: opts.references || undefined,
     text: opts.cuerpo,
     attachments: opts.adjuntos.map(a => ({
       filename: a.nombre,
@@ -145,7 +153,7 @@ export async function enviarMail(opts: {
   const res = await fetch("https://www.googleapis.com/gmail/v1/users/me/messages/send", {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ raw: rawBase64Url }),
+    body: JSON.stringify(opts.threadId ? { raw: rawBase64Url, threadId: opts.threadId } : { raw: rawBase64Url }),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => null);
@@ -188,6 +196,17 @@ function extraerTexto(payload?: ParteMensaje): string {
   return "";
 }
 
+/** El HTML del mail (para verlo como en Gmail), si tiene. */
+function extraerHtml(payload?: ParteMensaje): string {
+  if (!payload) return "";
+  if (payload.mimeType === "text/html" && payload.body?.data) return decodeBase64Url(payload.body.data);
+  for (const parte of payload.parts ?? []) {
+    const html = extraerHtml(parte);
+    if (html) return html;
+  }
+  return "";
+}
+
 /** Junta todas las partes que son adjuntos (tienen filename y attachmentId). */
 function extraerAdjuntos(payload?: ParteMensaje): AdjuntoInfo[] {
   if (!payload) return [];
@@ -210,13 +229,21 @@ function extraerAdjuntos(payload?: ParteMensaje): AdjuntoInfo[] {
 export type AdjuntoInfo = { attachmentId: string; nombre: string; tipo: string; tamano: number };
 export type MensajeResumen = {
   id: string;
+  threadId?: string;
   asunto: string;
   de: string;
+  para?: string;
   fecha: string;
   snippet: string;
   noLeido: boolean;
+  conAdjuntos?: boolean;
+  destacado?: boolean;
+  enviado?: boolean;
 };
-export type MensajeCompleto = MensajeResumen & { cuerpo: string; adjuntos: AdjuntoInfo[] };
+export type MensajeCompleto = MensajeResumen & {
+  cuerpo: string; cuerpoHtml: string; adjuntos: AdjuntoInfo[];
+  cc: string; responderA: string; messageIdHeader: string; references: string;
+};
 
 /** Lista los últimos mensajes de la bandeja de entrada (más nuevos primero). */
 export async function listarMensajes(maxResults = 25, conexionId?: string): Promise<MensajeResumen[]> {
@@ -247,6 +274,48 @@ export async function listarMensajes(maxResults = 25, conexionId?: string): Prom
   }));
 }
 
+/** Busca mails en toda la casilla con la misma sintaxis del buscador de Gmail
+ *  (texto libre, from:, subject:, has:attachment, before:, in:sent…), de a
+ *  páginas: pageToken trae la siguiente (más vieja), sin límite de antigüedad. */
+export async function buscarMensajes(opts: { q?: string; pageToken?: string; max?: number; conexionId?: string }): Promise<{ mensajes: MensajeResumen[]; siguiente: string | null; total: number }> {
+  const accessToken = await accessTokenActivo(opts.conexionId);
+  const params = new URLSearchParams({ maxResults: String(Math.min(opts.max ?? 30, 100)) });
+  if (opts.q?.trim()) params.set("q", opts.q.trim());
+  if (opts.pageToken) params.set("pageToken", opts.pageToken);
+  const listRes = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages?${params}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const listData = await listRes.json();
+  if (!listRes.ok) throw new Error(listData?.error?.message ?? "No se pudo buscar en la casilla.");
+  const ids: string[] = (listData.messages ?? []).map((m: { id: string }) => m.id);
+  const mensajes = await Promise.all(ids.map(async (id): Promise<MensajeResumen> => {
+    const res = await fetch(
+      `https://www.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date&metadataHeaders=Content-Type`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const data = await res.json();
+    const headers: CabeceraGmail[] = data.payload?.headers ?? [];
+    const etiquetas: string[] = data.labelIds ?? [];
+    const tipo = cabecera(headers, "Content-Type").toLowerCase();
+    return {
+      id, threadId: data.threadId,
+      asunto: cabecera(headers, "Subject") || "(sin asunto)",
+      de: cabecera(headers, "From"),
+      para: cabecera(headers, "To"),
+      // internalDate es la fecha real de llegada (la cabecera Date la pone el remitente).
+      fecha: data.internalDate ? new Date(Number(data.internalDate)).toISOString() : cabecera(headers, "Date"),
+      snippet: decodificarEntidades(data.snippet ?? ""),
+      noLeido: etiquetas.includes("UNREAD"),
+      destacado: etiquetas.includes("STARRED"),
+      enviado: etiquetas.includes("SENT"),
+      conAdjuntos: tipo.includes("multipart/mixed"),
+    };
+  }));
+  return { mensajes, siguiente: listData.nextPageToken ?? null, total: listData.resultSizeEstimate ?? mensajes.length };
+}
+
+function decodificarEntidades(t: string) {
+  return t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
+
 /** Trae un mensaje completo, con el cuerpo de texto ya decodificado. */
 export async function obtenerMensaje(id: string, conexionId?: string): Promise<MensajeCompleto> {
   const accessToken = await accessTokenActivo(conexionId);
@@ -258,12 +327,21 @@ export async function obtenerMensaje(id: string, conexionId?: string): Promise<M
   const headers: CabeceraGmail[] = data.payload?.headers ?? [];
   return {
     id,
+    threadId: data.threadId,
     asunto: cabecera(headers, "Subject") || "(sin asunto)",
     de: cabecera(headers, "From"),
-    fecha: cabecera(headers, "Date"),
-    snippet: data.snippet ?? "",
+    para: cabecera(headers, "To"),
+    cc: cabecera(headers, "Cc"),
+    responderA: cabecera(headers, "Reply-To"),
+    messageIdHeader: cabecera(headers, "Message-ID") || cabecera(headers, "Message-Id"),
+    references: cabecera(headers, "References"),
+    fecha: data.internalDate ? new Date(Number(data.internalDate)).toISOString() : cabecera(headers, "Date"),
+    snippet: decodificarEntidades(data.snippet ?? ""),
     noLeido: (data.labelIds ?? []).includes("UNREAD"),
+    destacado: (data.labelIds ?? []).includes("STARRED"),
+    enviado: (data.labelIds ?? []).includes("SENT"),
     cuerpo: extraerTexto(data.payload),
+    cuerpoHtml: extraerHtml(data.payload),
     adjuntos: extraerAdjuntos(data.payload),
   };
 }
