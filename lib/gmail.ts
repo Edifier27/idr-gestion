@@ -12,7 +12,11 @@ import { asegurarTablasGmail } from "@/lib/db/asegurar-gmail";
 function redirectUri(origen: string) {
   return `${origen}/api/gmail/callback`;
 }
-const SCOPE = "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly";
+// gmail.modify: marcar leído/no leído, archivar y destacar desde el CRM (no
+// permite borrar para siempre). Las casillas conectadas antes de sumarlo
+// siguen andando para leer y mandar; para lo demás hay que reconectarlas.
+const SCOPE_MODIFICAR = "https://www.googleapis.com/auth/gmail.modify";
+const SCOPE = `https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly ${SCOPE_MODIFICAR}`;
 
 function credenciales() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -59,6 +63,10 @@ export async function intercambiarCodigo(code: string, origen: string): Promise<
 }
 
 async function accessTokenDesdeRefresh(refreshToken: string): Promise<string> {
+  return (await tokenDesdeRefresh(refreshToken)).token;
+}
+
+async function tokenDesdeRefresh(refreshToken: string): Promise<{ token: string; puedeModificar: boolean }> {
   const { clientId, clientSecret } = credenciales();
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -80,7 +88,7 @@ async function accessTokenDesdeRefresh(refreshToken: string): Promise<string> {
     }
     throw new Error(data.error_description ?? data.error ?? "No se pudo renovar el acceso a Gmail.");
   }
-  return data.access_token as string;
+  return { token: data.access_token as string, puedeModificar: String(data.scope ?? "").includes(SCOPE_MODIFICAR) };
 }
 
 // conexionId puntual (la casilla asignada a ese usuario) o, si no se pasa,
@@ -357,4 +365,39 @@ export async function obtenerAdjunto(mensajeId: string, attachmentId: string, co
   if (!res.ok) throw new Error(data?.error?.message ?? "No se pudo descargar el adjunto.");
   const base64 = (data.data as string).replace(/-/g, "+").replace(/_/g, "/");
   return Buffer.from(base64, "base64");
+}
+
+/** ¿La casilla dio permiso para marcar leído, archivar y destacar? */
+export async function puedeModificar(conexionId?: string): Promise<boolean> {
+  const conexion = await conexionActiva(conexionId);
+  if (!conexion) return false;
+  return (await tokenDesdeRefresh(conexion.refreshToken)).puedeModificar;
+}
+
+export type AccionMail = "leido" | "no_leido" | "archivar" | "a_recibidos" | "destacar" | "quitar_destacado";
+const ETIQUETAS: Record<AccionMail, { add?: string[]; remove?: string[] }> = {
+  leido: { remove: ["UNREAD"] },
+  no_leido: { add: ["UNREAD"] },
+  archivar: { remove: ["INBOX"] },
+  a_recibidos: { add: ["INBOX"] },
+  destacar: { add: ["STARRED"] },
+  quitar_destacado: { remove: ["STARRED"] },
+};
+
+/** Marca leído/no leído, archiva o destaca uno o varios mails (como en Gmail). */
+export async function modificarMensajes(ids: string[], accion: AccionMail, conexionId?: string) {
+  const conexion = await conexionActiva(conexionId);
+  if (!conexion) throw new Error("No hay una casilla de Gmail conectada.");
+  const { token, puedeModificar } = await tokenDesdeRefresh(conexion.refreshToken);
+  if (!puedeModificar) throw new Error("PERMISO_MODIFICAR");
+  const e = ETIQUETAS[accion];
+  const res = await fetch("https://www.googleapis.com/gmail/v1/users/me/messages/batchModify", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ ids: ids.slice(0, 1000), addLabelIds: e.add ?? [], removeLabelIds: e.remove ?? [] }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error?.message ?? "Gmail no aceptó el cambio.");
+  }
 }

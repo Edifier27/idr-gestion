@@ -134,6 +134,10 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo, modo = "co
   const [siguiente, setSiguiente] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [casilla, setCasilla] = useState<string | null>(null);
+  // null = todavía no se sabe; false = la casilla no dio permiso para modificar (hay que reconectarla).
+  const [modificar, setModificar] = useState<boolean | null>(null);
+  const [elegidos, setElegidos] = useState<Set<string>>(new Set());
+  const [aplicando, setAplicando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
@@ -164,6 +168,8 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo, modo = "co
       setSiguiente(data.siguiente ?? null);
       setTotal(data.total ?? 0);
       if (data.casilla) setCasilla(data.casilla);
+      if (typeof data.modificar === "boolean") setModificar(data.modificar);
+      if (!mas) setElegidos(new Set());
     } catch (e) {
       if (n === pedido.current) setError(e instanceof Error ? e.message : "Error al leer la casilla.");
     } finally {
@@ -187,6 +193,48 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo, modo = "co
     setBuscado(busqueda.trim());
   }
 
+  // Marcar leído / no leído, archivar, volver a Recibidos y destacar (en Gmail).
+  async function accion(ids: string[], que: "leido" | "no_leido" | "archivar" | "a_recibidos" | "destacar" | "quitar_destacado", silencioso = false) {
+    if (!ids.length) return;
+    setAplicando(true);
+    try {
+      const res = await fetch("/api/gmail/acciones", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids, accion: que }) });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        if (data?.reconectar) setModificar(false);
+        throw new Error(data?.error ?? "No se pudo hacer el cambio.");
+      }
+      const set = new Set(ids);
+      const saleDeLaCarpeta = (que === "archivar" && (carpeta === "recibidos" || carpeta === "no_leidos")) || (que === "leido" && carpeta === "no_leidos") || (que === "quitar_destacado" && carpeta === "destacados");
+      setMensajes(lista => {
+        if (!lista) return lista;
+        if (saleDeLaCarpeta) return lista.filter(m => !set.has(m.id));
+        return lista.map(m => !set.has(m.id) ? m : {
+          ...m,
+          noLeido: que === "leido" ? false : que === "no_leido" ? true : m.noLeido,
+          destacado: que === "destacar" ? true : que === "quitar_destacado" ? false : m.destacado,
+        });
+      });
+      if (abierto && set.has(abierto.id)) {
+        if (saleDeLaCarpeta && que === "archivar") setAbierto(null);
+        else setAbierto({ ...abierto, destacado: que === "destacar" ? true : que === "quitar_destacado" ? false : abierto.destacado, noLeido: que === "no_leido" ? true : que === "leido" ? false : abierto.noLeido });
+      }
+      setElegidos(new Set());
+      if (!silencioso) {
+        const n = ids.length > 1 ? `${ids.length} mails` : "Mail";
+        notificar.ok({ leido: `${n} marcado${ids.length > 1 ? "s" : ""} como leído${ids.length > 1 ? "s" : ""}.`, no_leido: `${n} marcado${ids.length > 1 ? "s" : ""} como no leído${ids.length > 1 ? "s" : ""}.`, archivar: `${n} archivado${ids.length > 1 ? "s" : ""}.`, a_recibidos: `${n} movido${ids.length > 1 ? "s" : ""} a Recibidos.`, destacar: "Destacado.", quitar_destacado: "Sin destacar." }[que]);
+      }
+    } catch (e) {
+      if (!silencioso) notificar.error(e instanceof Error ? e.message : "No se pudo hacer el cambio.");
+    } finally {
+      setAplicando(false);
+    }
+  }
+
+  function alternar(id: string) {
+    setElegidos(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
   async function abrir(id: string) {
     setCargandoDetalle(true);
     setAbierto(null);
@@ -200,6 +248,8 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo, modo = "co
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "No se pudo leer el mail.");
       setAbierto(data.mensaje);
+      // Como en Gmail: al abrirlo queda leído (también en la casilla).
+      if (data.mensaje.noLeido && modificar) accion([id], "leido", true);
       setMensajes(lista => lista?.map(m => (m.id === id ? { ...m, noLeido: false } : m)) ?? lista);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al leer el mail.");
@@ -327,6 +377,24 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo, modo = "co
           </button>
         ))}
       </div>
+      {modificar === false && (
+        <div className="rounded-md border border-amber/40 bg-amber/10 px-3 py-2 text-xs text-ink">
+          Para <b>marcar leído y archivar</b> desde el CRM, la casilla tiene que dar un permiso más.{" "}
+          <a href="/api/gmail/connect" className="font-semibold text-azul underline underline-offset-2">Reconectar casilla</a>
+        </div>
+      )}
+      {elegidos.size > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-azul/5 px-2 py-1.5 text-xs">
+          <span className="mr-1 font-semibold text-ink">{elegidos.size} elegido{elegidos.size === 1 ? "" : "s"}</span>
+          <button disabled={aplicando} onClick={() => accion(Array.from(elegidos), "leido")} className={boton.ghost}>Marcar leído</button>
+          <button disabled={aplicando} onClick={() => accion(Array.from(elegidos), "no_leido")} className={boton.ghost}>Marcar no leído</button>
+          {carpeta === "todos" || carpeta === "enviados" || carpeta === "destacados" || carpeta === "adjuntos" ? null : (
+            <button disabled={aplicando} onClick={() => accion(Array.from(elegidos), "archivar")} className={boton.ghost}>Archivar</button>
+          )}
+          <button disabled={aplicando} onClick={() => accion(Array.from(elegidos), "destacar")} className={boton.ghost}>★ Destacar</button>
+          <button onClick={() => setElegidos(new Set())} className={`ml-auto ${boton.ghost}`}>✕</button>
+        </div>
+      )}
       {!completo ? null : (
         <p className="text-[10.5px] text-slate/80">
           Tip: igual que en Gmail — <code>from:</code>aseguradora, <code>subject:</code>siniestro, <code>has:attachment</code>, <code>before:2025/01/01</code>.
@@ -365,8 +433,11 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo, modo = "co
                   </span>
                 </div>
               )}
+              <div className={`group flex items-start rounded-lg border transition ${seleccionado || elegidos.has(m.id) ? "border-azul/25 bg-azul/5" : "border-transparent hover:border-line hover:bg-paper"}`}>
+              <input type="checkbox" checked={elegidos.has(m.id)} onChange={() => alternar(m.id)} aria-label="Elegir este mail"
+                className={`ml-2 mt-4 h-3.5 w-3.5 shrink-0 cursor-pointer accent-azul ${elegidos.size ? "" : "opacity-40 group-hover:opacity-100"}`} />
               <button onClick={() => abrir(m.id)}
-                className={`flex w-full items-start gap-3 rounded-lg border px-2.5 py-2.5 text-left transition ${seleccionado ? "border-azul/25 bg-azul/5" : "border-transparent hover:border-line hover:bg-paper"}`}>
+                className="flex min-w-0 flex-1 items-start gap-3 px-2.5 py-2.5 text-left">
                 <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
                   style={{ background: m.noLeido ? colorPorTexto(persona.email) : "#cbd5e1" }}>
                   {inicial(persona.nombre)}
@@ -395,6 +466,7 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo, modo = "co
                   </div>
                 </div>
               </button>
+              </div>
             </div>
           );
         })}
@@ -472,6 +544,19 @@ export function InboxPanel({ operadoresExistentes = [], operadorFijo, modo = "co
           <button onClick={() => redactar("reenviar", abierto)} className={`px-3 py-1.5 text-xs ${boton.secundario}`}>↪ Reenviar</button>
           {abierto.cuerpoHtml && (
             <button onClick={() => setVerTexto(v => !v)} className={boton.ghost}>{verTexto ? "Ver con formato" : "Ver como texto"}</button>
+          )}
+          {modificar !== false && (
+            <>
+              {carpeta === "recibidos" || carpeta === "no_leidos" ? (
+                <button disabled={aplicando} onClick={() => accion([abierto.id], "archivar")} className={`px-3 py-1.5 text-xs ${boton.secundario}`}>⤓ Archivar</button>
+              ) : (
+                <button disabled={aplicando} onClick={() => accion([abierto.id], "a_recibidos")} className={boton.ghost}>Mover a Recibidos</button>
+              )}
+              <button disabled={aplicando} onClick={() => accion([abierto.id], "no_leido")} className={boton.ghost}>Marcar no leído</button>
+              <button disabled={aplicando} onClick={() => accion([abierto.id], abierto.destacado ? "quitar_destacado" : "destacar")} className={boton.ghost}>
+                <span className={abierto.destacado ? "text-amber" : ""}>★</span> {abierto.destacado ? "Quitar destacado" : "Destacar"}
+              </button>
+            </>
           )}
           <a href={`https://mail.google.com/mail/u/?authuser=${encodeURIComponent(casilla ?? "")}#all/${abierto.threadId ?? abierto.id}`} target="_blank" rel="noopener noreferrer" className={boton.ghost}>Abrir en Gmail ↗</a>
         </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { inArray } from "drizzle-orm";
 import { sesionRequerida, conexionGmailDeSesion } from "@/lib/acceso";
-import { buscarMensajes, conexionActiva } from "@/lib/gmail";
+import { buscarMensajes, conexionActiva, puedeModificar } from "@/lib/gmail";
 import { getDb } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 import { asegurarColumnaGmailMensajeId } from "@/lib/db/asegurar-gmail-mensaje-id";
@@ -53,7 +53,9 @@ export async function GET(req: NextRequest) {
     });
 
     const casilla = (await conexionActiva(conexion.conexionId))?.email ?? null;
-    return NextResponse.json({ mensajes, siguiente, total, casilla });
+    // Solo en la primera página: si la casilla ya dio permiso para marcar leído/archivar.
+    const modificar = p.get("pagina") ? undefined : await puedeModificar(conexion.conexionId).catch(() => false);
+    return NextResponse.json({ mensajes, siguiente, total, casilla, modificar });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error al leer la bandeja.";
     return NextResponse.json({ error: message }, { status: 500 });
