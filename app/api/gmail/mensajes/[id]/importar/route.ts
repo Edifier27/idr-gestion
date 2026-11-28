@@ -5,6 +5,7 @@ import { sesionRequerida, conexionGmailDeSesion } from "@/lib/acceso";
 import { obtenerMensaje, obtenerAdjunto } from "@/lib/gmail";
 import { extraerCaratula, extraerDeMail } from "@/lib/extraction";
 import { esPdf } from "@/lib/adjuntos";
+import { hayQueNormalizar, normalizarArchivo } from "@/lib/normalizar-archivo";
 import { crearSiniestro } from "@/lib/siniestros";
 import { avisarAsignacion } from "@/lib/aviso-asignacion";
 import { getDb } from "@/lib/db";
@@ -88,15 +89,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     let archivosImportados = 0;
     for (const adjunto of mensaje.adjuntos) {
       try {
-        const bytes = pdfBytes && adjunto.attachmentId === pdfAdjunto?.attachmentId ? pdfBytes : await obtenerAdjunto(params.id, adjunto.attachmentId, conexion.conexionId);
-        const tipo = esPdf(adjunto) ? "application/pdf" : adjunto.tipo;
-        const blob = await put(adjunto.nombre, bytes, { access: "public", addRandomSuffix: true, contentType: tipo });
+        const crudo = pdfBytes && adjunto.attachmentId === pdfAdjunto?.attachmentId ? pdfBytes : await obtenerAdjunto(params.id, adjunto.attachmentId, conexion.conexionId);
+        // Formatos raros (.jfif, .heic, .webp…) entran como JPG.
+        const n = esPdf(adjunto) ? { bytes: crudo, nombre: adjunto.nombre, tipo: "application/pdf", convertido: false }
+          : hayQueNormalizar(adjunto.nombre, adjunto.tipo) ? await normalizarArchivo(new Uint8Array(crudo), adjunto.nombre, adjunto.tipo)
+          : { bytes: crudo, nombre: adjunto.nombre, tipo: adjunto.tipo, convertido: false };
+        const bytes = Buffer.from(n.bytes);
+        const tipo = n.tipo;
+        const blob = await put(n.nombre, bytes, { access: "public", addRandomSuffix: true, contentType: tipo });
         await db.insert(evidencia).values({
           siniestroId: siniestro.id,
-          nombre: adjunto.nombre,
+          nombre: n.nombre,
           url: blob.url,
           tipo,
-          tamano: adjunto.tamano || bytes.length,
+          tamano: n.convertido ? bytes.length : (adjunto.tamano || bytes.length),
           subidoPor: session.user.username,
         });
         archivosImportados++;
