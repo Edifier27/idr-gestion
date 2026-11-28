@@ -360,25 +360,81 @@ async function bloqueDireccion(c: Cursor, titulo: string, direccion: string | nu
   }
 }
 
+// Títulos de las pruebas con los nombres que usa el estudio (Word modelo, stro 571673).
+const TITULO_PRUEBA: Record<string, string> = {
+  denuncia: "DP", ampliacion: "Ampliación del asegurado", foto_lugar: "Lugar del hecho", foto_siniestro: "Inspección del vehículo",
+  dni: "DNI", dni_conductor: "DNI del conductor", registro_conducir: "Registro de conducir", cedula_vehiculo: "Cédula del vehículo",
+  geolocalizacion: "Geo", llamadas: "Registro de llamadas", mensajes: "Conversaciones", palabras_clave: "Palabras filtro",
+  foto_momento: "Fotos del momento del hecho", foto_previa: "Imagen previa del vehículo", llave: "Llaves", vtv: "VTV",
+  recibo_sueldo: "Recibo de sueldo", desiste: "Desistimiento", fotos: "Fotos", otro: "Otros",
+};
+// Orden de los hechos del Word modelo, si la IA todavía no ordenó el caso.
+const ORDEN_HECHOS = ["ampliacion", "denuncia", "llave", "foto_lugar", "foto_siniestro", "foto_momento", "llamadas", "foto_previa", "geolocalizacion", "palabras_clave", "mensajes", "vtv", "recibo_sueldo", "desiste", "fotos", "otro"];
+const DOCUMENTACION = ["dni", "dni_conductor", "registro_conducir", "cedula_vehiculo"];
+
+export type OpcionesExpediente = {
+  // Orden y títulos de las pruebas según el relato (los arma la IA con el informe final).
+  anexo?: { id: string; titulo: string }[];
+  // Resolución que eligió el estudio al generar el informe (si el resultado del caso sigue pendiente).
+  resolucion?: string | null;
+};
+
+// El descargo del operador sin completar (la plantilla con "???") no se muestra.
+function descargoReal(t?: string | null) {
+  const x = (t ?? "").trim();
+  return x && !/\?\?\?/.test(x) ? x : "";
+}
+
+// Parte el informe de la IA: relato (encabezado, 1 y 2) y fundamentación (3 a 5).
+function partirInforme(texto: string): { relato: string; fundamentacion: string } {
+  const lineas = texto.replace(/\*\*/g, "").split("\n");
+  const corte = lineas.findIndex(l => /^\s*3\.\s+[A-ZÁÉÍÓÚÑ]/.test(l));
+  const sinFicha = (ls: string[]) => ls.filter(l => !/^\s*(INFORME DE INVESTIGACI|DATOS DEL SINIESTRO:|COMPAÑÍA ASEGURADORA:)/i.test(l)).join("\n").trim();
+  if (corte < 0) return { relato: "", fundamentacion: sinFicha(lineas) };
+  return { relato: sinFicha(lineas.slice(0, corte)), fundamentacion: lineas.slice(corte).join("\n").trim() };
+}
+
+async function volcarArchivo(c: Cursor, row: EvidenciaRow, bytes: Uint8Array | null) {
+  const ext = row.nombre.toLowerCase().split(".").pop() ?? "";
+  const tipo = row.tipo === "application/octet-stream" && ["jpg", "jpeg", "jfif"].includes(ext) ? "image/jpeg" : row.tipo;
+  if (!bytes) {
+    espacio(c, 14);
+    c.page.drawText(sanear(`· ${row.nombre} (no se pudo descargar)`), { x: MARGEN, y: c.y, size: 9, font: c.font, color: GREY });
+    c.y -= 16;
+  } else if (tipo === "image/jpeg" || tipo === "image/png") {
+    await incrustarImagen(c, { ...row, tipo }, bytes).catch(async () => {
+      espacio(c, 14);
+      c.page.drawText(sanear(`· ${row.nombre} (no se pudo mostrar)`), { x: MARGEN, y: c.y, size: 9, font: c.font, color: GREY });
+      c.y -= 16;
+    });
+  } else if (tipo === "application/pdf") {
+    await incrustarPDF(c, row, bytes);
+  } else {
+    espacio(c, 14);
+    c.page.drawText(sanear(`· ${row.nombre} (descargar desde el CRM)`), { x: MARGEN, y: c.y, size: 9, font: c.font, color: GREY });
+    c.y -= 16;
+  }
+}
+
 /**
- * Expediente final del caso, en el orden que pidió Dario (23-nov-2026):
- * denuncia policial, siniestro (relato = ampliación + denuncia, descargo del
- * operador y cotejo), domicilio del asegurado y lugar del hecho con mapa,
- * inspección del vehículo (todas menos robo total), documentación del
- * asegurado y pruebas digitales según el ramo. Las fotos van centradas y
- * derechas, en el orden en que se subieron; los PDF adjuntos se copian
- * página a página; el resto (Word, HEIC, etc.) queda listado.
+ * Expediente / legajo final del caso, con la estructura de siempre que prefiere
+ * el cliente (ficha, I. Resumen de los hechos, II. Fundamentación y conclusión,
+ * III. Desarrollo, Documentación de los intervinientes), completado con el
+ * informe de la IA y con las pruebas en el orden de los hechos, cada una con su
+ * título. Las fotos van derechas y centradas; los PDF se copian página a página.
+ * Sin informe final todavía, I y II usan el relato de la denuncia, el descargo
+ * del operador y el cotejo (versión de trabajo).
  */
-export async function expedientePDF(s: SiniestroRow, archivosSinOrden: ArchivoConBytes[], notas: BitacoraRow[] = [], lectura: LecturaDenuncia | null = null, conInformeFinal = false): Promise<Uint8Array> {
+export async function expedientePDF(s: SiniestroRow, archivosSinOrden: ArchivoConBytes[], notas: BitacoraRow[] = [], lectura: LecturaDenuncia | null = null, conInformeFinal = false, opciones: OpcionesExpediente = {}): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const c: Cursor = { pdf, page: pdf.addPage(A4), y: 792, font, bold };
-  const archivos = [...archivosSinOrden].sort((x, y) => new Date(x.row.creadoEn).getTime() - new Date(y.row.creadoEn).getTime());
   const ramo = ramoDeTipo(s.tipo);
-  const secciones = seccionesExpediente(ramo);
-  const tiene = (cats: string[]) => archivos.some(a => cats.includes(a.row.categoria ?? "otro"));
-  const archivosDe = (id: string) => secciones.find(x => x.id === id)?.categorias ?? [];
+  // La carátula y el certificado de la aseguradora no van en el legajo.
+  const archivos = [...archivosSinOrden]
+    .filter(a => !/^(caratula|certif)/i.test(a.row.nombre))
+    .sort((x, y) => new Date(x.row.creadoEn).getTime() - new Date(y.row.creadoEn).getTime());
 
   const lugar = (s.lugarSiniestro ?? {}) as Record<string, string>;
   const lugarTxt = [lugar.calle1, lugar.altura1, lugar.localidad, lugar.provincia].filter(Boolean).join(" ");
@@ -389,7 +445,8 @@ export async function expedientePDF(s: SiniestroRow, archivosSinOrden: ArchivoCo
   c.page.drawText("Informe final de investigación de siniestro", { x: MARGEN, y: c.y, size: 10, font, color: GREY });
   c.y -= 24;
 
-  franjaClasificacion(c, s.resultado);
+  const clasificacion = s.resultado !== "pendiente" ? s.resultado : (opciones.resolucion && CIERRE_INFO[opciones.resolucion] ? opciones.resolucion : s.resultado);
+  franjaClasificacion(c, clasificacion);
 
   filaDoble(c, ["Aseguradora", s.compania], ["Rama", s.rama]);
   filaDoble(c, ["N° de siniestro", s.nroSiniestro], ["N° de gestión", s.numeroGestion]);
@@ -400,59 +457,68 @@ export async function expedientePDF(s: SiniestroRow, archivosSinOrden: ArchivoCo
   filaDoble(c, ["Operador asignado", s.operador], ["Estado actual", ETIQUETAS_ESTADO[s.estado] ?? s.estado]);
   filaDoble(c, ["Vencimiento de gestión", s.fechaLimite], ["Última actualización", new Date(s.actualizadoEn).toLocaleDateString("es-AR")]);
 
-  let n = 0;
-  const titulo = (t: string) => tituloSeccion(c, `${++n}. ${t.toUpperCase()}`);
-
-  // Con informe final (versión para la aseguradora, como el informe modelo
-  // de Dario): va el informe y después las pruebas, sin las notas internas
-  // (cotejo, bitácora, descargo en borrador).
   const informeFinal = conInformeFinal ? s.informeFinal?.trim() : null;
-  if (informeFinal) {
-    titulo("Informe de investigación");
-    textoInforme(c, informeFinal);
-  }
+  const partes = informeFinal ? partirInforme(informeFinal) : null;
 
-  // --- 1. Denuncia policial (y ampliación) ---
-  if (tiene(archivosDe("denuncia")) || (lectura?.denuncia && !informeFinal)) {
-    titulo("Denuncia policial");
-    if (lectura?.denuncia && !informeFinal) parrafo(c, lectura.denuncia);
-    for (const cat of archivosDe("denuncia")) await volcarGrupo(c, cat, archivos, ramo);
-  }
+  // --- I. Resumen de los hechos denunciados ---
+  tituloSeccion(c, "I. RESUMEN DE LOS HECHOS DENUNCIADOS");
+  const relato = partes?.relato || s.relatoDenuncia?.trim() || lectura?.denuncia?.trim() || descargoReal(s.descargo);
+  if (partes?.relato) textoInforme(c, partes.relato);
+  else parrafo(c, relato || "Todavía no hay relato cargado: generá el informe de investigación o leé la denuncia con IA.");
 
-  // --- 2. Siniestro: relato, descargo y cotejo (versión de trabajo) ---
-  if (!informeFinal) {
-    titulo("Siniestro");
-    subtitulo(c, "Relato de la denuncia (ampliación del asegurado + denuncia del día del hecho)");
-    parrafo(c, s.relatoDenuncia?.trim() || " ");
+  // --- II. Fundamentación y conclusión ---
+  tituloSeccion(c, "II. FUNDAMENTACIÓN Y CONCLUSIÓN");
+  if (partes) {
+    textoInforme(c, partes.fundamentacion);
+  } else {
+    const descargo = descargoReal(s.descargo);
+    if (descargo) { subtitulo(c, "Descargo / ampliación del operador"); parrafo(c, descargo); }
     if (lectura && lectura.cotejo.some(x => x.coincide === false)) {
       subtitulo(c, "Denuncia vs. datos del siniestro");
       for (const x of lectura.cotejo.filter(y => y.coincide === false)) {
         parrafo(c, `${x.dato}: siniestro "${x.siniestro ?? "—"}" / denuncia "${x.denuncia ?? "—"}"${x.nota ? ` (${x.nota})` : ""}`, 9);
       }
     }
-    subtitulo(c, "Descargo del operador");
-    parrafo(c, s.descargo?.trim() || "A completar.");
-    subtitulo(c, "Cotejo denuncias / ampliación / relevado (informe técnico-legal)");
-    parrafo(c, s.informe?.trim() || "Todavía no se generó el informe con IA.");
+    subtitulo(c, "Cotejo denuncia vs. relevado (informe técnico-legal)");
+    parrafo(c, s.informe?.trim() || "Todavía no se generó el informe de investigación con IA.");
     if (notas.length > 0) {
       subtitulo(c, "Bitácora de gestiones");
       for (const nota of notas) parrafo(c, `${new Date(nota.fecha).toLocaleString("es-AR")} · ${nota.tipo}: ${nota.nota}`, 9);
     }
   }
 
-  // --- 3. Domicilio del asegurado y lugar del hecho, con mapa ---
-  if (s.domicilio || lugarTxt || tiene(archivosDe("lugar"))) {
-    titulo("Domicilio y lugar del hecho");
+  // --- III. Desarrollo: las pruebas en el orden de los hechos, con su título ---
+  const posicion = new Map((opciones.anexo ?? []).map((x, i) => [x.id, i]));
+  const tituloIA = new Map((opciones.anexo ?? []).map(x => [x.id, x.titulo]));
+  const cat = (a: ArchivoConBytes) => a.row.categoria ?? "otro";
+  const deHechos = archivos.filter(a => !DOCUMENTACION.includes(cat(a)))
+    .sort((a, b) => {
+      const pa = posicion.get(a.row.id), pb = posicion.get(b.row.id);
+      if (pa !== undefined || pb !== undefined) return (pa ?? 999) - (pb ?? 999);
+      return (ORDEN_HECHOS.indexOf(cat(a)) + 1 || 99) - (ORDEN_HECHOS.indexOf(cat(b)) + 1 || 99);
+    });
+  if (deHechos.length || s.domicilio || lugarTxt) {
+    tituloSeccion(c, "III. DESARROLLO — PRUEBAS EN EL ORDEN DE LOS HECHOS");
     await bloqueDireccion(c, "Domicilio del asegurado", s.domicilio);
     await bloqueDireccion(c, "Lugar del hecho", lugarTxt);
-    for (const cat of archivosDe("lugar")) await volcarGrupo(c, cat, archivos, ramo);
+    let anterior = "";
+    for (const a of deHechos) {
+      const titulo = tituloIA.get(a.row.id) || TITULO_PRUEBA[cat(a)] || etiquetaCategoriaEvidencia(cat(a), ramo);
+      if (titulo !== anterior) { espacio(c, 200); etiquetaGrupo(c, titulo); anterior = titulo; }
+      await volcarArchivo(c, a.row, a.bytes);
+    }
   }
 
-  // --- 4 en adelante: inspección, documentación, pruebas digitales, otros ---
-  for (const sec of secciones.filter(x => ["inspeccion", "documentacion", "digitales", "otros"].includes(x.id))) {
-    if (!tiene(sec.categorias)) continue;
-    titulo(sec.titulo);
-    for (const cat of sec.categorias) await volcarGrupo(c, cat, archivos, ramo);
+  // --- Documentación de los intervinientes ---
+  const docs = archivos.filter(a => DOCUMENTACION.includes(cat(a))).sort((a, b) => DOCUMENTACION.indexOf(cat(a)) - DOCUMENTACION.indexOf(cat(b)));
+  if (docs.length) {
+    tituloSeccion(c, "DOCUMENTACIÓN DE LOS INTERVINIENTES");
+    let anterior = "";
+    for (const a of docs) {
+      const titulo = TITULO_PRUEBA[cat(a)] ?? etiquetaCategoriaEvidencia(cat(a), ramo);
+      if (titulo !== anterior) { espacio(c, 200); etiquetaGrupo(c, titulo); anterior = titulo; }
+      await volcarArchivo(c, a.row, a.bytes);
+    }
   }
 
   return pdf.save();
