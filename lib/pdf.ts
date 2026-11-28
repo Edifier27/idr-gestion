@@ -190,15 +190,29 @@ function textoInforme(c: Cursor, texto: string) {
 }
 
 /** Dos pares campo/valor en la misma fila, para que la ficha resumen no ocupe tanto alto. */
+// Dos datos por renglón. Un valor largo (ej. un domicilio con aclaraciones)
+// baja de línea dentro de su columna en vez de pisar la de al lado.
 function filaDoble(c: Cursor, a: [string, string | null], b?: [string, string | null]) {
-  espacio(c, 15);
-  const escribir = (x: number, campo: string, valor: string | null) => {
-    c.page.drawText(sanear(campo.toUpperCase()), { x, y: c.y, size: 7.5, font: c.bold, color: GREY });
-    c.page.drawText(sanear(valor?.trim() || "—"), { x, y: c.y - 10, size: 9.5, font: c.font, color: INK });
+  const anchoCol = ANCHO_UTIL / 2 - 14;
+  // Una palabra sin espacios más ancha que la columna (un mail largo) se corta.
+  const cortar = (l: string): string[] => {
+    if (c.font.widthOfTextAtSize(l, 9.5) <= anchoCol) return [l];
+    let i = l.length;
+    while (i > 1 && c.font.widthOfTextAtSize(l.slice(0, i), 9.5) > anchoCol) i--;
+    return [l.slice(0, i), ...cortar(l.slice(i))];
   };
-  escribir(MARGEN, a[0], a[1]);
-  if (b) escribir(MARGEN + ANCHO_UTIL / 2, b[0], b[1]);
-  c.y -= 26;
+  const lineasDe = (valor: string | null) => envolverTexto(sanear(valor?.trim() || "—"), c.font, 9.5, anchoCol).flatMap(cortar).slice(0, 5);
+  const la = lineasDe(a[1]);
+  const lb = b ? lineasDe(b[1]) : [];
+  const n = Math.max(la.length, lb.length, 1);
+  espacio(c, 15 + (n - 1) * 11.5);
+  const escribir = (x: number, campo: string, lineas: string[]) => {
+    c.page.drawText(sanear(campo.toUpperCase()), { x, y: c.y, size: 7.5, font: c.bold, color: GREY });
+    lineas.forEach((l, i) => c.page.drawText(l, { x, y: c.y - 10 - i * 11.5, size: 9.5, font: c.font, color: INK }));
+  };
+  escribir(MARGEN, a[0], la);
+  if (b) escribir(MARGEN + ANCHO_UTIL / 2, b[0], lb);
+  c.y -= 26 + (n - 1) * 11.5;
 }
 
 const ETIQUETAS_ESTADO: Record<string, string> = {
