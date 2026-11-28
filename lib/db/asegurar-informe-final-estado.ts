@@ -16,6 +16,8 @@ export async function asegurarEstadoInformeFinal() {
   await db.execute(sql`ALTER TABLE siniestros ADD COLUMN IF NOT EXISTS informe_final_paso text`);
   // Versión resumida (veredicto, a favor, en contra, falta, recomendación).
   await db.execute(sql`ALTER TABLE siniestros ADD COLUMN IF NOT EXISTS informe_final_resumen jsonb`);
+  // Orden y títulos del anexo del legajo en Word ([{ id, titulo }]).
+  await db.execute(sql`ALTER TABLE siniestros ADD COLUMN IF NOT EXISTS informe_final_anexo jsonb`);
   asegurada = true;
 }
 

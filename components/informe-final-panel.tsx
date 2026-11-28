@@ -11,6 +11,16 @@ const VEREDICTO = {
   dudoso: { t: "Dudoso", c: "bg-amber text-paper" },
   no_verosimil: { t: "No verosímil", c: "bg-fraude text-paper" },
 } as const;
+// Resolución que elige el estudio antes de generar: la IA la fundamenta.
+const RESOLUCIONES = [
+  { v: "ia", t: "Que la IA lo decida según las pruebas" },
+  { v: "sin_fraude", t: "Sin fraude — continuidad del trámite" },
+  { v: "desistido", t: "Desiste" },
+  { v: "posible_fraude", t: "Posible fraude — ampliar investigación" },
+  { v: "con_fraude", t: "Fraude — rechazo" },
+  { v: "sin_cobertura", t: "Sin cobertura — rechazo" },
+  { v: "rechazo", t: "Rechazo" },
+];
 const SUGERENCIA = { continuidad: "Continuidad del trámite", rechazo: "Rechazo", ampliar: "Ampliar investigación" } as const;
 
 // Informe resumido: para decidir en 20 segundos (mismos puntos críticos que
@@ -57,7 +67,8 @@ function Resumido({ r }: { r: ResumenInforme }) {
 // Igual que InformePanel, pero apunta a /api/informe-final y al campo
 // informe_final: la resolución privada del admin, que el operador no ve
 // (puedeVerInformeFinal en lib/acceso.ts).
-export function InformeFinalPanel({ siniestroId, informeInicial }: { siniestroId: string; informeInicial: string | null }) {
+export function InformeFinalPanel({ siniestroId, informeInicial, resultado }: { siniestroId: string; informeInicial: string | null; resultado?: string }) {
+  const [resolucion, setResolucion] = useState(RESOLUCIONES.some(r => r.v === resultado) ? resultado! : "ia");
   const router = useRouter();
   // El informe se genera en el servidor: aunque cierres o cambies de página
   // sigue pensando, y al volver esta tarjeta retoma el estado.
@@ -130,7 +141,7 @@ export function InformeFinalPanel({ siniestroId, informeInicial }: { siniestroId
       const res = await fetch("/api/informe-final", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ siniestroId }),
+        body: JSON.stringify({ siniestroId, resolucion }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "No se pudo generar la resolución final.");
@@ -184,6 +195,14 @@ export function InformeFinalPanel({ siniestroId, informeInicial }: { siniestroId
 
   return (
     <div className="space-y-3">
+      <label className="flex flex-wrap items-center gap-2 text-sm text-ink">
+        <span className="font-medium">Resolución:</span>
+        <select value={resolucion} onChange={e => setResolucion(e.target.value)} disabled={generando}
+          className="rounded-md border border-line bg-white px-2.5 py-1.5 text-sm text-ink shadow-sm focus:border-azul/40 focus:outline-none">
+          {RESOLUCIONES.map(r => <option key={r.v} value={r.v}>{r.t}</option>)}
+        </select>
+        <span className="text-xs text-slate">La IA arma el informe con esta resolución.</span>
+      </label>
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={generar}
@@ -234,7 +253,14 @@ export function InformeFinalPanel({ siniestroId, informeInicial }: { siniestroId
             </div>
           )}
         </div>
-      ) : (
+      ) : null}
+      {informeInicial && !generando && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-ok/30 bg-ok/5 px-4 py-3">
+          <a href={`/api/legajo-word?id=${siniestroId}`} className={boton.exito}>Descargar legajo final (Word)</a>
+          <span className="text-xs text-slate">Informe final + anexo con las pruebas en el orden de los hechos, cada una con su título, como el que se manda a la aseguradora. Puede tardar unos segundos.</span>
+        </div>
+      )}
+      {informeInicial ? null : (
         <p className="text-sm text-slate">
           Todavía no generaste el informe de investigación. La IA mira cada foto y documento del caso, los perita y redacta el informe con el formato del que se manda a la aseguradora (como el del siniestro 571673). Es un borrador: revisalo y corregilo antes de mandarlo. El operador no lo ve.
         </p>

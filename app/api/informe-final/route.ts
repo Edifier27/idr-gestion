@@ -3,7 +3,9 @@ import { eq, sql } from "drizzle-orm";
 import { waitUntil } from "@vercel/functions";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros, bitacora } from "@/lib/db/schema";
-import { generarInformeFinal, resumirInforme } from "@/lib/informe-final";
+import { generarInformeFinal, resumirInforme, ordenarAnexo, RESOLUCIONES } from "@/lib/informe-final";
+import { evidencia } from "@/lib/db/schema";
+import { asc } from "drizzle-orm";
 import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
 import { sesionRequerida, puedeVerCaso, puedeVerInformeFinal } from "@/lib/acceso";
 import { asegurarEstadoInformeFinal } from "@/lib/db/asegurar-informe-final-estado";
@@ -52,7 +54,8 @@ export async function GET(req: NextRequest) {
 // POST /api/informe-final { siniestroId } -> arranca la resolución final con IA
 // en el servidor (solo admin: el operador no la ve) y contesta enseguida.
 export async function POST(req: NextRequest) {
-  const { siniestroId } = await req.json().catch(() => ({}));
+  const { siniestroId, resolucion } = await req.json().catch(() => ({}));
+  const decision = typeof resolucion === "string" && RESOLUCIONES[resolucion] ? resolucion : "ia";
   const a = await autorizar(String(siniestroId ?? ""));
   if ("error" in a) return a.error;
   const s = a.s;
@@ -80,11 +83,15 @@ export async function POST(req: NextRequest) {
         db.execute(sql`UPDATE siniestros SET informe_final_paso = ${texto} WHERE id = ${s.id} AND informe_final_estado = 'generando'`).catch(() => {});
       };
       informarPaso("Leyendo la denuncia y el chat del caso", true);
-      const informeTexto = await generarInformeFinal(s, notas.map((n) => `[${n.tipo}] ${n.nota}`), lectura, informarPaso);
+      const { texto: informeTexto, archivos } = await generarInformeFinal(s, notas.map((n) => `[${n.tipo}] ${n.nota}`), lectura, informarPaso, decision);
+      informarPaso("Ordenando las pruebas del legajo según el relato", true);
+      const filas = await db.select({ id: evidencia.id, nombre: evidencia.nombre, categoria: evidencia.categoria }).from(evidencia).where(eq(evidencia.siniestroId, s.id)).orderBy(asc(evidencia.creadoEn));
+      const numero = new Map(archivos.map(a => [a.id, a.n]));
+      const anexo = await ordenarAnexo(informeTexto, filas.filter(f => !/^(caratula|certif)/i.test(f.nombre)).map(f => ({ ...f, n: numero.get(f.id) ?? null }))).catch(() => []);
       informarPaso("Armando el informe resumido", true);
       const resumen = await resumirInforme(informeTexto).catch(() => null);
       await db.execute(sql`
-        UPDATE siniestros SET informe_final = ${informeTexto}, informe_final_resumen = ${resumen ? JSON.stringify(resumen) : null}::jsonb, informe_final_estado = 'listo', informe_final_error = NULL, informe_final_fin = now(), informe_final_paso = NULL, actualizado_en = now()
+        UPDATE siniestros SET informe_final = ${informeTexto}, informe_final_resumen = ${resumen ? JSON.stringify(resumen) : null}::jsonb, informe_final_anexo = ${anexo.length ? JSON.stringify(anexo) : null}::jsonb, informe_final_estado = 'listo', informe_final_error = NULL, informe_final_fin = now(), informe_final_paso = NULL, actualizado_en = now()
         WHERE id = ${s.id}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al generar la resolución final.";

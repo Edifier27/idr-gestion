@@ -357,7 +357,7 @@ export default async function Detalle({ params }: { params: { id: string } }) {
               accento="ink"
               extra={<span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber to-amber/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink">🔒 Solo vos — para el mail</span>}
             >
-              <InformeFinalPanel siniestroId={s.id} informeInicial={s.informeFinal} />
+              <InformeFinalPanel siniestroId={s.id} informeInicial={s.informeFinal} resultado={s.resultado} />
             </Bloque>
           </div>
         )}
