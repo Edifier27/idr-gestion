@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       informarPaso("Armando el informe resumido", true);
       const resumen = await resumirInforme(informeTexto).catch(() => null);
       await db.execute(sql`
-        UPDATE siniestros SET informe_final = ${informeTexto}, informe_final_resumen = ${resumen ? JSON.stringify(resumen) : null}::jsonb, informe_final_anexo = ${anexo.length ? JSON.stringify(anexo) : null}::jsonb, informe_final_estado = 'listo', informe_final_error = NULL, informe_final_fin = now(), informe_final_paso = NULL, actualizado_en = now()
+        UPDATE siniestros SET informe_final = ${informeTexto}, informe_final_resumen = ${resumen ? JSON.stringify(resumen) : null}::jsonb, informe_final_anexo = ${anexo.length ? JSON.stringify(anexo) : null}::jsonb, informe_final_resolucion = ${decision === "ia" ? null : decision}, informe_final_estado = 'listo', informe_final_error = NULL, informe_final_fin = now(), informe_final_paso = NULL, actualizado_en = now()
         WHERE id = ${s.id}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al generar la resolución final.";

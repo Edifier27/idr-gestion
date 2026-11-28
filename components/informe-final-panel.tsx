@@ -256,8 +256,8 @@ export function InformeFinalPanel({ siniestroId, informeInicial, resultado }: { 
       ) : null}
       {informeInicial && !generando && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-ok/30 bg-ok/5 px-4 py-3">
-          <a href={`/api/legajo-word?id=${siniestroId}`} className={boton.exito}>Descargar legajo final (Word)</a>
-          <span className="text-xs text-slate">Informe final + anexo con las pruebas en el orden de los hechos, cada una con su título, como el que se manda a la aseguradora. Puede tardar unos segundos.</span>
+          <a href={`/api/expediente-pdf?id=${siniestroId}`} className={boton.exito}>Descargar legajo final (PDF)</a>
+          <span className="text-xs text-slate">Ficha del caso, I. Resumen de los hechos, II. Fundamentación y conclusión (del informe) y III. las pruebas en el orden de los hechos, cada una con su título. Puede tardar unos segundos.</span>
         </div>
       )}
       {informeInicial ? null : (
