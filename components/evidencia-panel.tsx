@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { VisorPrueba, esImagen } from "@/components/visor-prueba";
 import { CATEGORIAS_EVIDENCIA, etiquetaCategoriaEvidencia, ordenCategorias, ramoDeTipo, seccionesExpediente, type Ramo } from "@/lib/categorias-evidencia";
 import { rubroDeTipo } from "@/lib/tipos-siniestro";
 import { QueAdjuntar, RubroChip } from "@/components/que-adjuntar";
@@ -76,6 +77,8 @@ export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivo
   // (drop genérico en cualquier otra parte del panel).
   const [categoriaSobrevolada, setCategoriaSobrevolada] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Visor emergente (zoom, lupa y texto según la IA), en el orden en que se ven los grupos.
+  const [visor, setVisor] = useState<number | null>(null);
   // Cuenta enter/leave en vez de un booleano simple: al arrastrar sobre un
   // hijo del cuadro, el navegador dispara dragleave del padre + dragenter del
   // hijo — con un booleano solo, eso "parpadea" el resaltado del dropzone.
@@ -343,6 +346,13 @@ export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivo
       ) : (
         <div className="space-y-4">
           <p className="text-[11px] text-slate">Arrastrá una tarjeta a otro grupo para recategorizarla.</p>
+          {visor !== null && (
+            <VisorPrueba
+              pruebas={agruparPorCategoria(archivos, ramo).flatMap(g => g.archivos).map(f => ({ ...f, etiqueta: etiquetaCategoria(f.categoria, ramo) ?? "Sin categoría" }))}
+              inicial={visor}
+              onCerrar={() => setVisor(null)}
+            />
+          )}
           {agruparPorCategoria(archivos, ramo).map(grupo => (
             <div
               key={grupo.categoria ?? "sin-categoria"}
@@ -355,7 +365,7 @@ export function EvidenciaPanel({ siniestroId, tipo, archivosIniciales, onArchivo
                 {etiquetaCategoria(grupo.categoria, ramo) ?? "Sin categoría"} <span className="text-slate/50">({grupo.archivos.length})</span>
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {grupo.archivos.map(f => <TarjetaArchivo key={f.id} f={f} onBorrar={borrar} />)}
+                {grupo.archivos.map(f => <TarjetaArchivo key={f.id} f={f} onBorrar={borrar} onAbrir={() => setVisor(agruparPorCategoria(archivos, ramo).flatMap(g => g.archivos).findIndex(x => x.id === f.id))} />)}
               </div>
             </div>
           ))}
@@ -382,7 +392,7 @@ function agruparPorCategoria(archivos: Archivo[], ramo: Ramo | null): { categori
   return grupos;
 }
 
-function TarjetaArchivo({ f, onBorrar }: { f: Archivo; onBorrar: (id: string) => void }) {
+function TarjetaArchivo({ f, onBorrar, onAbrir }: { f: Archivo; onBorrar: (id: string) => void; onAbrir: () => void }) {
   return (
     <div
       draggable
@@ -393,8 +403,8 @@ function TarjetaArchivo({ f, onBorrar }: { f: Archivo; onBorrar: (id: string) =>
       title="Arrastrar a otra categoría para recategorizar"
       className="group relative cursor-grab overflow-hidden rounded-lg border border-line bg-paper shadow-sm transition hover:shadow-md active:cursor-grabbing"
     >
-      <a href={f.url} target="_blank" rel="noopener noreferrer" className="block">
-        {f.tipo.startsWith("image/") ? (
+      <button type="button" onClick={onAbrir} className="block w-full text-left" title="Ver en grande (zoom, lupa y texto según la IA)">
+        {esImagen(f) ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={f.url} alt={f.nombre} className="h-24 w-full object-cover" />
         ) : (
@@ -403,7 +413,7 @@ function TarjetaArchivo({ f, onBorrar }: { f: Archivo; onBorrar: (id: string) =>
             <span className="px-1 text-center text-[10px] leading-tight">{f.nombre}</span>
           </div>
         )}
-      </a>
+      </button>
       <button
         onClick={() => onBorrar(f.id)}
         className="absolute right-1 top-1 hidden rounded bg-fraude/90 px-1.5 py-0.5 text-[10px] font-medium text-white group-hover:block"

@@ -65,7 +65,9 @@ export async function generarInformeFinal(
   s: SiniestroRow, notas: string[], lectura: LecturaDenuncia | null,
   // Avisa en qué paso está (para mostrarlo mientras trabaja); forzar = cambio de etapa.
   paso: (texto: string, forzar?: boolean) => void = () => {},
-): Promise<string> {
+  // Resolución que decidió el estudio (sin_fraude, desistido, con_fraude…): el informe la fundamenta.
+  resolucion: string = "ia",
+): Promise<{ texto: string; archivos: { n: number; id: string }[] }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY no está configurada.");
   const db = getDb();
@@ -80,6 +82,7 @@ export async function generarInformeFinal(
   const contenido: Anthropic.Messages.ContentBlockParam[] = [];
   const noVistos: string[] = [];
   let bytes = 0, n = 0;
+  const archivos: { n: number; id: string }[] = [];
   let bajadas = 0;
   for (const f of filas) {
     paso(`Bajando las pruebas (${++bajadas} de ${filas.length})`);
@@ -91,6 +94,7 @@ export async function generarInformeFinal(
       const buf = Buffer.from(await r.arrayBuffer());
       if (bytes + buf.length > MAX_BYTES) { noVistos.push(f.nombre); continue; }
       bytes += buf.length; n++;
+      archivos.push({ n, id: f.id });
       contenido.push({ type: "text", text: `Archivo ${n} — "${f.nombre}" — categoría: ${etiquetaCategoriaEvidencia(f.categoria, ramo)}` });
       const data = buf.toString("base64");
       if (f.tipo === "application/pdf") contenido.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data } });
@@ -118,7 +122,8 @@ export async function generarInformeFinal(
     archivosNoVistos: noVistos,
   };
 
-  const pedido = `Datos del caso:\n${JSON.stringify(datos, null, 2)}\n\nRedactá el informe.`;
+  const decision = RESOLUCIONES[resolucion];
+  const pedido = `Datos del caso:\n${JSON.stringify(datos, null, 2)}\n\n${decision ? `RESOLUCIÓN QUE DECIDIÓ EL ESTUDIO (obligatoria): ${decision}\nLas secciones 4 y 5 la fundamentan con las pruebas y la sugerencia final es esa; no la contradigas. Si alguna prueba no alcanza para sostenerla, decilo con prudencia, pero mantené la resolución.\n\n` : ""}Redactá el informe.`;
   const client = new Anthropic({ apiKey });
 
   // Con muchas pruebas el modelo piensa largo antes de escribir: con poco
@@ -173,7 +178,54 @@ export async function generarInformeFinal(
   if (!texto) { paso("Reintentando solo con el texto del caso", true); texto = await pedir(soloTexto); }
   paso("Guardando el informe", true);
   if (!texto) throw new Error("La IA no pudo redactar el informe de este caso. Avisanos y lo revisamos.");
-  return texto;
+  return { texto, archivos };
+}
+
+// Resoluciones que puede elegir el estudio antes de generar el informe.
+export const RESOLUCIONES: Record<string, string> = {
+  sin_fraude: "SIN FRAUDE. El relato es consistente con las pruebas. Sugerencia: CONTINUIDAD DEL TRÁMITE REGULAR DE COBERTURA Y LIQUIDACIÓN (con las condiciones de documentación que correspondan).",
+  desistido: "DESISTE. El asegurado desiste del reclamo (citá el desistimiento firmado si está entre las pruebas). Sugerencia: CIERRE DEL SINIESTRO POR DESISTIMIENTO DEL ASEGURADO.",
+  con_fraude: "FRAUDE. Las pruebas muestran simulación o falsa denuncia. Sugerencia: RECHAZO DEL SINIESTRO, con las inconsistencias que lo fundamentan.",
+  posible_fraude: "POSIBLE FRAUDE. Hay inconsistencias que no permiten validar el relato. Sugerencia: AMPLIACIÓN DE LA INVESTIGACIÓN, diciendo qué falta.",
+  sin_cobertura: "SIN COBERTURA. El hecho no está cubierto por la póliza (uso, riesgo o condición). Sugerencia: RECHAZO POR FALTA DE COBERTURA.",
+  rechazo: "RECHAZO. Sugerencia: RECHAZO DEL SINIESTRO, con su fundamento.",
+};
+
+// Orden del anexo del legajo, como en el Word modelo (stro 571673).
+export const ORDEN_ANEXO_MODELO = "ampliación o declaración del asegurado (con su DNI) → documentación del vehículo (título, cédula, registro) → DP (denuncia policial, todas las páginas) → llaves → las pruebas del hecho en el orden en que pasaron según el relato (lugar del hecho, comercios o testigos entrevistados con lo que dijeron, domicilio, fotos del momento) → llamadas → imagen previa del vehículo → geo → palabras filtro y conversaciones → VTV, recibo y el resto";
+
+export type ItemAnexo = { id: string; titulo: string };
+
+// Ordena las pruebas del legajo como el Word modelo: cuenta la historia en el
+// orden en que pasaron los hechos (según la denuncia, el operador y el
+// asegurado) y le pone a cada prueba el título que va abajo de la foto.
+export async function ordenarAnexo(informe: string, pruebas: { id: string; n: number | null; nombre: string; categoria: string | null }[]): Promise<ItemAnexo[]> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey || !pruebas.length) return [];
+  const lista = pruebas.map((p, i) => `${i + 1}) ${p.n ? `Archivo ${p.n}` : "(no la vio la IA)"} · "${p.nombre}" · ${etiquetaCategoriaEvidencia(p.categoria)}`).join("\n");
+  const msg = await new Anthropic({ apiKey }).beta.messages.stream({
+    model: "claude-sonnet-5-5",
+    max_tokens: 16000,
+    output_config: { effort: "low" },
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system: `Armás el anexo de pruebas de un legajo de siniestro que va a la aseguradora. El legajo cuenta la historia: cada prueba acompaña el momento del relato que prueba. Ordená las pruebas siguiendo este esquema (el del legajo modelo del estudio) y, dentro de las pruebas del hecho, en el orden cronológico del relato del informe:
+${ORDEN_ANEXO_MODELO}
+A cada prueba poné el título que va abajo de la foto, corto, con los nombres del modelo: "DP", "Título", "Llaves", "Lugar del hecho", "Domicilio", "Llamada a su pareja", "Imagen previa del vehículo", "Geo", "Palabras filtro". Si el informe dice algo concreto de esa prueba (un comercio, un testigo, lo que se ve), el título puede contarlo en una frase (ej. "Verdulería Amancio Alcorta y Dr. Melo, donde dice realizar compras: el verdulero confirma que es cliente habitual."). No inventes nada que no diga el informe.
+Devolvé SOLO un JSON: [{"prueba": número de la lista, "titulo": "…"}], con TODAS las pruebas una sola vez.`,
+    messages: [{ role: "user", content: `Informe final:\n${informe}\n\nPruebas del caso:\n${lista}` }],
+  }).finalMessage();
+  const t = msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map(b => b.text).join("");
+  const j = JSON.parse(t.slice(t.indexOf("["), t.lastIndexOf("]") + 1)) as { prueba: number; titulo: string }[];
+  const vistos = new Set<string>();
+  const out: ItemAnexo[] = [];
+  for (const x of j) {
+    const p = pruebas[Number(x.prueba) - 1];
+    if (!p || vistos.has(p.id)) continue;
+    vistos.add(p.id);
+    out.push({ id: p.id, titulo: String(x.titulo ?? "").slice(0, 300) });
+  }
+  return out;
 }
 
 // Informe resumido: lo que el administrador necesita para decidir en 20

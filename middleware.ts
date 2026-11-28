@@ -9,6 +9,6 @@ export const config = {
   // aparte con CRON_SECRET adentro del propio handler.
   // Todo lo demás (panel, siniestros, admin, API de datos) requiere sesión.
   matcher: [
-    "/((?!$|api/auth|api/setup|api/migrar|api/backup|api/recordatorio-plazo|api/cron/|api/whatsapp/webhook|login|setup|privacidad|emoji/|fondo-chat.svg|_next/static|_next/image|favicon.ico).*)",
+    "/((?!$|api/auth|api/setup|api/migrar|api/backup|api/recordatorio-plazo|api/cron/|api/whatsapp/webhook|login|setup|privacidad|api/version|emoji/|fondo-chat.svg|_next/static|_next/image|favicon.ico).*)",
   ],
 };
