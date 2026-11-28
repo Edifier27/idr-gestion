@@ -3,7 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { waitUntil } from "@vercel/functions";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros, bitacora } from "@/lib/db/schema";
-import { generarInformeFinal } from "@/lib/informe-final";
+import { generarInformeFinal, resumirInforme } from "@/lib/informe-final";
 import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
 import { sesionRequerida, puedeVerCaso, puedeVerInformeFinal } from "@/lib/acceso";
 import { asegurarEstadoInformeFinal } from "@/lib/db/asegurar-informe-final-estado";
@@ -14,11 +14,11 @@ export const maxDuration = 800; // mira todas las pruebas y puede reintentar: si
 // Si quedó "generando" más que esto, la ejecución se cortó: se puede volver a pedir.
 const VENCE_MS = 14 * 60_000;
 
-type Estado = { estado: string | null; inicio: string | null; error: string | null; informeFinal: string | null };
+type Estado = { estado: string | null; inicio: string | null; error: string | null; paso: string | null; informeFinal: string | null; resumen: unknown };
 
 async function leerEstado(id: string): Promise<Estado | null> {
   const r = await getDb().execute(sql`
-    SELECT informe_final_estado AS estado, informe_final_inicio AS inicio, informe_final_error AS error, informe_final AS "informeFinal"
+    SELECT informe_final_estado AS estado, informe_final_inicio AS inicio, informe_final_error AS error, informe_final_paso AS paso, informe_final AS "informeFinal", informe_final_resumen AS resumen
     FROM siniestros WHERE id = ${id}`);
   const e = (r.rows as Estado[])[0];
   if (!e) return null;
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   // Una sola generación a la vez por caso.
   const tomada = await db.execute(sql`
-    UPDATE siniestros SET informe_final_estado = 'generando', informe_final_inicio = now(), informe_final_error = NULL
+    UPDATE siniestros SET informe_final_estado = 'generando', informe_final_inicio = now(), informe_final_error = NULL, informe_final_fin = NULL, informe_final_paso = 'Arrancando…'
     WHERE id = ${s.id} AND (informe_final_estado IS DISTINCT FROM 'generando' OR informe_final_inicio < now() - make_interval(secs => ${VENCE_MS / 1000}))
     RETURNING id`);
   if (!tomada.rows.length) return NextResponse.json(await leerEstado(s.id), { status: 202 });
@@ -70,13 +70,25 @@ export async function POST(req: NextRequest) {
     try {
       const notas = await db.select().from(bitacora).where(eq(bitacora.siniestroId, s.id));
       const lectura = await leerLecturaDenuncia(s.id);
-      const informeTexto = await generarInformeFinal(s, notas.map((n) => `[${n.tipo}] ${n.nota}`), lectura);
+      // Lo que va haciendo se guarda en el caso (como mucho cada 3 s, salvo
+      // cambios de etapa) para mostrarlo en la tarjeta y en el indicador.
+      let ultimo = 0, ultimoTexto = "";
+      const informarPaso = (texto: string, forzar = false) => {
+        const ahora = Date.now();
+        if (texto === ultimoTexto || (!forzar && ahora - ultimo < 3000)) return;
+        ultimo = ahora; ultimoTexto = texto;
+        db.execute(sql`UPDATE siniestros SET informe_final_paso = ${texto} WHERE id = ${s.id} AND informe_final_estado = 'generando'`).catch(() => {});
+      };
+      informarPaso("Leyendo la denuncia y el chat del caso", true);
+      const informeTexto = await generarInformeFinal(s, notas.map((n) => `[${n.tipo}] ${n.nota}`), lectura, informarPaso);
+      informarPaso("Armando el informe resumido", true);
+      const resumen = await resumirInforme(informeTexto).catch(() => null);
       await db.execute(sql`
-        UPDATE siniestros SET informe_final = ${informeTexto}, informe_final_estado = 'listo', informe_final_error = NULL, actualizado_en = now()
+        UPDATE siniestros SET informe_final = ${informeTexto}, informe_final_resumen = ${resumen ? JSON.stringify(resumen) : null}::jsonb, informe_final_estado = 'listo', informe_final_error = NULL, informe_final_fin = now(), informe_final_paso = NULL, actualizado_en = now()
         WHERE id = ${s.id}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error al generar la resolución final.";
-      await db.execute(sql`UPDATE siniestros SET informe_final_estado = 'error', informe_final_error = ${message} WHERE id = ${s.id}`).catch(() => {});
+      await db.execute(sql`UPDATE siniestros SET informe_final_estado = 'error', informe_final_error = ${message}, informe_final_fin = now(), informe_final_paso = NULL WHERE id = ${s.id}`).catch(() => {});
     }
   })());
 

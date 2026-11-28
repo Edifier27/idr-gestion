@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { and, eq, ne } from "drizzle-orm";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/app-shell";
+import { InformesEnCurso } from "@/components/informes-en-curso";
 import { getDb, dbConfigurada } from "@/lib/db";
 import { siniestros } from "@/lib/db/schema";
 
@@ -24,6 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <AppShell nombre={session.user.name ?? session.user.username} rol={session.user.rol} derivados={derivados}>
       {children}
+      {esAdmin && <InformesEnCurso />}
     </AppShell>
   );
 }

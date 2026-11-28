@@ -11,5 +11,11 @@ export async function asegurarEstadoInformeFinal() {
   await db.execute(sql`ALTER TABLE siniestros ADD COLUMN IF NOT EXISTS informe_final_estado text`);
   await db.execute(sql`ALTER TABLE siniestros ADD COLUMN IF NOT EXISTS informe_final_inicio timestamptz`);
   await db.execute(sql`ALTER TABLE siniestros ADD COLUMN IF NOT EXISTS informe_final_error text`);
+  await db.execute(sql`ALTER TABLE siniestros ADD COLUMN IF NOT EXISTS informe_final_fin timestamptz`);
+  // En qué paso está (lo informa el servidor mientras trabaja): "Bajando las pruebas (3 de 15)", "Redactando · 640 palabras"…
+  await db.execute(sql`ALTER TABLE siniestros ADD COLUMN IF NOT EXISTS informe_final_paso text`);
+  // Versión resumida (veredicto, a favor, en contra, falta, recomendación).
+  await db.execute(sql`ALTER TABLE siniestros ADD COLUMN IF NOT EXISTS informe_final_resumen jsonb`);
   asegurada = true;
 }
+
