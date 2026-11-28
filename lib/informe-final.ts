@@ -123,7 +123,7 @@ export async function generarInformeFinal(
   };
 
   const decision = RESOLUCIONES[resolucion];
-  const pedido = `Datos del caso:\n${JSON.stringify(datos, null, 2)}\n\n${decision ? `RESOLUCIÓN QUE DECIDIÓ EL ESTUDIO (obligatoria): ${decision}\nLas secciones 4 y 5 la fundamentan con las pruebas y la sugerencia final es esa; no la contradigas. Si alguna prueba no alcanza para sostenerla, decilo con prudencia, pero mantené la resolución.\n\n` : ""}Redactá el informe.`;
+  const pedido = `Datos del caso:\n${JSON.stringify(datos, null, 2)}\n\n${decision ? `RESOLUCIÓN QUE DECIDIÓ EL ESTUDIO (obligatoria — todo el informe se escribe para fundamentarla, no solo la conclusión):\n${decision}\n\nReglas: no la contradigas ni la pongas en duda. No inventes datos ni pruebas. Si hay una inconsistencia grave, no la borres: mencionala en una línea como observación y explicá por qué no cambia la resolución.\n\n` : ""}Redactá el informe.`;
   const client = new Anthropic({ apiKey });
 
   // Con muchas pruebas el modelo piensa largo antes de escribir: con poco
@@ -183,12 +183,31 @@ export async function generarInformeFinal(
 
 // Resoluciones que puede elegir el estudio antes de generar el informe.
 export const RESOLUCIONES: Record<string, string> = {
-  sin_fraude: "SIN FRAUDE. El relato es consistente con las pruebas. Sugerencia: CONTINUIDAD DEL TRÁMITE REGULAR DE COBERTURA Y LIQUIDACIÓN (con las condiciones de documentación que correspondan).",
-  desistido: "DESISTE. El asegurado desiste del reclamo (citá el desistimiento firmado si está entre las pruebas). Sugerencia: CIERRE DEL SINIESTRO POR DESISTIMIENTO DEL ASEGURADO.",
-  con_fraude: "FRAUDE. Las pruebas muestran simulación o falsa denuncia. Sugerencia: RECHAZO DEL SINIESTRO, con las inconsistencias que lo fundamentan.",
-  posible_fraude: "POSIBLE FRAUDE. Hay inconsistencias que no permiten validar el relato. Sugerencia: AMPLIACIÓN DE LA INVESTIGACIÓN, diciendo qué falta.",
-  sin_cobertura: "SIN COBERTURA. El hecho no está cubierto por la póliza (uso, riesgo o condición). Sugerencia: RECHAZO POR FALTA DE COBERTURA.",
-  rechazo: "RECHAZO. Sugerencia: RECHAZO DEL SINIESTRO, con su fundamento.",
+  sin_fraude: `SIN FRAUDE — CONTINUIDAD DEL TRÁMITE. El estudio validó el siniestro y el informe tiene que cerrarlo para su cobertura,
+con el tono del informe modelo (stro 571673):
+- Sección 3: destacá la coherencia de la secuencia temporal, la validación del uso declarado y los puntos acreditados con cada prueba.
+- Sección 4: "Oportunidad en la Denuncia" en término (o justificada), "Consistencia del Cuadro Probatorio" e "Inexistencia de
+  Indicadores de Fraude". Las diferencias menores (horarios aproximados, datos faltantes, fotos de baja calidad) van como
+  observaciones que no afectan la cobertura, en una línea.
+- Sección 5: "el presente siniestro cumple satisfactoriamente con los criterios de consistencia técnica y probatoria, no
+  presentando inconsistencias ni sospecha de fraude" y la sugerencia: CONTINUIDAD DEL TRÁMITE REGULAR DE COBERTURA Y
+  LIQUIDACIÓN, supeditada a la documentación reglamentaria que corresponda. No sugieras ampliar la investigación.`,
+  desistido: `DESISTE. El asegurado desiste del reclamo. Centrá el informe en eso:
+- Sección 3: lo relevado hasta el desistimiento, sin peritaje en profundidad.
+- Sección 4: el desistimiento (citá el desistimiento firmado si está entre las pruebas, con su fecha) y, si las hubo, las
+  inconsistencias que surgieron antes de que desistiera, en tono neutro.
+- Sección 5: el asegurado desiste voluntariamente del reclamo; sugerencia: CIERRE DEL SINIESTRO POR DESISTIMIENTO DEL ASEGURADO.`,
+  con_fraude: `FRAUDE — RECHAZO. El estudio concluyó que el siniestro no es verídico. Fundamentalo con firmeza:
+- Sección 3: cada contradicción con la prueba que la muestra (Archivo N), en orden de gravedad.
+- Sección 4: "Existencia de Indicadores de Fraude" con su fundamento; oportunidad de la denuncia y consistencia del cuadro probatorio.
+- Sección 5: el relato no se sostiene con las pruebas; sugerencia: RECHAZO DEL SINIESTRO POR INCONSISTENCIAS / SIMULACIÓN.`,
+  posible_fraude: `POSIBLE FRAUDE — AMPLIAR INVESTIGACIÓN. Hay inconsistencias que no permiten validar el relato:
+- Sección 4: las inconsistencias concretas y qué no se pudo acreditar.
+- Sección 5: sugerencia: AMPLIACIÓN DE LA INVESTIGACIÓN, con la lista corta de lo que hay que pedir o verificar.`,
+  sin_cobertura: `SIN COBERTURA — RECHAZO. El hecho no está cubierto por la póliza (uso, riesgo, vigencia o condición):
+- Sección 4: la causa concreta de la falta de cobertura y la prueba que la acredita.
+- Sección 5: sugerencia: RECHAZO POR FALTA DE COBERTURA.`,
+  rechazo: `RECHAZO. Fundamentá el rechazo con las pruebas y terminá con la sugerencia: RECHAZO DEL SINIESTRO.`,
 };
 
 // Orden del anexo del legajo, como en el Word modelo (stro 571673).
