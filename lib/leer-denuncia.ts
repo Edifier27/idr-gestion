@@ -112,7 +112,7 @@ export async function leerDenuncia(s: SiniestroRow, autor: string | null): Promi
 
   const msg = await new Anthropic({ apiKey }).messages.create({
     model: "claude-sonnet-5-5",
-    max_tokens: 4000,
+    max_tokens: 16000,
     system: SISTEMA,
     messages: [{ role: "user", content: contenido }],
   });

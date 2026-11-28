@@ -104,15 +104,40 @@ export async function generarInformeFinal(s: SiniestroRow, notas: string[], lect
     bitacora: notas,
     archivosNoVistos: noVistos,
   };
-  contenido.push({ type: "text", text: `Datos del caso:\n${JSON.stringify(datos, null, 2)}\n\nRedactá el informe.` });
 
-  const msg = await new Anthropic({ apiKey }).messages.create({
-    model: "claude-sonnet-5-5",
-    max_tokens: 6000,
-    system: SISTEMA,
-    messages: [{ role: "user", content: contenido }],
-  });
-  const texto = msg.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map(b => b.text).join("").trim();
-  if (!texto) throw new Error("La IA no devolvió el informe. Probá de nuevo.");
+  const pedido = `Datos del caso:\n${JSON.stringify(datos, null, 2)}\n\nRedactá el informe.`;
+  const client = new Anthropic({ apiKey });
+
+  // Con muchas pruebas el modelo piensa largo antes de escribir: con poco
+  // max_tokens se gastaba todo pensando y el informe salía vacío (stro 160924).
+  // Además, si el filtro de seguridad rechaza alguna prueba (stop_reason
+  // "refusal"), se pasa a otro modelo ("fallbacks") y, si igual no sale, se
+  // reintenta sin las imágenes y, por último, solo con el texto del caso.
+  async function pedir(bloques: Anthropic.Messages.ContentBlockParam[]) {
+    const msg = await client.beta.messages.stream({
+      model: "claude-sonnet-5-5",
+      max_tokens: 32000,
+      output_config: { effort: "high" },
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      system: SISTEMA,
+      messages: [{ role: "user", content: bloques as Anthropic.Beta.BetaContentBlockParam[] }],
+    }).finalMessage();
+    const texto = msg.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map(b => b.text).join("").trim();
+    if (!texto || msg.stop_reason === "refusal") {
+      console.error("informe-final sin texto", { siniestro: s.nroSiniestro, stop_reason: msg.stop_reason, stop_details: msg.stop_details, usage: msg.usage });
+      return null;
+    }
+    return texto;
+  }
+
+  const conTodo = [...contenido, { type: "text" as const, text: pedido }];
+  const sinImagenes = [...contenido.filter(b => b.type !== "image"), { type: "text" as const, text: `${pedido}\n\n(Las fotos no se pudieron analizar en esta pasada: no hagas el peritaje de imágenes, indicá que quedan para revisión manual.)` }];
+  const soloTexto = [{ type: "text" as const, text: `${pedido}\n\n(Los archivos de prueba no se pudieron analizar en esta pasada: indicá que el peritaje de las pruebas queda para revisión manual.)` }];
+
+  const texto = (await pedir(conTodo))
+    ?? (contenido.some(b => b.type === "image") ? await pedir(sinImagenes) : null)
+    ?? await pedir(soloTexto);
+  if (!texto) throw new Error("La IA no pudo redactar el informe de este caso. Avisanos y lo revisamos.");
   return texto;
 }
