@@ -75,19 +75,21 @@ export function InformesEnCurso() {
             {visibles.map(x => {
               const seg = x.inicio ? ((x.estado === "generando" ? ahora : new Date(x.fin ?? Date.now()).getTime()) - new Date(x.inicio).getTime()) / 1000 : 0;
               return (
-                <li key={x.id} className="flex items-start gap-2.5 px-3 py-2.5">
+                <li key={x.id} className="flex items-start gap-2.5 px-3 py-2.5 transition hover:bg-paper">
                   {x.estado === "generando"
                     ? <span className="mt-1 inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-azul/30 border-t-azul" aria-hidden />
                     : <span className={`mt-0.5 shrink-0 text-sm ${x.estado === "listo" ? "text-ok" : "text-fraude"}`}>{x.estado === "listo" ? "✓" : "!"}</span>}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-ink">#{x.nro ?? "s/n"} · {x.asegurado ?? "—"}</p>
+                  <Link href={`/siniestros/${x.id}#resolucion`} onClick={() => setAbierto(false)} className="group min-w-0 flex-1" title="Ir al caso">
+                    <p className="truncate text-sm font-medium text-ink group-hover:text-azul group-hover:underline">#{x.nro ?? "s/n"} · {x.asegurado ?? "—"}</p>
                     <p className="truncate text-xs text-slate">
                       <span className="font-mono tabular-nums">{mmss(seg)}</span>
                       {" · "}
                       {x.estado === "generando" ? (x.paso ?? "Trabajando…") : x.estado === "listo" ? "Listo" : (x.error ?? "No salió")}
                     </p>
-                  </div>
-                  {x.estado === "generando" ? null : (
+                  </Link>
+                  {x.estado === "generando" ? (
+                    <Link href={`/siniestros/${x.id}#resolucion`} onClick={() => setAbierto(false)} className="shrink-0 rounded border border-azul/30 px-2 py-1 text-[11px] font-semibold text-azul hover:bg-azul/5">Ir al caso</Link>
+                  ) : (
                     <span className="flex shrink-0 items-center gap-1">
                       <Link href={`/siniestros/${x.id}#resolucion`} className="rounded bg-azul px-2 py-1 text-[11px] font-semibold text-paper hover:opacity-90">Ver</Link>
                       <button onClick={() => { cerrados.current.add(x.id); setInformes(l => [...l]); }} className="rounded px-1 text-xs text-slate hover:text-ink" aria-label="Quitar de la lista">✕</button>
