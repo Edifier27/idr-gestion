@@ -31,7 +31,7 @@ async function respuestaIa(descripcion: string, pagina: string, errores: unknown
   try {
     const msg = await new Anthropic({ apiKey }).messages.create({
       model: "claude-sonnet-5-5",
-      max_tokens: 700,
+      max_tokens: 4000,
       system: SISTEMA,
       messages: [{
         role: "user",

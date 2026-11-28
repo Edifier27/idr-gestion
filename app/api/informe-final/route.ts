@@ -7,7 +7,7 @@ import { leerLecturaDenuncia } from "@/lib/leer-denuncia";
 import { sesionRequerida, puedeVerCaso, puedeVerInformeFinal } from "@/lib/acceso";
 
 export const runtime = "nodejs";
-export const maxDuration = 300; // mira todas las pruebas: puede tardar
+export const maxDuration = 600; // mira todas las pruebas y puede reintentar: puede tardar
 
 // POST /api/informe-final  { siniestroId } -> genera la resolución final con IA
 // (solo admin: es la versión privada, el operador no la ve — ver puedeVerInformeFinal).
